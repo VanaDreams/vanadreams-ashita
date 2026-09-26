@@ -216,12 +216,11 @@ namespace Vanadreams.Pages
                            File.Exists(Path.Combine(ClientInstall.GameFolder(ours), "FFXiMain.dll"));
             if (!haveOurs)
             {
-                if (registeredIsUsable) return true;   // not our copy, but a working one: leave it alone
-                MessageBox.Show(
-                    "Windows has no Final Fantasy XI to start.\n\nPress Install game on the menu to fetch it.",
-                    "Vanadreams Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
-                _win.RefreshStrip();
-                return false;
+                // Nothing found to point at - which is not the same as nothing being there. A game put
+                // somewhere this launcher does not know to look is still a game, and telling that player
+                // there is none, or to download another copy, would be a worse lie than letting him try.
+                // Press on and let the launch speak for itself.
+                return true;
             }
 
             try
