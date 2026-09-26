@@ -186,6 +186,32 @@ namespace Vanadreams.Pages
                 _win.RefreshStrip();
                 return;
             }
+            // Windows tells the game where it is installed, not this launcher. If that registration is
+            // missing, or points somewhere the game is no longer sitting, xiloader still logs in -
+            // authentication is only a network call - and then the handoff finds nothing and the console
+            // closes moments after "Successfully logged in". From the player's side that reads as a
+            // broken server. Caught here so it reads as what it is.
+            // 26 Sept 2026: a player installed twice, to C: and then to D:, and the registration still
+            // pointed at the first. He could not play, and nothing anywhere said why.
+            if (!_profile.IsRetail)
+            {
+                var registered = ClientVersion.FindFfxiFolder();
+                var usable = registered != null && File.Exists(Path.Combine(registered, "FFXiMain.dll"));
+                if (!usable)
+                {
+                    var what = registered == null
+                        ? "Windows has no Final Fantasy XI installation registered."
+                        : "Windows has the game registered at " + registered.TrimEnd('\\') + ", and the game is not there.";
+                    MessageBox.Show(
+                        what + "\n\nThe game reads that location from Windows rather than from this launcher, " +
+                        "so it would log in and then close without ever starting.\n\n" +
+                        "Open Install game and press \"Register installed game\" to point Windows at the copy you are using.",
+                        "Vanadreams Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    _win.RefreshStrip();
+                    return;
+                }
+            }
+
             try
             {
                 GameLauncher.Launch(state.AshitaRoot, _profile, state.Credentials.Get(_profile.Id));

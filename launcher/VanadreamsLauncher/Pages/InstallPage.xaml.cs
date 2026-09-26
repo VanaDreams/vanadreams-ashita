@@ -42,6 +42,21 @@ namespace Vanadreams.Pages
             State.Text = found == null ? "Not installed yet." : matches ? "✓ Installed · matches the server" : "Installed, but older than the server needs. Install game fetches the right one.";
             State.Foreground = (Brush)FindResource(found == null ? "Warn" : matches ? "Ok" : "Warn");
             InstallButton.Content = _cancel != null ? "Stop" : found == null ? "Install game" : "Install a fresh copy";
+
+            // Installing somewhere new only tells Windows about it once the whole download finishes, so a
+            // second install that was stopped, failed, or had its permission prompt refused leaves the old
+            // folder registered and the new one unreachable to the game. Say so BEFORE the download rather
+            // than leaving the player to find out at the login screen.
+            var registeredElsewhere = found != null &&
+                !string.Equals(found.TrimEnd('\\'), ClientInstall.GameFolder(_root).TrimEnd('\\'),
+                               StringComparison.OrdinalIgnoreCase);
+            MismatchText.Text = registeredElsewhere
+                ? "Windows currently points the game at " + found.TrimEnd('\\') +
+                  ". Installing here will point it at this folder instead, once the install finishes. " +
+                  "If the files are already here, press Register installed game - it takes a moment and downloads nothing."
+                : "";
+            MismatchText.Visibility = registeredElsewhere ? Visibility.Visible : Visibility.Collapsed;
+            RegisterButton.IsEnabled = _cancel == null && Directory.Exists(ClientInstall.GameFolder(_root));
         }
 
         private async Task LoadManifestAsync()
@@ -100,6 +115,43 @@ namespace Vanadreams.Pages
                 _cancel = null; FolderButton.IsEnabled = true; Progress.Visibility = Visibility.Collapsed;
                 Refresh();
             }
+        }
+
+        /// <summary>
+        /// Tell Windows the game is in this folder, without downloading anything.
+        ///
+        /// Registration used to be reachable only at the end of a completed install, so an install that
+        /// was stopped, failed, or had its permission prompt refused left Windows pointing at an older
+        /// folder - and the game, which reads that registration rather than anything this launcher holds,
+        /// would log in and then close. Re-downloading several gigabytes to fix a registry value was the
+        /// only way out. This is that fix on its own.
+        /// </summary>
+        private async void Register_Click(object sender, RoutedEventArgs e)
+        {
+            var game = ClientInstall.GameFolder(_root);
+            if (!File.Exists(Path.Combine(game, "FFXiMain.dll")))
+            {
+                ProgressText.Text = "No game in " + game + " to register. Pick the folder the game is actually in, or press Install game.";
+                return;
+            }
+
+            RegisterButton.IsEnabled = false;
+            ProgressText.Text = "Windows will ask for permission to register the game…";
+            try
+            {
+                var ok = await Task.Run(() => ClientInstall.RunRegister(_root, App.State.Settings.DownloadsFolder));
+                ProgressText.Text = ok
+                    ? "Registered. Windows now points the game at " + game + ". Press Play."
+                    : "The permission prompt was refused, so nothing changed. Press Register installed game and choose Yes.";
+                App.State.CheckVersion();
+                App.State.Notify();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("register installed game", ex);
+                ProgressText.Text = ex.Message;
+            }
+            finally { Refresh(); }
         }
 
         private void Folder_Click(object sender, RoutedEventArgs e)
