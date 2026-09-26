@@ -17,6 +17,16 @@ namespace Vanadreams.Services
         public string Path { get; private set; }
         public string AshitaRoot { get; set; } = "";
         public string FfxiFolderOverride { get; set; } = "";
+
+        /// <summary>
+        /// The game folder Windows pointed at before this launcher last changed it.
+        ///
+        /// Windows holds ONE Final Fantasy XI registration for the whole machine, so registering a copy
+        /// takes the registration away from whatever had it - a retail install, or an earlier copy of
+        /// this one. Remembering the previous folder means that can be handed back without hunting for
+        /// the path or reinstalling anything.
+        /// </summary>
+        public string PreviousGameFolder { get; set; } = "";
         public string LastProfile { get; set; } = "";
         public string CatalogUrl { get; set; } = "https://raw.githubusercontent.com/VanaDreams/vanadreams-ashita/main/catalog.json";
         public string StatusUrl { get; set; } = ServerStatusClient.DefaultUrl;

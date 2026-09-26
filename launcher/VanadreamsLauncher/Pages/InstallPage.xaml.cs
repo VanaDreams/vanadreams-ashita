@@ -57,6 +57,16 @@ namespace Vanadreams.Pages
                 : "";
             MismatchText.Visibility = registeredElsewhere ? Visibility.Visible : Visibility.Collapsed;
             RegisterButton.IsEnabled = _cancel == null && Directory.Exists(ClientInstall.GameFolder(_root));
+
+            // Only offered when there is something to give back: a folder we took the registration from,
+            // which still has a game in it, and which is not the one Windows already points at.
+            var previous = App.State.Settings.PreviousGameFolder;
+            var canRestore = !string.IsNullOrWhiteSpace(previous) &&
+                File.Exists(Path.Combine(previous, "FFXiMain.dll")) &&
+                !string.Equals(previous.TrimEnd('\\'), found?.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
+            RestoreButton.Visibility = canRestore ? Visibility.Visible : Visibility.Collapsed;
+            RestoreButton.IsEnabled = canRestore && _cancel == null;
+            if (canRestore) RestoreButton.Content = "Give it back to " + Path.GetFileName(previous.TrimEnd('\\'));
         }
 
         private async Task LoadManifestAsync()
@@ -102,7 +112,7 @@ namespace Vanadreams.Pages
             {
                 await ClientInstall.InstallFilesAsync(state.Downloader, _manifest, _root, state.Settings.DownloadsFolder, progress, _cancel.Token);
                 ProgressText.Text = "Files in place. Windows will ask for permission to register the game…";
-                var ok = await Task.Run(() => ClientInstall.RunRegister(_root, state.Settings.DownloadsFolder));
+                var ok = await RegisterWithConsentAsync();
                 ProgressText.Text = ok ? "Installed. Run Setup if you haven't, then press Play."
                                        : "The permission prompt was refused, so the game isn't registered yet. Press Install game again to finish; nothing downloads twice.";
                 state.CheckVersion();
@@ -115,6 +125,86 @@ namespace Vanadreams.Pages
                 _cancel = null; FolderButton.IsEnabled = true; Progress.Visibility = Visibility.Collapsed;
                 Refresh();
             }
+        }
+
+        /// <summary>
+        /// Register this folder with Windows, asking first when that takes the registration off another
+        /// copy of the game.
+        ///
+        /// Windows holds ONE Final Fantasy XI registration for the whole machine. Registering a copy
+        /// therefore takes it from whatever had it - commonly a working retail PlayOnline install, which
+        /// then cannot find its own game. The launcher used to do that silently, as the last step of a
+        /// download, which is how a player ended up with two installs and a registration pointing at the
+        /// one he had stopped using.
+        ///
+        /// False when the player declined, or the permission prompt was refused.
+        /// </summary>
+        private async Task<bool> RegisterWithConsentAsync()
+        {
+            var game = ClientInstall.GameFolder(_root);
+            var current = ClientVersion.FindFfxiFolder();
+            var takingItFrom = current != null &&
+                !string.Equals(current.TrimEnd('\\'), game.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
+
+            if (takingItFrom)
+            {
+                var answer = MessageBox.Show(
+                    "Windows points Final Fantasy XI at:\n\n" + current.TrimEnd('\\') +
+                    "\n\nIt can only point at one copy. Registering:\n\n" + game +
+                    "\n\ntakes it from the other one, and anything that launches that copy - a retail " +
+                    "PlayOnline included - will no longer find its game.\n\n" +
+                    "The old folder is remembered, so it can be handed back from this page.\n\n" +
+                    "Point Windows at this folder?",
+                    "Vanadreams Launcher", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (answer != MessageBoxResult.Yes)
+                {
+                    ProgressText.Text = "Left alone. Windows still points at " + current.TrimEnd('\\') + ".";
+                    return false;
+                }
+            }
+
+            var ok = await Task.Run(() => ClientInstall.RunRegister(_root, App.State.Settings.DownloadsFolder));
+            if (ok && takingItFrom)
+            {
+                App.State.Settings.PreviousGameFolder = current.TrimEnd('\\');
+                App.State.Settings.Save();
+            }
+            return ok;
+        }
+
+        /// <summary>Hand the registration back to the copy it was taken from - no download, one prompt.</summary>
+        private async void Restore_Click(object sender, RoutedEventArgs e)
+        {
+            var previous = App.State.Settings.PreviousGameFolder;
+            if (string.IsNullOrWhiteSpace(previous)) return;
+            if (!File.Exists(Path.Combine(previous, "FFXiMain.dll")))
+            {
+                ProgressText.Text = "There is no game in " + previous + " any more, so it cannot be handed back.";
+                App.State.Settings.PreviousGameFolder = "";
+                App.State.Settings.Save();
+                Refresh();
+                return;
+            }
+
+            var root = Path.GetDirectoryName(previous.TrimEnd('\\'));
+            RestoreButton.IsEnabled = false;
+            ProgressText.Text = "Windows will ask for permission…";
+            try
+            {
+                var taken = ClientVersion.FindFfxiFolder();
+                var ok = await Task.Run(() => ClientInstall.RunRegister(root, App.State.Settings.DownloadsFolder));
+                if (ok)
+                {
+                    App.State.Settings.PreviousGameFolder = taken == null ? "" : taken.TrimEnd('\\');
+                    App.State.Settings.Save();
+                    ProgressText.Text = "Windows points at " + previous + " again.";
+                }
+                else ProgressText.Text = "The permission prompt was refused, so nothing changed.";
+                App.State.CheckVersion();
+                App.State.Notify();
+            }
+            catch (Exception ex) { Log.Error("restore registration", ex); ProgressText.Text = ex.Message; }
+            finally { Refresh(); }
         }
 
         /// <summary>
@@ -139,7 +229,7 @@ namespace Vanadreams.Pages
             ProgressText.Text = "Windows will ask for permission to register the game…";
             try
             {
-                var ok = await Task.Run(() => ClientInstall.RunRegister(_root, App.State.Settings.DownloadsFolder));
+                var ok = await RegisterWithConsentAsync();
                 ProgressText.Text = ok
                     ? "Registered. Windows now points the game at " + game + ". Press Play."
                     : "The permission prompt was refused, so nothing changed. Press Register installed game and choose Yes.";
