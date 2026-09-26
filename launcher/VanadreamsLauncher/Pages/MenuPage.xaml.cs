@@ -194,6 +194,23 @@ namespace Vanadreams.Pages
                 return true;   // nothing to do, which is almost every launch
             }
 
+            // Nothing recorded? Look where an install would be before asking anyone to fetch 7 GB again.
+            // Anyone who installed before the folder was remembered has this empty, including the player
+            // this was written for - and his game was sitting beside his Ashita the whole time.
+            if (string.IsNullOrWhiteSpace(ours) || !File.Exists(Path.Combine(ClientInstall.GameFolder(ours), "FFXiMain.dll")))
+            {
+                foreach (var candidate in new[] { state.Settings.AshitaRoot, ClientInstall.DefaultRoot })
+                {
+                    if (string.IsNullOrWhiteSpace(candidate)) continue;
+                    if (!File.Exists(Path.Combine(ClientInstall.GameFolder(candidate), "FFXiMain.dll"))) continue;
+                    ours = candidate;
+                    state.Settings.GameInstallRoot = candidate;
+                    state.Settings.Save();
+                    Log.Info("found the game beside " + candidate + " and recorded it");
+                    break;
+                }
+            }
+
             // Anything we could point it at?
             var haveOurs = !string.IsNullOrWhiteSpace(ours) &&
                            File.Exists(Path.Combine(ClientInstall.GameFolder(ours), "FFXiMain.dll"));
