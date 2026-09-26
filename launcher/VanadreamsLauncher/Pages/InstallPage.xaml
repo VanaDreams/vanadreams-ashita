@@ -39,13 +39,9 @@
                 <StackPanel Grid.Row="1">
                     <TextBlock Style="{StaticResource Display40}" FontSize="26" Text="Final Fantasy XI"/>
                     <TextBlock x:Name="State" Style="{StaticResource Mono}" Margin="0,4,0,10" TextWrapping="Wrap"/>
-                    <TextBlock x:Name="MismatchText" Style="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap"
-                               Margin="0,0,0,10" Visibility="Collapsed"/>
                 </StackPanel>
                 <StackPanel Grid.Row="2">
                     <Button x:Name="InstallButton" Style="{StaticResource GoldButton}" Content="Install game" Click="Install_Click" Margin="0,0,0,8"/>
-                    <Button x:Name="RegisterButton" Style="{StaticResource GhostButton}" Content="Register installed game" Click="Register_Click" Margin="0,0,0,8"/>
-                    <Button x:Name="RestoreButton" Style="{StaticResource GhostButton}" Content="Give it back to the other copy" Click="Restore_Click" Margin="0,0,0,8" Visibility="Collapsed"/>
                     <Button x:Name="FolderButton" Style="{StaticResource GhostButton}" Content="Change folder" Click="Folder_Click" Margin="0,0,0,8"/>
                     <Button Style="{StaticResource GhostButton}" Content="Back" HorizontalAlignment="Left" Click="Back_Click"/>
                 </StackPanel>

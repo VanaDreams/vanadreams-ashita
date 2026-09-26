@@ -175,6 +175,59 @@ namespace Vanadreams.Pages
             try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); } catch (Exception ex) { Log.Warn("open url: " + ex.Message); }
         }
 
+        /// <summary>
+        /// Make sure Windows points at the game we installed, fixing it in place when it does not.
+        /// False only when it could not be put right and the player has been told why.
+        /// </summary>
+        private bool EnsureGameIsRegistered()
+        {
+            var state = App.State;
+            var ours = state.Settings.GameInstallRoot;
+            var registered = ClientVersion.FindFfxiFolder();
+            var registeredIsUsable = registered != null && File.Exists(Path.Combine(registered, "FFXiMain.dll"));
+
+            if (registeredIsUsable &&
+                (string.IsNullOrWhiteSpace(ours) ||
+                 string.Equals(registered.TrimEnd('\\'), ClientInstall.GameFolder(ours).TrimEnd('\\'),
+                               StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;   // nothing to do, which is almost every launch
+            }
+
+            // Anything we could point it at?
+            var haveOurs = !string.IsNullOrWhiteSpace(ours) &&
+                           File.Exists(Path.Combine(ClientInstall.GameFolder(ours), "FFXiMain.dll"));
+            if (!haveOurs)
+            {
+                if (registeredIsUsable) return true;   // not our copy, but a working one: leave it alone
+                MessageBox.Show(
+                    "Windows has no Final Fantasy XI to start.\n\nPress Install game on the menu to fetch it.",
+                    "Vanadreams Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
+                _win.RefreshStrip();
+                return false;
+            }
+
+            try
+            {
+                if (ClientInstall.RunRegister(ours, state.Settings.DownloadsFolder))
+                {
+                    Log.Info("registration pointed back at " + ClientInstall.GameFolder(ours));
+                    state.CheckVersion();
+                    return true;
+                }
+                MessageBox.Show(
+                    "Windows needs permission to point at your game folder before it can start.\n\n" +
+                    "Press Play again and choose Yes.",
+                    "Vanadreams Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("register on play", ex);
+                MessageBox.Show(ex.Message, "Vanadreams Launcher", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            return false;
+        }
+
         private void Play()
         {
             if (_profile == null) return;
@@ -186,31 +239,18 @@ namespace Vanadreams.Pages
                 _win.RefreshStrip();
                 return;
             }
-            // Windows tells the game where it is installed, not this launcher. If that registration is
-            // missing, or points somewhere the game is no longer sitting, xiloader still logs in -
-            // authentication is only a network call - and then the handoff finds nothing and the console
-            // closes moments after "Successfully logged in". From the player's side that reads as a
-            // broken server. Caught here so it reads as what it is.
-            // 26 Sept 2026: a player installed twice, to C: and then to D:, and the registration still
-            // pointed at the first. He could not play, and nothing anywhere said why.
-            if (!_profile.IsRetail)
-            {
-                var registered = ClientVersion.FindFfxiFolder();
-                var usable = registered != null && File.Exists(Path.Combine(registered, "FFXiMain.dll"));
-                if (!usable)
-                {
-                    var what = registered == null
-                        ? "Windows has no Final Fantasy XI installation registered."
-                        : "Windows has the game registered at " + registered.TrimEnd('\\') + ", and the game is not there.";
-                    MessageBox.Show(
-                        what + "\n\nThe game reads that location from Windows rather than from this launcher, " +
-                        "so it would log in and then close without ever starting.\n\n" +
-                        "Open Install game and press \"Register installed game\" to point Windows at the copy you are using.",
-                        "Vanadreams Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    _win.RefreshStrip();
-                    return;
-                }
-            }
+            // The game reads its own location from Windows, not from this launcher, and Windows holds one
+            // such location for the whole machine. When it does not point at the copy we installed, the
+            // game cannot start: xiloader still logs in - authentication is only a network call - and then
+            // the handoff finds nothing, so the console closes moments after "Successfully logged in" and
+            // the player sees a server that will not let him in.
+            //
+            // We installed the game, so this is ours to keep right rather than ours to report. Put it back
+            // and carry on. The only thing the player sees is Windows' own permission prompt, and only on
+            // the launch after it drifted.
+            // 26 Sept 2026: a player installed twice, to C: and then to D:, and the registration stayed on
+            // the first. He spent an hour on it and nothing anywhere said why.
+            if (!_profile.IsRetail && !EnsureGameIsRegistered()) return;
 
             try
             {

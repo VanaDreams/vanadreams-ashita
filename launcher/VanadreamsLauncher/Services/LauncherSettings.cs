@@ -19,14 +19,15 @@ namespace Vanadreams.Services
         public string FfxiFolderOverride { get; set; } = "";
 
         /// <summary>
-        /// The game folder Windows pointed at before this launcher last changed it.
+        /// Where this launcher put the game. Empty until it installs one.
         ///
-        /// Windows holds ONE Final Fantasy XI registration for the whole machine, so registering a copy
-        /// takes the registration away from whatever had it - a retail install, or an earlier copy of
-        /// this one. Remembering the previous folder means that can be handed back without hunting for
-        /// the path or reinstalling anything.
+        /// Windows holds a single Final Fantasy XI registration for the machine and the game reads its
+        /// own location from there, so the two have to agree. Until this was recorded the launcher did
+        /// not know where it had installed either: the install folder was a local variable that reset to
+        /// the default every time the page opened, which is why a player who installed to a second drive
+        /// could not be put right without finding the folder himself.
         /// </summary>
-        public string PreviousGameFolder { get; set; } = "";
+        public string GameInstallRoot { get; set; } = "";
         public string LastProfile { get; set; } = "";
         public string CatalogUrl { get; set; } = "https://raw.githubusercontent.com/VanaDreams/vanadreams-ashita/main/catalog.json";
         public string StatusUrl { get; set; } = ServerStatusClient.DefaultUrl;
@@ -51,6 +52,7 @@ namespace Vanadreams.Services
                 if (d == null) return s;
                 s.AshitaRoot = Json.Str(d, "ashitaRoot", "");
                 s.FfxiFolderOverride = Json.Str(d, "ffxiFolderOverride", "");
+                s.GameInstallRoot = Json.Str(d, "gameInstallRoot", "");
                 s.LastProfile = Json.Str(d, "lastProfile", "");
                 s.CatalogUrl = Json.Str(d, "catalogUrl", s.CatalogUrl);
                 s.StatusUrl = Json.Str(d, "statusUrl", s.StatusUrl);
@@ -77,6 +79,7 @@ namespace Vanadreams.Services
             {
                 { "ashitaRoot", AshitaRoot ?? "" },
                 { "ffxiFolderOverride", FfxiFolderOverride ?? "" },
+                { "gameInstallRoot", GameInstallRoot ?? "" },
                 { "lastProfile", LastProfile ?? "" },
                 { "catalogUrl", CatalogUrl },
                 { "statusUrl", StatusUrl },
