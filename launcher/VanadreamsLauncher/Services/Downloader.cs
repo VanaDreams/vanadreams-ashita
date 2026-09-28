@@ -107,6 +107,25 @@ namespace Vanadreams.Services
             return null;
         }
 
+        /// <summary>One release's asset by tag, e.g. ("LandSandBoat/xiloader", "v2.1.2", "xiloader.exe"). Null when the tag or the asset is not there.</summary>
+        public async Task<ReleaseAsset> ReleaseAssetAsync(string repo, string tag, string assetGlob, CancellationToken ct = default(CancellationToken))
+        {
+            string text;
+            try { text = await GetStringAsync($"https://api.github.com/repos/{repo}/releases/tags/{tag}", ct).ConfigureAwait(false); }
+            catch (HttpRequestException) { return null; }
+            var rel = Json.Obj(Json.Parse(text));
+            if (rel == null || Json.Bool(rel, "draft")) return null;
+            var rx = GlobToRegex(assetGlob);
+            foreach (var a in Json.List(rel.ContainsKey("assets") ? rel["assets"] : null))
+            {
+                var asset = Json.Obj(a);
+                var name = Json.Str(asset, "name", "");
+                if (rx.IsMatch(name))
+                    return new ReleaseAsset { Name = name, Url = Json.Str(asset, "browser_download_url"), Size = Json.Long(asset, "size"), Tag = Json.Str(rel, "tag_name") };
+            }
+            return null;
+        }
+
         /// <summary>Every file under a folder of a GitHub repo, with the content hash and size GitHub lists for it.</summary>
         public async Task<List<RepoFile>> ListRepoFolderAsync(string repo, string path, string branch, CancellationToken ct = default(CancellationToken))
         {

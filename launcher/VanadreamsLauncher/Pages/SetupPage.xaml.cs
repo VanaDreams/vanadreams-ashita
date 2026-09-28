@@ -14,7 +14,6 @@ namespace Vanadreams.Pages
     public partial class SetupPage : UserControl
     {
         private const string AshitaZipUrl = "https://github.com/AshitaXI/Ashita-v4beta/archive/refs/heads/main.zip";
-        private const string XiloaderRepo = "LandSandBoat/xiloader";
         private readonly MainWindow _win;
         private string _v3;
         private bool _busy;
@@ -123,16 +122,10 @@ namespace Vanadreams.Pages
                 if (!File.Exists(Path.Combine(root, "Ashita-cli.exe"))) throw new InvalidOperationException("Ashita-cli.exe did not appear after unpacking; the archive layout changed.");
                 Done(Step1);
 
-                // 2. xiloader
+                // 2. xiloader - the one the server accepts, never "the latest" (Services\Loader.cs says why)
                 Mark(Step2);
-                Say("Looking up the latest xiloader…");
-                var asset = await state.Downloader.LatestReleaseAssetAsync(XiloaderRepo, "xiloader.exe") ?? await state.Downloader.LatestReleaseAssetAsync(XiloaderRepo, "*.exe");
-                if (asset == null) throw new InvalidOperationException("No xiloader.exe found on LandSandBoat's releases.");
-                var loaderTmp = Path.Combine(state.Settings.DownloadsFolder, "xiloader-" + asset.Tag + ".exe");
-                if (!File.Exists(loaderTmp) || new FileInfo(loaderTmp).Length != asset.Size)
-                    await state.Downloader.DownloadFileAsync(asset.Url, loaderTmp, progress, "xiloader " + asset.Tag, asset.Size);
-                Directory.CreateDirectory(Path.Combine(root, "bootloader"));
-                File.Copy(loaderTmp, Path.Combine(root, "bootloader", "xiloader.exe"), true);
+                Say("Fetching xiloader " + Loader.Tag + "…");
+                await Loader.InstallAsync(state.Downloader, state.Settings.DownloadsFolder, root, true, progress);
                 Done(Step2);
 
                 // 3. profile

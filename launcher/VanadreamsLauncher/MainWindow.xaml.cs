@@ -38,9 +38,21 @@ namespace Vanadreams
             if (State.Settings.MusicOn) Dispatcher.BeginInvoke(new Action(Music.Start), System.Windows.Threading.DispatcherPriority.Background);
             _statusTimer.Start();
             await State.RefreshStatusAsync();
+            await EnsureLoaderAsync();
             await State.RefreshCatalogAsync();
             await State.GiveDefaultsAsync();
             await CheckForUpdateAsync();
+        }
+
+        /// <summary>The loader in bootloader\ is one the server accepts; when it is not, it is swapped for the pinned one (Services\Loader.cs).</summary>
+        private async Task EnsureLoaderAsync()
+        {
+            if (!State.HasAshita) return;
+            try
+            {
+                if (await Loader.InstallAsync(State.Downloader, State.Settings.DownloadsFolder, State.AshitaRoot, false)) State.Notify();
+            }
+            catch (Exception ex) { Log.Warn("loader: " + ex.Message); }
         }
 
         private string _updatedExe;
