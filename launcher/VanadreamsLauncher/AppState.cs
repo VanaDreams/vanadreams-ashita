@@ -135,14 +135,10 @@ namespace Vanadreams
 
         public string LoaderVersion()
         {
-            try
-            {
-                var p = Path.Combine(AshitaRoot, "bootloader", "xiloader.exe");
-                if (!File.Exists(p)) return "missing";
-                var v = System.Diagnostics.FileVersionInfo.GetVersionInfo(p);
-                return string.IsNullOrWhiteSpace(v.FileVersion) || v.FileVersion == "0.0" ? "present" : v.FileVersion;
-            }
-            catch (Exception) { return "present"; }
+            // xiloader's FileVersion string is empty; the fixed parts carry the number (Loader.Installed).
+            var v = Loader.Installed(AshitaRoot);
+            if (v == null) return "missing";
+            return Loader.IsSupported(v) ? v.ToString() : v + " (server takes " + Loader.RequiredMajor + "." + Loader.RequiredMinor + ")";
         }
 
         public string AshitaUpdated()

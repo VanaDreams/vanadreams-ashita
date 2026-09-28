@@ -244,11 +244,24 @@ namespace Vanadreams.Pages
             return false;
         }
 
-        private void Play()
+        private async void Play()
         {
             if (_profile == null) return;
             var state = App.State;
             state.CheckVersion();
+            // The loader has to be one the server accepts, and the newest one is not (Services\Loader.cs).
+            // A player whose Setup ran on or after 27 Sep 2026 had v2.2.0 in bootloader\ and was told
+            // "Your xiloader is too old" by a server that wanted the older one. Put it right here, once,
+            // so the fix reaches a player who only ever presses Play.
+            if (!_profile.IsRetail)
+            {
+                try
+                {
+                    if (await Loader.InstallAsync(state.Downloader, state.Settings.DownloadsFolder, state.AshitaRoot, false))
+                        Log.Info("loader replaced before play");
+                }
+                catch (Exception ex) { Log.Warn("loader check on play: " + ex.Message); }
+            }
             if (!_profile.IsRetail && state.Version.BlocksPlay)   // the Vanadreams version rule has no say over retail
             {
                 MessageBox.Show(state.Version.Sentence + "\n\nInstall game, on the menu, fetches the version the server runs.", "Vanadreams Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
