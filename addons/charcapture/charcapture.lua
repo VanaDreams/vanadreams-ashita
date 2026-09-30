@@ -10,7 +10,7 @@
 
 addon.name    = 'charcapture';
 addon.author  = 'Vanadreams';
-addon.version = '0.1.4';
+addon.version = '0.1.5';
 addon.desc    = 'Captures a character snapshot for porting to Vanadreams.';
 addon.link    = 'https://github.com/VanaDreams/vanadreams-ashita';
 
@@ -77,6 +77,18 @@ local TRAIT_MAX = 256;          -- exact client table: 0x0AC Traits, 32 bytes
 local KEYITEM_MAX = 4096;       -- exact client tables: 0x055, 8 tables of 512 (it was 3072, so every key item from 3072 up was lost)
 local CONTAINERS = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
 local EQUIP_SLOTS = 16;
+
+-- Ashita only has a storage's contents (and GetContainerCountMax for it) once the client has been
+-- sent them, which for Inventory/Wardrobe/Safe/etc happens on zone in, but for Mog Safe 2 and
+-- Wardrobes 2-8 only happens once that tab has actually been opened this session - equipping from
+-- one works with no such requirement, so a capture can read id 0 for an item worn straight out of
+-- an unopened wardrobe, with the same wardrobe's own slot list coming back empty alongside it.
+local STORAGE_NAME = {
+    [0] = 'Inventory', [1] = 'Mog Safe', [2] = 'Storage', [3] = 'Temporary Items', [4] = 'Mog Locker',
+    [5] = 'Mog Satchel', [6] = 'Mog Sack', [7] = 'Mog Case', [8] = 'Mog Wardrobe', [9] = 'Mog Safe 2',
+    [10] = 'Mog Wardrobe 2', [11] = 'Mog Wardrobe 3', [12] = 'Mog Wardrobe 4', [13] = 'Mog Wardrobe 5',
+    [14] = 'Mog Wardrobe 6', [15] = 'Mog Wardrobe 7', [16] = 'Mog Wardrobe 8',
+};
 
 local function say(msg)
     print(('\30\08[charcapture]\30\01 %s'):format(msg));
@@ -192,8 +204,10 @@ local function capture()
 
     -- bags
     local item_count = 0;
+    local container_unsynced = T{};    -- containers whose size Ashita hasn't loaded this session
     for _, c in ipairs(CONTAINERS) do
         local max = safe(function() return inv:GetContainerCountMax(c); end, 0);
+        if (not max or max == 0) and c ~= 0 then container_unsynced[c] = true; end
         local list = T{};
         if max and max > 0 then
             -- slot 0 of the inventory is gil
@@ -211,6 +225,8 @@ local function capture()
     end
 
     -- equipment
+    local unsynced_worn_seen = {};   -- container id -> true, plain table so :append below can't collide with it
+    local unsynced_worn = T{};       -- the same containers, in order, for the message
     for slot = 0, EQUIP_SLOTS - 1 do
         local e = safe(function() return inv:GetEquippedItem(slot); end, nil);
         if e and e.Index ~= 0 then
@@ -218,7 +234,16 @@ local function capture()
             local index = e.Index % 0x0100;
             local it = safe(function() return inv:GetContainerItem(container, index); end, nil);
             snap.equipment[tostring(slot)] = T{ container = container, slot = index, id = it and it.Id or 0 };
+            if container_unsynced[container] and not unsynced_worn_seen[container] then
+                unsynced_worn_seen[container] = true;
+                unsynced_worn:append(container);
+            end
         end
+    end
+    if #unsynced_worn > 0 then
+        local names = T{};
+        for _, c in ipairs(unsynced_worn) do names:append(STORAGE_NAME[c] or ('storage ' .. c)); end
+        snap.not_captured:append(('gear worn from %s (open it in your menu once, then /capture again)'):format(table.concat(names, ', ')));
     end
 
     -- write
@@ -234,6 +259,11 @@ local function capture()
     local job = res:GetString('jobs.names_abbr', snap.jobs.main) or tostring(snap.jobs.main);
     last_summary = ('%s, %s%d, %d items across all bags, %d gil, %d spells, %d key items -> %s'):format(name, job, snap.jobs.main_level, item_count, snap.gil, #snap.spells, #snap.key_items, path);
     say(last_summary);
+    if #unsynced_worn > 0 then
+        local names = T{};
+        for _, c in ipairs(unsynced_worn) do names:append(STORAGE_NAME[c] or ('storage ' .. c)); end
+        say(('Open %s once (Ashita has not loaded it this session, so the gear you have worn from it came out blank), then /capture again.'):format(table.concat(names, ', ')));
+    end
     say('now send it from the launcher: Capture > Send to Vanadreams.');
     return path;
 end
