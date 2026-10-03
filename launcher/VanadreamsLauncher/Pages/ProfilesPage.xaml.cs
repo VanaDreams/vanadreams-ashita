@@ -62,6 +62,7 @@ namespace Vanadreams.Pages
             UserBox.Text = cred?.User ?? p.Command.User;
             PassBox.Password = cred?.Password ?? p.Command.Password;
             BootBox.Text = p.BootFile;
+            ShowGameFolder(p);
             ExtraBox.Text = p.Command.Extra + (p.Command.Hairpin ? (p.Command.Extra.Length > 0 ? " " : "") + "--hairpin" : "");
             ModeBox.SelectedIndex = Array.FindIndex(_modes, m => m.mode == p.Mode);
             WidthBox.Text = p.Width > 0 ? p.Width.ToString() : ""; HeightBox.Text = p.Height > 0 ? p.Height.ToString() : "";
@@ -74,6 +75,35 @@ namespace Vanadreams.Pages
                 var bf = Path.IsPathRooted(p.BootFile) ? p.BootFile : Path.Combine(App.State.AshitaRoot, p.BootFile);
                 if (!File.Exists(bf)) Note.Text = "Boot file not found. Run Setup or browse to xiloader.";
             }
+        }
+
+        /// <summary>
+        /// Vanadreams profiles always play the game this launcher installed, so their box shows it and cannot be
+        /// changed. Any other server's profile names the copy that works with that server.
+        /// </summary>
+        private void ShowGameFolder(Profile p)
+        {
+            var state = App.State;
+            var vanadreams = p.IsVanadreams;
+            GameBox.IsReadOnly = vanadreams;   // read-only rather than disabled, so its tooltip still says why
+            GameBrowse.IsEnabled = !vanadreams;
+            if (vanadreams)
+            {
+                GameBox.Text = GameRegistration.HasGame(state.Settings.GameInstallRoot) ? ClientInstall.GameFolder(state.Settings.GameInstallRoot) : "";
+                GameBox.ToolTip = "Vanadreams plays the game this launcher installed (Install game, on the menu).";
+                return;
+            }
+            GameBox.Text = p.GameFolder;
+            var fallback = GameRegistration.HasGame(state.Settings.OtherGameRoot) ? ClientInstall.GameFolder(state.Settings.OtherGameRoot) : null;
+            GameBox.ToolTip = "The copy of Final Fantasy XI that works with this server. Windows is pointed at it when you press Play." +
+                (fallback != null ? "\nLeft blank, this profile plays " + fallback + ", the copy Windows had before Vanadreams."
+                                  : "\nLeft blank, the game Windows already points at is used.");
+        }
+
+        private void GameBrowse_Click(object sender, RoutedEventArgs e)
+        {
+            var d = new System.Windows.Forms.FolderBrowserDialog { Description = "Pick this server's FINAL FANTASY XI folder, or the folder that holds it and PlayOnlineViewer", SelectedPath = GameBox.Text };
+            if (d.ShowDialog() == System.Windows.Forms.DialogResult.OK) GameBox.Text = d.SelectedPath;
         }
 
         private bool _filling;
@@ -102,6 +132,7 @@ namespace Vanadreams.Pages
             var extra = LoaderCommand.Parse(ExtraBox.Text);
             p.Command = new LoaderCommand { Server = ServerBox.Text.Trim(), Hairpin = extra.Hairpin, Extra = extra.Extra };
             p.BootFile = BootBox.Text.Trim();
+            if (!p.IsVanadreams) p.GameFolder = GameBox.Text.Trim();
             p.Mode = _modes[Math.Max(0, ModeBox.SelectedIndex)].mode;
             int w, h, mw, mh;
             p.Width = int.TryParse(WidthBox.Text, out w) ? w : -1; p.Height = int.TryParse(HeightBox.Text, out h) ? h : -1;
@@ -117,7 +148,9 @@ namespace Vanadreams.Pages
             App.State.Settings.LastProfile = p.Id;
             App.State.Settings.Save();
             Reload(p.Id);
-            Note.Text = "Saved.";
+            Note.Text = !p.IsVanadreams && !string.IsNullOrWhiteSpace(p.GameFolder) && !GameRegistration.HasGame(GameRegistration.RootOf(p.GameFolder))
+                ? "Saved, but there is no game in that folder: pick FINAL FANTASY XI, with PlayOnlineViewer beside it."
+                : "Saved.";
             App.State.Notify();
         }
 

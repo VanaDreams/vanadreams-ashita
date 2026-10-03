@@ -23,6 +23,9 @@ namespace Vanadreams.Services
 
         public bool IsTailscale => string.Equals(Server, TailscaleServer, System.StringComparison.OrdinalIgnoreCase);
 
+        /// <summary>The command logs in to Vanadreams: its public name, any other fairywitch name with vanadreams in it, or its Tailscale address.</summary>
+        public bool IsVanadreams => IsTailscale || (Server ?? "").IndexOf("vanadreams", System.StringComparison.OrdinalIgnoreCase) >= 0;
+
         /// <summary>
         /// Point this command at the server over Tailscale, or back at its public name. Over Tailscale
         /// --hairpin goes on with it: the server hands every client its public address for the zones, and
