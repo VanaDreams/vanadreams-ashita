@@ -37,7 +37,6 @@ namespace Vanadreams.Pages
             new MenuCommand { Label = "Fishing", Key = "fishing" },
             new MenuCommand { Label = "Vanatunes", Key = "vanatunes" },
             new MenuCommand { Label = "Capture", Key = "capture" },
-            new MenuCommand { Label = "From Windower", Key = "windower" },
             new MenuCommand { Label = "Setup", Key = "setup" },
             new MenuCommand { Label = "Install game", Key = "install" },
             new MenuCommand { Label = "Settings", Key = "settings" },
@@ -160,7 +159,6 @@ namespace Vanadreams.Pages
                 case "fishing": _win.Navigate(new FishingPage(_win)); break;
                 case "vanatunes": _win.Navigate(new VanatunesPage(_win)); break;
                 case "capture": _win.Navigate(new CapturePage(_win)); break;
-                case "windower": _win.Navigate(new WindowerPage(_win)); break;
                 case "setup": _win.Navigate(new SetupPage(_win)); break;
                 case "install": _win.Navigate(new InstallPage(_win)); break;
                 case "settings": _win.Navigate(new SettingsPage(_win)); break;
