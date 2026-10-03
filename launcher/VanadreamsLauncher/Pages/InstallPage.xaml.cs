@@ -37,7 +37,7 @@ namespace Vanadreams.Pages
 
         private void Refresh()
         {
-            var found = _asNewPlayer ? null : ClientVersion.FindFfxiFolder();
+            var found = _asNewPlayer ? null : App.State.FfxiFolder;   // the copy Vanadreams plays, not whatever Windows has registered
             var have = ClientVersion.ReadInstalled(found);
             var want = Expected;
             FolderText.Text = ClientInstall.GameFolder(_root);

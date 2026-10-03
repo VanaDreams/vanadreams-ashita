@@ -176,63 +176,74 @@ namespace Vanadreams.Pages
         }
 
         /// <summary>
-        /// Make sure Windows points at the game we installed, fixing it in place when it does not.
-        /// False only when it could not be put right and the player has been told why.
+        /// The copy of the game this profile should start. Vanadreams plays the copy this launcher installed; any other
+        /// server, retail included, plays the profile's own game folder or the copy Windows had before we took it.
+        /// Null when there is nothing known to point at, and the registration is left alone.
         /// </summary>
-        private bool EnsureGameIsRegistered()
+        private string GameRootFor(Profile profile)
         {
             var state = App.State;
+            if (!profile.IsVanadreams) return state.OtherGameRootFor(profile);
+
             var ours = state.Settings.GameInstallRoot;
-            var registered = ClientVersion.FindFfxiFolder();
-            var registeredIsUsable = registered != null && File.Exists(Path.Combine(registered, "FFXiMain.dll"));
-
-            if (registeredIsUsable &&
-                (string.IsNullOrWhiteSpace(ours) ||
-                 string.Equals(registered.TrimEnd('\\'), ClientInstall.GameFolder(ours).TrimEnd('\\'),
-                               StringComparison.OrdinalIgnoreCase)))
-            {
-                return true;   // nothing to do, which is almost every launch
-            }
-
+            if (GameRegistration.HasGame(ours)) return ours;
             // Nothing recorded? Look where an install would be before asking anyone to fetch 7 GB again.
-            // Anyone who installed before the folder was remembered has this empty, including the player
-            // this was written for - and his game was sitting beside his Ashita the whole time.
-            if (string.IsNullOrWhiteSpace(ours) || !File.Exists(Path.Combine(ClientInstall.GameFolder(ours), "FFXiMain.dll")))
+            // Anyone who installed before the folder was remembered has this empty, and his game may be sitting
+            // beside his Ashita while Windows points at an older copy somewhere else.
+            foreach (var candidate in new[] { state.Settings.AshitaRoot, ClientInstall.DefaultRoot })
             {
-                foreach (var candidate in new[] { state.Settings.AshitaRoot, ClientInstall.DefaultRoot })
-                {
-                    if (string.IsNullOrWhiteSpace(candidate)) continue;
-                    if (!File.Exists(Path.Combine(ClientInstall.GameFolder(candidate), "FFXiMain.dll"))) continue;
-                    ours = candidate;
-                    state.Settings.GameInstallRoot = candidate;
-                    state.Settings.Save();
-                    Log.Info("found the game beside " + candidate + " and recorded it");
-                    break;
-                }
+                if (!GameRegistration.HasGame(candidate)) continue;
+                state.Settings.GameInstallRoot = candidate;
+                state.Settings.Save();
+                Log.Info("found the game beside " + candidate + " and recorded it");
+                return candidate;
             }
+            // Nothing found to point at - which is not the same as nothing being there. A game put somewhere this
+            // launcher does not know to look is still a game, so the launch goes ahead with what Windows has.
+            return null;
+        }
 
-            // Anything we could point it at?
-            var haveOurs = !string.IsNullOrWhiteSpace(ours) &&
-                           File.Exists(Path.Combine(ClientInstall.GameFolder(ours), "FFXiMain.dll"));
-            if (!haveOurs)
+        /// <summary>Roots whose registration did not take even after the prompt; asked once per run, not on every Play.</summary>
+        private static readonly HashSet<string> _registerDidNotTake = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Make sure Windows starts the copy of the game in this root, fixing it in place when it does not.
+        /// False only when it could not be put right and the player has been told why.
+        /// </summary>
+        private bool EnsureGameIsRegistered(string root)
+        {
+            var state = App.State;
+            var reg = GameRegistration.Read();
+            if (GameRegistration.PointsAt(reg, root) || _registerDidNotTake.Contains(root))
+                return true;   // nothing to do, which is almost every launch
+
+            // Remember the copy we are taking it from, so a profile for its server can have it back.
+            var current = GameRegistration.CurrentRoot(reg);
+            if (GameRegistration.HasGame(current) &&
+                !GameRegistration.SameFolder(current, root) &&
+                !GameRegistration.SameFolder(current, state.Settings.GameInstallRoot))
             {
-                // Nothing found to point at - which is not the same as nothing being there. A game put
-                // somewhere this launcher does not know to look is still a game, and telling that player
-                // there is none, or to download another copy, would be a worse lie than letting him try.
-                // Press on and let the launch speak for itself.
-                return true;
+                state.Settings.OtherGameRoot = current;
+                state.Settings.Save();
+                Log.Info("the registration was on " + current + "; remembered for other servers");
             }
 
             try
             {
-                if (ClientInstall.RunRegister(ours, state.Settings.DownloadsFolder))
+                if (ClientInstall.RunRegister(root, state.Settings.DownloadsFolder))
                 {
-                    Log.Info("registration pointed back at " + ClientInstall.GameFolder(ours));
-                    state.CheckVersion();
+                    Log.Info("registration pointed at " + ClientInstall.GameFolder(root));
+                    var after = GameRegistration.Read();
+                    if (!GameRegistration.PointsAt(after, root))
+                    {
+                        _registerDidNotTake.Add(root);
+                        Log.Warn("registration still differs after registering " + root + ": game " + after.GameFolder +
+                                 ", viewer " + after.ViewerFolder + ", COM " + string.Join("; ", after.ComServers));
+                    }
                     return true;
                 }
                 MessageBox.Show(
-                    "Windows needs permission to point at your game folder before it can start.\n\n" +
+                    "Windows needs permission to point at the game in " + ClientInstall.GameFolder(root) + " before it can start.\n\n" +
                     "Press Play again and choose Yes.",
                     "Vanadreams Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
@@ -248,12 +259,11 @@ namespace Vanadreams.Pages
         {
             if (_profile == null) return;
             var state = App.State;
-            state.CheckVersion();
-            // The loader has to be one the server accepts, and the newest one is not (Services\Loader.cs).
+            // The loader has to be one the Vanadreams server accepts, and the newest one is not (Services\Loader.cs).
             // A player whose Setup ran on or after 27 Sep 2026 had v2.2.0 in bootloader\ and was told
             // "Your xiloader is too old" by a server that wanted the older one. Put it right here, once,
-            // so the fix reaches a player who only ever presses Play.
-            if (!_profile.IsRetail)
+            // so the fix reaches a player who only ever presses Play. Other servers keep the loader they have.
+            if (_profile.IsVanadreams)
             {
                 try
                 {
@@ -262,24 +272,26 @@ namespace Vanadreams.Pages
                 }
                 catch (Exception ex) { Log.Warn("loader check on play: " + ex.Message); }
             }
-            if (!_profile.IsRetail && state.Version.BlocksPlay)   // the Vanadreams version rule has no say over retail
+            // The game reads its own location from Windows, not from this launcher, and Windows holds one
+            // such location for the whole machine. When it does not point at the copy this profile belongs to,
+            // the wrong game starts: an older copy kept for another server, which Vanadreams turns away, or
+            // nothing at all, so the console closes moments after "Successfully logged in".
+            //
+            // We know which copy each profile needs, so this is ours to keep right rather than ours to report.
+            // Point it at that copy and carry on. The only thing the player sees is Windows' own permission
+            // prompt, and only on the launch after it drifted or when they switch between servers.
+            // 26 Sept 2026: a player installed twice, to C: and then to D:, and the registration stayed on
+            // the first. He spent an hour on it and nothing anywhere said why.
+            var root = GameRootFor(_profile);
+            if (root != null && !EnsureGameIsRegistered(root)) return;
+
+            state.CheckVersion();
+            if (_profile.IsVanadreams && state.Version.BlocksPlay)   // the Vanadreams version rule has no say over other servers
             {
                 MessageBox.Show(state.Version.Sentence + "\n\nInstall game, on the menu, fetches the version the server runs.", "Vanadreams Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
                 _win.RefreshStrip();
                 return;
             }
-            // The game reads its own location from Windows, not from this launcher, and Windows holds one
-            // such location for the whole machine. When it does not point at the copy we installed, the
-            // game cannot start: xiloader still logs in - authentication is only a network call - and then
-            // the handoff finds nothing, so the console closes moments after "Successfully logged in" and
-            // the player sees a server that will not let him in.
-            //
-            // We installed the game, so this is ours to keep right rather than ours to report. Put it back
-            // and carry on. The only thing the player sees is Windows' own permission prompt, and only on
-            // the launch after it drifted.
-            // 26 Sept 2026: a player installed twice, to C: and then to D:, and the registration stayed on
-            // the first. He spent an hour on it and nothing anywhere said why.
-            if (!_profile.IsRetail && !EnsureGameIsRegistered()) return;
 
             try
             {

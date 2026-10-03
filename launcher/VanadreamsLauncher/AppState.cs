@@ -36,7 +36,26 @@ namespace Vanadreams
         public ProfileStore Profiles => new ProfileStore(Settings.AshitaRoot);
         public string AshitaRoot => Settings.AshitaRoot;
         public bool HasAshita => Settings.HasAshita;
-        public string FfxiFolder => !string.IsNullOrWhiteSpace(Settings.FfxiFolderOverride) ? Settings.FfxiFolderOverride : ClientVersion.FindFfxiFolder();
+        /// <summary>
+        /// The Vanadreams game folder, the one the version check and the guide read: the copy this launcher installed
+        /// when it is there, else the folder set in Settings, else whatever Windows has registered. Reading the
+        /// registered copy first reported, and refused to play, an older game the player kept for another server.
+        /// </summary>
+        public string FfxiFolder =>
+            GameRegistration.HasGame(Settings.GameInstallRoot) ? ClientInstall.GameFolder(Settings.GameInstallRoot)
+            : !string.IsNullOrWhiteSpace(Settings.FfxiFolderOverride) ? Settings.FfxiFolderOverride
+            : ClientVersion.FindFfxiFolder();
+
+        /// <summary>
+        /// The copy of the game a profile for another server plays: its own game folder, else the copy Windows had
+        /// before this launcher took the registration. Null when neither holds a game; the registration is then left as it is.
+        /// </summary>
+        public string OtherGameRootFor(Profile p)
+        {
+            var own = GameRegistration.RootOf(p?.GameFolder);
+            if (GameRegistration.HasGame(own)) return own;
+            return GameRegistration.HasGame(Settings.OtherGameRoot) ? Settings.OtherGameRoot : null;
+        }
 
         public void Notify() => Changed?.Invoke();
 
