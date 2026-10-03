@@ -224,6 +224,8 @@ namespace Vanadreams.Pages
             state.Notify();
         }
 
+        private void Windower_Click(object sender, RoutedEventArgs e) => _win.Navigate(new WindowerPage(_win));
+
         private void Back_Click(object sender, RoutedEventArgs e) => _win.Navigate(new MenuPage(_win));
     }
 }

@@ -261,6 +261,6 @@ namespace Vanadreams.Pages
             try { Process.Start(new ProcessStartInfo("explorer.exe", "\"" + _openFolder + "\"") { UseShellExecute = true }); } catch (Exception ex) { Log.Warn(ex.Message); }
         }
 
-        private void Back_Click(object sender, RoutedEventArgs e) => _win.Navigate(new MenuPage(_win));
+        private void Back_Click(object sender, RoutedEventArgs e) => _win.Navigate(new AddonsPage(_win));
     }
 }
