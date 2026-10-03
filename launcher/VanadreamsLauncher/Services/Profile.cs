@@ -17,6 +17,8 @@ namespace Vanadreams.Services
         /// <summary>A retail profile: PlayOnline's own quick-play command, launched through PlayOnline Viewer.</summary>
         public bool IsRetail => (Command.Extra ?? "").IndexOf("/game", StringComparison.OrdinalIgnoreCase) >= 0
                                 || BootFile.EndsWith(@"PlayOnlineViewer\pol.exe", StringComparison.OrdinalIgnoreCase);
+        /// <summary>A Vanadreams profile: it always plays the game this launcher installed.</summary>
+        public bool IsVanadreams => !IsRetail && Command.IsVanadreams;
 
         public string Name { get; set; } = "";
         public bool AutoClose { get; set; } = true;
@@ -31,6 +33,12 @@ namespace Vanadreams.Services
         public int BackgroundWidth { get; set; } = -1;
         public int BackgroundHeight { get; set; } = -1;
         public WindowMode Mode { get; set; } = WindowMode.Registry;
+        /// <summary>
+        /// The copy of the game this profile plays, for any server but Vanadreams: the folder holding FINAL FANTASY XI
+        /// and PlayOnlineViewer, or FINAL FANTASY XI itself. Blank means the copy Windows had before this launcher
+        /// pointed it at its own. Ashita does not read [ashita.launcher], so the key is the launcher's alone.
+        /// </summary>
+        public string GameFolder { get; set; } = "";
         public Dictionary<string, bool> PolPlugins { get; } = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 
         public IniFile Ini { get; private set; }
@@ -42,6 +50,7 @@ namespace Vanadreams.Services
             p.Name = ini.Get("ashita.launcher", "name", "");
             if (string.IsNullOrWhiteSpace(p.Name)) p.Name = p.Id;
             p.AutoClose = ini.Get("ashita.launcher", "autoclose", "1") != "0";
+            p.GameFolder = UnescapePath(ini.Get("ashita.launcher", "game", ""));
             p.BootFile = UnescapePath(ini.Get("ashita.boot", "file", ""));
             p.Script = ini.Get("ashita.boot", "script", "");
             p.Command = LoaderCommand.Parse(ini.Get("ashita.boot", "command", ""));
@@ -60,6 +69,7 @@ namespace Vanadreams.Services
             if (Ini == null) Ini = IniFile.FromText("");
             Ini.Set("ashita.launcher", "name", Name);
             Ini.Set("ashita.launcher", "autoclose", AutoClose ? "1" : "0");
+            if (!string.IsNullOrWhiteSpace(GameFolder) || Ini.Has("ashita.launcher", "game")) Ini.Set("ashita.launcher", "game", EscapePath(GameFolder));
             Ini.Set("ashita.boot", "file", EscapePath(BootFile));
             Ini.Set("ashita.boot", "command", Command.ToIniCommand());
             Ini.Set("ashita.boot", "script", Script ?? "");
