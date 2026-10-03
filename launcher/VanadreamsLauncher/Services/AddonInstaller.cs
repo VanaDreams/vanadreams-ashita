@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Vanadreams.Services
 {
-    /// <summary>Installing a catalogue item whose files are a folder of a GitHub repo.</summary>
+    /// <summary>Installing a catalogue item: a folder of a GitHub repo, or a release archive.</summary>
     public static class AddonInstaller
     {
         public static string TargetFolder(string ashitaRoot, CatalogItem item) =>
@@ -43,6 +43,29 @@ namespace Vanadreams.Services
             settings.InstalledVersions[item.Id] = item.Version ?? DateTime.Now.ToString("yyyy-MM-dd");
             if (item.Install == InstallAction.PivotOverlay) PivotConfig.AddOverlay(ashitaRoot, item.Id);
             return plan;
+        }
+
+        /// <summary>
+        /// Downloads the item's newest release archive, unless the same one is already in the downloads folder, and
+        /// unpacks it where the catalogue's install field says. The default is the Ashita root.
+        /// </summary>
+        public static async Task<string> InstallReleaseAsync(Downloader downloader, LauncherSettings settings, string ashitaRoot, CatalogItem item, IProgress<DownloadProgress> progress = null, Action<string> say = null)
+        {
+            // no ConfigureAwait(false): say is called on the caller's context, the page's own thread
+            var asset = await downloader.LatestReleaseAssetAsync(item.Repo, item.Asset);
+            if (asset == null) throw new InvalidOperationException("No release asset matching " + item.Asset + " on " + item.Repo + ".");
+            var zip = Path.Combine(settings.DownloadsFolder, item.Id + "-" + asset.Tag + "-" + asset.Name);
+            if (!File.Exists(zip) || new FileInfo(zip).Length != asset.Size)
+                await downloader.DownloadFileAsync(asset.Url, zip, progress, asset.Name, asset.Size);
+            say?.Invoke("Unpacking…");
+            var unzipTo = item.Install == InstallAction.CopyToAddons ? Path.Combine(ashitaRoot, "addons", item.LoadName ?? item.Id)
+                        : item.Install == InstallAction.UnzipToAddons ? Path.Combine(ashitaRoot, "addons")
+                        : item.Install == InstallAction.PivotOverlay ? Path.Combine(PivotConfig.OverlaysRoot(ashitaRoot), item.Id)
+                        : ashitaRoot;
+            await Task.Run(() => Downloader.ExtractZipOverwrite(zip, unzipTo));
+            if (item.Install == InstallAction.PivotOverlay) PivotConfig.AddOverlay(ashitaRoot, item.Id);
+            settings.InstalledVersions[item.Id] = item.Version ?? asset.Tag;
+            return asset.Tag;
         }
 
         /// <summary>The on-by-default items this player has not been given yet.</summary>

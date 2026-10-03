@@ -155,20 +155,7 @@ namespace Vanadreams.Pages
                 var progress = new Progress<DownloadProgress>(p => { Progress.IsIndeterminate = false; Progress.Value = p.Fraction * 100; ProgressText.Text = $"{p.Label}: {p.Done / 1048576.0:0.0} of {p.Total / 1048576.0:0.0} MB"; });
                 if (item.Source == SourceType.GithubRelease)
                 {
-                    var asset = await state.Downloader.LatestReleaseAssetAsync(item.Repo, item.Asset);
-                    if (asset == null) throw new InvalidOperationException("No release asset matching " + item.Asset + " on " + item.Repo + ".");
-                    var zip = Path.Combine(state.Settings.DownloadsFolder, item.Id + "-" + asset.Tag + "-" + asset.Name);
-                    if (!File.Exists(zip) || new FileInfo(zip).Length != asset.Size)
-                        await state.Downloader.DownloadFileAsync(asset.Url, zip, progress, asset.Name, asset.Size);
-                    ProgressText.Text = "Unpacking…";
-                    // the catalogue's install field says where the archive goes; the default is the Ashita root
-                    var unzipTo = item.Install == InstallAction.CopyToAddons ? Path.Combine(state.AshitaRoot, "addons", item.LoadName ?? item.Id)
-                                : item.Install == InstallAction.UnzipToAddons ? Path.Combine(state.AshitaRoot, "addons")
-                                : item.Install == InstallAction.PivotOverlay ? Path.Combine(PivotConfig.OverlaysRoot(state.AshitaRoot), item.Id)
-                                : state.AshitaRoot;
-                    await Task.Run(() => Downloader.ExtractZipOverwrite(zip, unzipTo));
-                    if (item.Install == InstallAction.PivotOverlay) PivotConfig.AddOverlay(state.AshitaRoot, item.Id);
-                    state.Settings.InstalledVersions[item.Id] = item.Version ?? asset.Tag;
+                    await AddonInstaller.InstallReleaseAsync(state.Downloader, state.Settings, state.AshitaRoot, item, progress, text => ProgressText.Text = text);
                 }
                 else if (item.Source == SourceType.RepoFolder)
                 {
@@ -236,6 +223,8 @@ namespace Vanadreams.Pages
             }
             state.Notify();
         }
+
+        private void Windower_Click(object sender, RoutedEventArgs e) => _win.Navigate(new WindowerPage(_win));
 
         private void Back_Click(object sender, RoutedEventArgs e) => _win.Navigate(new MenuPage(_win));
     }
