@@ -15,7 +15,12 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock x:Name="Heading" Style="{StaticResource Eyebrow}" Text="✦ Your addons"/>
+                <Grid>
+                    <TextBlock x:Name="Heading" Style="{StaticResource Eyebrow}" Text="✦ Your addons"/>
+                    <Button Style="{StaticResource GhostButton}" Content="Coming from Windower?" FontSize="11" Padding="10,1"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,0,0" Click="Windower_Click"
+                            ToolTip="Ashita look-alikes of your Windower addons, your init.txt binds, and your GearSwap sets"/>
+                </Grid>
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <ItemsControl x:Name="List">
                         <ItemsControl.ItemsPanel>
