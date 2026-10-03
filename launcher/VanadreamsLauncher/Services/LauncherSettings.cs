@@ -28,6 +28,12 @@ namespace Vanadreams.Services
         /// could not be put right without finding the folder himself.
         /// </summary>
         public string GameInstallRoot { get; set; } = "";
+        /// <summary>
+        /// The copy of the game Windows pointed at before this launcher took the registration for its own: most
+        /// often an older copy kept for another server. A profile for any other server with no game folder of its
+        /// own plays this one, so taking the registration for Vanadreams never strands the player's other game.
+        /// </summary>
+        public string OtherGameRoot { get; set; } = "";
         public string LastProfile { get; set; } = "";
         public string CatalogUrl { get; set; } = "https://raw.githubusercontent.com/VanaDreams/vanadreams-ashita/main/catalog.json";
         public string StatusUrl { get; set; } = ServerStatusClient.DefaultUrl;
@@ -53,6 +59,7 @@ namespace Vanadreams.Services
                 s.AshitaRoot = Json.Str(d, "ashitaRoot", "");
                 s.FfxiFolderOverride = Json.Str(d, "ffxiFolderOverride", "");
                 s.GameInstallRoot = Json.Str(d, "gameInstallRoot", "");
+                s.OtherGameRoot = Json.Str(d, "otherGameRoot", "");
                 s.LastProfile = Json.Str(d, "lastProfile", "");
                 s.CatalogUrl = Json.Str(d, "catalogUrl", s.CatalogUrl);
                 s.StatusUrl = Json.Str(d, "statusUrl", s.StatusUrl);
@@ -80,6 +87,7 @@ namespace Vanadreams.Services
                 { "ashitaRoot", AshitaRoot ?? "" },
                 { "ffxiFolderOverride", FfxiFolderOverride ?? "" },
                 { "gameInstallRoot", GameInstallRoot ?? "" },
+                { "otherGameRoot", OtherGameRoot ?? "" },
                 { "lastProfile", LastProfile ?? "" },
                 { "catalogUrl", CatalogUrl },
                 { "statusUrl", StatusUrl },
