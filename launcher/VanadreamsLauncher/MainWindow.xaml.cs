@@ -159,6 +159,7 @@ namespace Vanadreams
                 case "install": page = new InstallPage(this); break;
                 case "install-new": page = new InstallPage(this, asNewPlayer: true); break;
                 case "capture": page = new CapturePage(this); break;
+                case "windower": page = new WindowerPage(this); break;
                 default: page = new MenuPage(this); break;
             }
             Navigate(page);
