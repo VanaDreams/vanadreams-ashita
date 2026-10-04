@@ -77,20 +77,82 @@ namespace Vanadreams.Tests
         }
 
         [TestMethod]
-        public void A_root_has_a_game_only_with_FFXiMain_and_PlayOnlineViewer()
+        public void A_root_has_a_game_only_when_both_things_xiloader_creates_are_on_disk()
         {
             var dir = Path.Combine(Path.GetTempPath(), "vdl-" + Guid.NewGuid().ToString("N"));
             try
             {
-                Directory.CreateDirectory(ClientInstall.GameFolder(dir));
+                var game = ClientInstall.GameFolder(dir);
+                var com = Path.Combine(ClientInstall.ViewerFolder(dir), "viewer", "com");
+                Directory.CreateDirectory(game);
                 Assert.IsFalse(GameRegistration.HasGame(dir));
-                File.WriteAllText(Path.Combine(ClientInstall.GameFolder(dir), "FFXiMain.dll"), "");
+                File.WriteAllText(Path.Combine(game, "FFXiMain.dll"), "");
+                File.WriteAllText(Path.Combine(game, "FFXi.dll"), "");
                 Assert.IsFalse(GameRegistration.HasGame(dir));
-                Directory.CreateDirectory(ClientInstall.ViewerFolder(dir));
+                // an install stopped before its last part: the viewer folder is there and PlayOnline is not
+                Directory.CreateDirectory(com);
+                Assert.IsFalse(GameRegistration.HasGame(dir));
+                File.WriteAllText(Path.Combine(com, "polcore.dll"), "");
                 Assert.IsTrue(GameRegistration.HasGame(dir));
                 Assert.IsFalse(GameRegistration.HasGame(null));
             }
             finally { try { Directory.Delete(dir, true); } catch { } }
+        }
+
+        private const string Third = @"E:\Other\SquareEnix";
+
+        private static string Chosen(string registered, string[] roots, string[] games, string[] fitting) =>
+            GameRegistration.Choose(registered, roots,
+                r => Array.Exists(games, g => GameRegistration.SameFolder(g, r)),
+                r => Array.Exists(fitting, g => GameRegistration.SameFolder(g, r)));
+
+        [TestMethod]
+        public void A_first_install_starts_the_copy_the_launcher_installed()
+        {
+            // registered by the install itself
+            Assert.AreEqual(Ours, Chosen(Ours, new[] { Ours }, new[] { Ours }, new[] { Ours }));
+            // the permission prompt was refused, so Windows has nothing yet
+            Assert.AreEqual(Ours, Chosen("", new[] { "", Ours }, new[] { Ours }, new[] { Ours }));
+        }
+
+        [TestMethod]
+        public void An_older_copy_kept_for_another_server_gives_way_to_the_one_that_fits()
+        {
+            Assert.AreEqual(Ours, Chosen(Old, new[] { Ours }, new[] { Ours, Old }, new[] { Ours }));
+        }
+
+        [TestMethod]
+        public void A_game_that_works_is_not_taken_away_for_a_copy_that_is_not_whole()
+        {
+            // the launcher's folder holds an install that never finished; the game has been starting from another copy
+            Assert.AreEqual(Old, Chosen(Old, new[] { Ours }, new[] { Old }, new[] { Old }));
+            // both fit: the one Windows already starts stays, and nobody is asked for permission
+            Assert.AreEqual(Old, Chosen(Old, new[] { Ours }, new[] { Ours, Old }, new[] { Ours, Old }));
+        }
+
+        [TestMethod]
+        public void When_nothing_fits_or_the_version_is_unknown_the_registered_copy_is_started_and_nothing_is_refused()
+        {
+            Assert.AreEqual(Old, Chosen(Old, new[] { Ours, Third }, new[] { Ours, Old, Third }, new string[0]));
+            Assert.AreEqual(Ours, Chosen("", new[] { Ours, Third }, new[] { Ours, Third }, new string[0]));
+            // the registered folder is gone from disk: the first copy that is a game
+            Assert.AreEqual(Third, Chosen(Old, new[] { Ours, Third }, new[] { Third }, new string[0]));
+            Assert.IsNull(Chosen(Old, new[] { Ours }, new string[0], new string[0]));
+            Assert.IsNull(Chosen(null, null, new[] { Ours }, new[] { Ours }));
+        }
+
+        [TestMethod]
+        public void A_copy_fits_when_its_month_is_the_servers_or_newer_and_never_when_either_is_unknown()
+        {
+            Assert.IsTrue(ClientVersion.Fits("30260904_1", "30260904_1", VersionLock.Exact));
+            Assert.IsFalse(ClientVersion.Fits("30190305_0", "30260904_1", VersionLock.Exact));
+            Assert.IsTrue(ClientVersion.Fits("30261002_0", "30260904_1", VersionLock.MatchingOrNewer));
+            Assert.IsFalse(ClientVersion.Fits("30261002_0", "30260904_1", VersionLock.Exact));
+            // lock off: the server takes anything, and an old game is still the wrong one to pick
+            Assert.IsFalse(ClientVersion.Fits("30190305_0", "30260904_1", VersionLock.Off));
+            Assert.IsTrue(ClientVersion.Fits("30260904_1", "30260904_1", VersionLock.Off));
+            Assert.IsFalse(ClientVersion.Fits(null, "30260904_1", VersionLock.Exact));
+            Assert.IsFalse(ClientVersion.Fits("30260904_1", "", VersionLock.Exact));
         }
 
         [TestMethod]

@@ -32,11 +32,36 @@ namespace Vanadreams.Services
         /// <summary>The COM servers that decide which game xiloader starts.</summary>
         public static readonly string[] DecidingComServers = { "FFXi.dll", "FFXiMain.dll", "polcore.dll" };
 
-        /// <summary>A root holds a game we can point Windows at: FINAL FANTASY XI with FFXiMain.dll, and PlayOnlineViewer beside it.</summary>
-        public static bool HasGame(string root) =>
-            !string.IsNullOrWhiteSpace(root) &&
-            File.Exists(Path.Combine(ClientInstall.GameFolder(root), "FFXiMain.dll")) &&
-            Directory.Exists(ClientInstall.ViewerFolder(root));
+        /// <summary>
+        /// A root holds a game we can point Windows at: the two things xiloader creates are on disk, the game's
+        /// FFXi.dll with FFXiMain.dll beside it, and PlayOnline's polcore.dll. An empty PlayOnlineViewer folder
+        /// is not a game, and neither is an install that stopped part way: polcore.dll is in the last part.
+        /// </summary>
+        public static bool HasGame(string root)
+        {
+            if (string.IsNullOrWhiteSpace(root)) return false;
+            var game = ClientInstall.GameFolder(root);
+            var com = Path.Combine(ClientInstall.ViewerFolder(root), "viewer", "com");
+            return File.Exists(Path.Combine(game, "FFXi.dll")) &&
+                   File.Exists(Path.Combine(game, "FFXiMain.dll")) &&
+                   (File.Exists(Path.Combine(com, "polcore.dll")) || File.Exists(Path.Combine(com, "polcoreeu.dll")));
+        }
+
+        /// <summary>
+        /// The copy a Vanadreams profile starts, out of every copy known on this PC. Nothing is refused here: the
+        /// launcher looks for the right one. The copy Windows already starts comes first, so a game that works is
+        /// never taken away from the player; then the others in the order given, most ours first. The first that
+        /// fits the server is the one; when none fits, or the server's version is not known, the first that is a
+        /// game at all. Null when there is no game anywhere we know to look, and the launch goes ahead with
+        /// whatever Windows has.
+        /// </summary>
+        public static string Choose(string registeredRoot, IEnumerable<string> roots, Func<string, bool> isGame, Func<string, bool> fits)
+        {
+            var games = new List<string>();
+            foreach (var r in new[] { registeredRoot }.Concat(roots ?? Enumerable.Empty<string>()))
+                if (!string.IsNullOrWhiteSpace(r) && !games.Any(g => SameFolder(g, r)) && isGame(r)) games.Add(r);
+            return games.FirstOrDefault(fits) ?? games.FirstOrDefault();
+        }
 
         /// <summary>
         /// The root for a folder a player picked: the folder above FINAL FANTASY XI when they picked the game

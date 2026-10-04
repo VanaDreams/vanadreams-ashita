@@ -147,6 +147,14 @@ namespace Vanadreams.Services
             return check;
         }
 
+        /// <summary>
+        /// True when a copy with this stamp is one the server takes. With the lock off the server takes anything,
+        /// but an older game is still the wrong one to pick when a current one is on the PC, so off counts as
+        /// matching-or-newer here. An unreadable stamp, or a server version nobody has published, fits nothing.
+        /// </summary>
+        public static bool Fits(string installed, string expected, VersionLock lockMode) =>
+            Compare(installed, expected, lockMode == VersionLock.Off ? VersionLock.MatchingOrNewer : lockMode).Verdict == VersionVerdict.Ready;
+
         public static bool IsUnderProgramFiles(string folder)
         {
             if (string.IsNullOrEmpty(folder)) return false;

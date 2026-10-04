@@ -176,31 +176,34 @@ namespace Vanadreams.Pages
         }
 
         /// <summary>
-        /// The copy of the game this profile should start. Vanadreams plays the copy this launcher installed; any other
-        /// server, retail included, plays the profile's own game folder or the copy Windows had before we took it.
+        /// The copy of the game this profile should start. Vanadreams looks across every copy on the PC for the one
+        /// that fits the server (AppState.VanadreamsGameRoot); any other server, retail included, plays the profile's
+        /// own game folder or the copy Windows had before we took it.
         /// Null when there is nothing known to point at, and the registration is left alone.
         /// </summary>
-        private string GameRootFor(Profile profile)
+        private string GameRootFor(Profile profile, RegisteredGame reg)
         {
             var state = App.State;
             if (!profile.IsVanadreams) return state.OtherGameRootFor(profile);
 
-            var ours = state.Settings.GameInstallRoot;
-            if (GameRegistration.HasGame(ours)) return ours;
-            // Nothing recorded? Look where an install would be before asking anyone to fetch 7 GB again.
-            // Anyone who installed before the folder was remembered has this empty, and his game may be sitting
-            // beside his Ashita while Windows points at an older copy somewhere else.
-            foreach (var candidate in new[] { state.Settings.AshitaRoot, ClientInstall.DefaultRoot })
+            var registered = GameRegistration.CurrentRoot(reg);
+            var root = state.VanadreamsGameRoot(registered ?? "");
+            Log.Info("play: the copy to start is " + (root ?? "whatever Windows has") +
+                     (root == null ? "" : ", version " + (state.InstalledVersion(root) ?? "unknown")) +
+                     "; Windows starts " + (registered ?? "nothing") + "; installed here " +
+                     (string.IsNullOrWhiteSpace(state.Settings.GameInstallRoot) ? "not recorded" : state.Settings.GameInstallRoot));
+            // Nothing recorded? Anyone who installed before the folder was remembered has this empty, and his game
+            // may be sitting beside his Ashita. Record it so the Install page opens on the real folder.
+            if (root != null && !GameRegistration.HasGame(state.Settings.GameInstallRoot) &&
+                (GameRegistration.SameFolder(root, state.Settings.AshitaRoot) || GameRegistration.SameFolder(root, ClientInstall.DefaultRoot)))
             {
-                if (!GameRegistration.HasGame(candidate)) continue;
-                state.Settings.GameInstallRoot = candidate;
+                state.Settings.GameInstallRoot = root;
                 state.Settings.Save();
-                Log.Info("found the game beside " + candidate + " and recorded it");
-                return candidate;
+                Log.Info("found the game beside " + root + " and recorded it");
             }
-            // Nothing found to point at - which is not the same as nothing being there. A game put somewhere this
-            // launcher does not know to look is still a game, so the launch goes ahead with what Windows has.
-            return null;
+            // Null: nothing found to point at - which is not the same as nothing being there. A game put somewhere
+            // this launcher does not know to look is still a game, so the launch goes ahead with what Windows has.
+            return root;
         }
 
         /// <summary>Roots whose registration did not take even after the prompt; asked once per run, not on every Play.</summary>
@@ -210,10 +213,9 @@ namespace Vanadreams.Pages
         /// Make sure Windows starts the copy of the game in this root, fixing it in place when it does not.
         /// False only when it could not be put right and the player has been told why.
         /// </summary>
-        private bool EnsureGameIsRegistered(string root)
+        private bool EnsureGameIsRegistered(string root, RegisteredGame reg)
         {
             var state = App.State;
-            var reg = GameRegistration.Read();
             if (GameRegistration.PointsAt(reg, root) || _registerDidNotTake.Contains(root))
                 return true;   // nothing to do, which is almost every launch
 
@@ -282,8 +284,9 @@ namespace Vanadreams.Pages
             // prompt, and only on the launch after it drifted or when they switch between servers.
             // 26 Sept 2026: a player installed twice, to C: and then to D:, and the registration stayed on
             // the first. He spent an hour on it and nothing anywhere said why.
-            var root = GameRootFor(_profile);
-            if (root != null && !EnsureGameIsRegistered(root)) return;
+            var reg = GameRegistration.Read();
+            var root = GameRootFor(_profile, reg);
+            if (root != null && !EnsureGameIsRegistered(root, reg)) return;
 
             state.CheckVersion();
             if (_profile.IsVanadreams && state.Version.BlocksPlay)   // the Vanadreams version rule has no say over other servers
