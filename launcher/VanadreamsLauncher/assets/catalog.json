@@ -613,6 +613,23 @@
       "description": "The Vanadreams playlist in game, and your own songs beside it. It plays them shuffled wherever you are, moving on when a song ends, from its own window. Press Reinstall to get songs added to the playlist since; your own mp3 or wav files go in the folder the Config button opens. Windows plays the songs beside the game, so no game track is replaced; turn Music down in the game's sound config if you only want these."
     },
     {
+      "id": "grampsshop",
+      "name": "grampsshop",
+      "kind": "addon",
+      "maintainer": "Vanadreams",
+      "source": {
+        "type": "repo-folder",
+        "repo": "VanaDreams/grampsshop",
+        "path": "grampsshop",
+        "branch": "main"
+      },
+      "version": "0.1.0",
+      "install": "copy-to-addons",
+      "load": "/addon load grampsshop",
+      "docs": "https://github.com/VanaDreams/grampsshop/tree/main/grampsshop",
+      "description": "Gramps Shop, Kupo! A small shop you can open anywhere on Vanadreams. Click the little Gramps Shop button in game, pick an item and how many, and press Buy; the gil comes out of your pocket and the item goes in your bag. Instant Warp scrolls, Reraisers, Silent Oil and Prism Powder to start. Vanadreams only."
+    },
+    {
       "id": "crafty",
       "name": "crafty",
       "kind": "addon",
