@@ -37,14 +37,65 @@ namespace Vanadreams
         public string AshitaRoot => Settings.AshitaRoot;
         public bool HasAshita => Settings.HasAshita;
         /// <summary>
-        /// The Vanadreams game folder, the one the version check and the guide read: the copy this launcher installed
-        /// when it is there, else the folder set in Settings, else whatever Windows has registered. Reading the
-        /// registered copy first reported, and refused to play, an older game the player kept for another server.
+        /// The Vanadreams game folder, the one the version check and the guide read: the copy Play would start
+        /// (VanadreamsGameRoot), else the folder set in Settings, else whatever Windows has registered.
         /// </summary>
-        public string FfxiFolder =>
-            GameRegistration.HasGame(Settings.GameInstallRoot) ? ClientInstall.GameFolder(Settings.GameInstallRoot)
-            : !string.IsNullOrWhiteSpace(Settings.FfxiFolderOverride) ? Settings.FfxiFolderOverride
-            : ClientVersion.FindFfxiFolder();
+        public string FfxiFolder
+        {
+            get
+            {
+                var root = VanadreamsGameRoot();
+                return root != null ? ClientInstall.GameFolder(root)
+                    : !string.IsNullOrWhiteSpace(Settings.FfxiFolderOverride) ? Settings.FfxiFolderOverride
+                    : ClientVersion.FindFfxiFolder();
+            }
+        }
+
+        /// <summary>
+        /// The copy of the game a Vanadreams profile starts, looked for across every copy this PC is known to hold:
+        /// the one Windows starts now, the one this launcher installed, one beside Ashita or in the default folder,
+        /// the folder set in Settings, and the copy the registration was once taken from. GameRegistration.Choose
+        /// picks the one that fits the server. Play passes the registered root read from the COM servers; the
+        /// pages that only show a version use the registered folder, which is quicker to read.
+        /// 4 Oct 2026: 0.2.27 always took the launcher's copy when one was there, whatever state it was in, and
+        /// a player whose game had been starting from another copy logged in and watched the console close.
+        /// </summary>
+        public string VanadreamsGameRoot(string registeredRoot = null)
+        {
+            if (registeredRoot == null) registeredRoot = GameRegistration.RootOf(ClientVersion.FindFfxiFolder());
+            var expected = ExpectedClientVer;
+            var lockMode = VerLock;
+            return GameRegistration.Choose(registeredRoot,
+                new[] { Settings.GameInstallRoot, Settings.AshitaRoot, ClientInstall.DefaultRoot, GameRegistration.RootOf(Settings.FfxiFolderOverride), Settings.OtherGameRoot },
+                GameRegistration.HasGame,
+                root => ClientVersion.Fits(InstalledVersion(root), expected, lockMode));
+        }
+
+        private string ExpectedClientVer => !string.IsNullOrEmpty(Status.ClientVer) ? Status.ClientVer : Settings.ExpectedClientVer;
+        private VersionLock VerLock => Status.Lock ?? (Enum.IsDefined(typeof(VersionLock), Settings.VerLock) ? (VersionLock)Settings.VerLock : VersionLock.MatchingOrNewer);
+
+        // patch.cfg runs to megabytes and several copies are read on every look; a file that has not changed is read once
+        private readonly System.Collections.Generic.Dictionary<string, Tuple<DateTime, long, string>> _stamps =
+            new System.Collections.Generic.Dictionary<string, Tuple<DateTime, long, string>>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>The version stamp of the copy in this root, or null when it has none that can be read.</summary>
+        public string InstalledVersion(string root)
+        {
+            if (string.IsNullOrWhiteSpace(root)) return null;
+            var folder = ClientInstall.GameFolder(root);
+            try
+            {
+                var cfg = new FileInfo(Path.Combine(folder, "patch.cfg"));
+                if (!cfg.Exists) return null;
+                Tuple<DateTime, long, string> seen;
+                lock (_stamps)
+                    if (_stamps.TryGetValue(cfg.FullName, out seen) && seen.Item1 == cfg.LastWriteTimeUtc && seen.Item2 == cfg.Length) return seen.Item3;
+                var stamp = ClientVersion.ReadInstalled(folder);
+                lock (_stamps) _stamps[cfg.FullName] = Tuple.Create(cfg.LastWriteTimeUtc, cfg.Length, stamp);
+                return stamp;
+            }
+            catch (Exception) { return ClientVersion.ReadInstalled(folder); }
+        }
 
         /// <summary>
         /// The copy of the game a profile for another server plays: its own game folder, else the copy Windows had
@@ -63,9 +114,7 @@ namespace Vanadreams
         {
             var installed = ClientVersion.ReadInstalled(FfxiFolder);
             var published = !string.IsNullOrEmpty(Status.ClientVer);
-            var expected = published ? Status.ClientVer : Settings.ExpectedClientVer;
-            var lockMode = Status.Lock ?? (Enum.IsDefined(typeof(VersionLock), Settings.VerLock) ? (VersionLock)Settings.VerLock : VersionLock.MatchingOrNewer);
-            Version = ClientVersion.Compare(installed, expected, lockMode);
+            Version = ClientVersion.Compare(installed, ExpectedClientVer, VerLock);
             Version.ExpectedIsPublished = published;
             return Version;
         }
