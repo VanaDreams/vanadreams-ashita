@@ -11,20 +11,22 @@ namespace Vanadreams.Services
     /// The connect server checks the loader's major.minor exactly (src/login/auth_session.h,
     /// SupportedXiloaderVersion) and answers anything else with "Your xiloader is too old" - a newer
     /// one included. LandSandBoat published xiloader v2.2.0 on 27 Sep 2026; it moves PlayOnline's
-    /// profile connection through a TLS relay to a profile server our server does not run yet, and it
-    /// reports itself as 2.2. This launcher had been fetching "the latest release", so every install
-    /// and repair from that day on put a loader in bootloader\ that the server turned away, and the
-    /// server logs nothing for that refusal - the message goes only to the player's console.
+    /// profile connection through a TLS relay to a profile server, and it reports itself as 2.2.
+    /// This launcher had been fetching "the latest release", so every install and repair from that
+    /// day on put a loader in bootloader\ that the server turned away, and the server logs nothing
+    /// for that refusal - the message goes only to the player's console.
     ///
     /// So the version is pinned here and moves when the server does. Setup and Repair always write
     /// this one; start-up and Play replace whatever is there when it is not one the server takes.
+    /// It was 2.1.2 until the live update of 4 Oct 2026, when the server took the profile server
+    /// and moved to 2.2.
     /// </summary>
     public static class Loader
     {
         public const string Repo = "LandSandBoat/xiloader";
-        public const string Tag = "v2.1.2";
+        public const string Tag = "v2.2.0";
         public const int RequiredMajor = 2;
-        public const int RequiredMinor = 1;
+        public const int RequiredMinor = 2;
 
         public static string PathIn(string ashitaRoot) => Path.Combine(ashitaRoot, "bootloader", "xiloader.exe");
 
