@@ -623,11 +623,11 @@
         "path": "grampsshop",
         "branch": "main"
       },
-      "version": "0.1.3",
+      "version": "0.1.4",
       "install": "copy-to-addons",
       "load": "/addon load grampsshop",
       "docs": "https://github.com/VanaDreams/grampsshop/tree/main/grampsshop",
-      "description": "Gramps Shop, Kupo! A small shop you can open anywhere on Vanadreams. Click the little Gramps Shop button in game, pick an item and how many, and press Buy; the gil comes out of your pocket and the item goes in your bag. Instant Warp scrolls, Reraisers, Silent Oil, Prism Powder and Heavy Metal plates so far. Vanadreams only."
+      "description": "Gramps Shop, Kupo! A small shop you can open anywhere on Vanadreams. Click the little Gramps Shop button in game, pick an item and how many, and press Buy; the gil comes out of your pocket and the item goes in your bag. Instant Warp scrolls, Reraisers, Silent Oil, Prism Powder and Heavy Metal Pouches so far. Vanadreams only."
     },
     {
       "id": "crafty",
