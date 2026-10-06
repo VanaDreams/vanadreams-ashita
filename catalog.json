@@ -1897,6 +1897,7 @@
       "version": "0.1.0",
       "install": "copy-to-addons",
       "load": "/addon load dreamyah",
+      "onByDefault": true,
       "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/dreamyah",
       "description": "Search the Vanadreams Auction House by item name. An AH Search button shows up while the Auction House menu is open; click it to see what is listed, how many, and the recent sale prices, and to bid. Also /dreamyah. Vanadreams only. New release, not yet tested in game.",
       "config": "config\\addons\\dreamyah\\"
