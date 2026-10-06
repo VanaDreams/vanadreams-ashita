@@ -1882,6 +1882,24 @@
       "docs": "https://github.com/Shinzaku/Points",
       "description": "Tracks the points you are earning: exp, capacity, sparks, and more, on screen.",
       "config": "config\\addons\\points\\"
+    },
+    {
+      "id": "dreamyah",
+      "name": "DreamyAH",
+      "kind": "addon",
+      "maintainer": "Vanadreams",
+      "source": {
+        "type": "repo-folder",
+        "repo": "VanaDreams/vanadreams-ashita",
+        "path": "addons/dreamyah",
+        "branch": "main"
+      },
+      "version": "0.1.0",
+      "install": "copy-to-addons",
+      "load": "/addon load dreamyah",
+      "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/dreamyah",
+      "description": "Search the Vanadreams Auction House by item name. An AH Search button shows up while the Auction House menu is open; click it to see what is listed, how many, and the recent sale prices, and to bid. Also /dreamyah. Vanadreams only. New release, not yet tested in game.",
+      "config": "config\\addons\\dreamyah\\"
     }
   ]
 }
