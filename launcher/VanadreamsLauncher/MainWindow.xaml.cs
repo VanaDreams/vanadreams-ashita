@@ -36,12 +36,14 @@ namespace Vanadreams
             if (State.HasAshita) Navigate(new MenuPage(this)); else Navigate(new SetupPage(this));
             // music after the first frame, so the unpack on a first run never delays the window
             if (State.Settings.MusicOn) Dispatcher.BeginInvoke(new Action(Music.Start), System.Windows.Threading.DispatcherPriority.Background);
+            // first, and alongside the rest: the update window has to be up before anyone reaches Play
+            var update = CheckForUpdateAsync();
             _statusTimer.Start();
             await State.RefreshStatusAsync();
             await EnsureLoaderAsync();
             await State.RefreshCatalogAsync();
             await State.GiveDefaultsAsync();
-            await CheckForUpdateAsync();
+            await update;
         }
 
         /// <summary>The loader in bootloader\ is one the server accepts; when it is not, it is swapped for the pinned one (Services\Loader.cs).</summary>
@@ -57,7 +59,11 @@ namespace Vanadreams
 
         private string _updatedExe;
 
-        /// <summary>Once per start: a newer signed release is fetched and swapped in; the strip offers the restart.</summary>
+        /// <summary>
+        /// Once per start: a newer release puts the update window in front of the player while it downloads
+        /// (UpdateWindow). The signed exe is swapped in whatever they choose; after Later, the strip keeps
+        /// the restart button.
+        /// </summary>
         private async Task CheckForUpdateAsync()
         {
             try
@@ -65,14 +71,26 @@ namespace Vanadreams
                 var asset = await Updater.CheckAsync(State.Downloader);
                 if (asset == null) return;
                 NewsLine.Text = "Update " + asset.Tag + " found, downloading…";
-                var exe = await Updater.FetchAsync(State.Downloader, asset, State.Settings.DownloadsFolder);
-                if (exe == null) { NewsLine.Text = "Update " + asset.Tag + " could not be fetched; it is on fairywitch.ca."; return; }
-                _updatedExe = Updater.Apply(exe);
+                var progress = new Progress<DownloadProgress>();
+                var ready = FetchAndApplyAsync(asset, progress);
+                var box = new UpdateWindow(asset.Tag, Updater.Normalise(Updater.Current), ready, progress) { Owner = this };
+                if (box.ShowDialog() == true && _updatedExe != null) { Updater.Restart(_updatedExe); return; }
+                await ready;
+                if (_updatedExe == null) { NewsLine.Text = "Update " + asset.Tag + " could not be fetched; it is on fairywitch.ca."; return; }
                 NewsLine.Text = "Launcher " + asset.Tag + " is ready.";
                 UpdateButton.Content = "Restart into " + asset.Tag;
                 UpdateButton.Visibility = Visibility.Visible;
             }
             catch (Exception ex) { Log.Warn("update: " + ex.Message); }
+        }
+
+        /// <summary>Download, check the signature, swap into place. The path of the new exe, or null.</summary>
+        private async Task<string> FetchAndApplyAsync(ReleaseAsset asset, IProgress<DownloadProgress> progress)
+        {
+            var exe = await Updater.FetchAsync(State.Downloader, asset, State.Settings.DownloadsFolder, progress);
+            if (exe == null) return null;
+            _updatedExe = Updater.Apply(exe);
+            return _updatedExe;
         }
 
         private void Update_Click(object sender, RoutedEventArgs e)

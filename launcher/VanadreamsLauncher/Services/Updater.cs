@@ -79,13 +79,13 @@ namespace Vanadreams.Services
         }
 
         /// <summary>Fetch the release exe into the downloads folder and make sure it is ours. Returns the path, or null.</summary>
-        public static async Task<string> FetchAsync(Downloader downloader, ReleaseAsset asset, string downloadsFolder)
+        public static async Task<string> FetchAsync(Downloader downloader, ReleaseAsset asset, string downloadsFolder, IProgress<DownloadProgress> progress = null)
         {
             var path = Path.Combine(downloadsFolder, "VanadreamsLauncher-" + asset.Tag + ".exe");
             try
             {
                 if (!File.Exists(path) || new FileInfo(path).Length != asset.Size)
-                    await downloader.DownloadFileAsync(asset.Url, path, null, "Launcher " + asset.Tag, asset.Size);
+                    await downloader.DownloadFileAsync(asset.Url, path, progress, "Launcher " + asset.Tag, asset.Size);
                 if (!IsSignedByUs(path)) { Log.Warn("update " + asset.Tag + " is not signed by us; not applied"); try { File.Delete(path); } catch (Exception) { } return null; }
                 return path;
             }
