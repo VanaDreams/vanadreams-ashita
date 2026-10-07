@@ -73,9 +73,15 @@ namespace Vanadreams.Services
             var f = folder.Trim().TrimEnd('\\', '/');
             var cut = f.LastIndexOfAny(new[] { '\\', '/' });
             if (cut > 0 && string.Equals(f.Substring(cut + 1), ClientInstall.GameFolderName, StringComparison.OrdinalIgnoreCase))
-                return f.Substring(0, cut);
-            return f;
+                return WholeDrive(f.Substring(0, cut));
+            return WholeDrive(f);
         }
+
+        /// <summary>
+        /// "D:" on its own means the current folder on D:, not the top of the drive, so a game installed straight into
+        /// D:\ was registered as D:FINAL FANTASY XI and closed four seconds after Play (6 Oct 2026). A drive keeps its backslash.
+        /// </summary>
+        private static string WholeDrive(string root) => root.Length == 2 && root[1] == ':' ? root + "\\" : root;
 
         public static bool SameFolder(string a, string b) =>
             !string.IsNullOrWhiteSpace(a) && !string.IsNullOrWhiteSpace(b) &&

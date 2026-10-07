@@ -77,6 +77,24 @@ namespace Vanadreams.Tests
         }
 
         [TestMethod]
+        public void A_game_at_the_top_of_a_drive_keeps_the_drive_backslash()
+        {
+            // "D:" alone means "the current folder on D:", so every path built on it came out as D:FINAL FANTASY XI
+            // and the game closed four seconds after Play (6 Oct 2026, an install picked straight into D:\).
+            Assert.AreEqual(@"D:\", GameRegistration.RootOf(@"D:\FINAL FANTASY XI"));
+            Assert.AreEqual(@"D:\", GameRegistration.RootOf(@"D:\FINAL FANTASY XI\"));
+            Assert.AreEqual(@"D:\", GameRegistration.RootOf(@"D:\"));
+            Assert.AreEqual(@"D:\", GameRegistration.RootOf("D:"));
+            var reg = new RegisteredGame { GameFolder = @"D:\FINAL FANTASY XI\", ViewerFolder = @"D:\PlayOnlineViewer" };
+            reg.ComServers.Add(@"D:\FINAL FANTASY XI\FFXi.dll");
+            Assert.AreEqual(@"D:\", GameRegistration.CurrentRoot(reg));
+            Assert.IsTrue(GameRegistration.PointsAt(reg, @"D:\"));
+            // what the broken build wrote: Play must see it as wrong, so it registers the game again
+            var broken = new RegisteredGame { GameFolder = @"D:FINAL FANTASY XI\", ViewerFolder = "D:PlayOnlineViewer" };
+            Assert.IsFalse(GameRegistration.PointsAt(broken, @"D:\"));
+        }
+
+        [TestMethod]
         public void A_root_has_a_game_only_when_both_things_xiloader_creates_are_on_disk()
         {
             var dir = Path.Combine(Path.GetTempPath(), "vdl-" + Guid.NewGuid().ToString("N"));
