@@ -80,9 +80,25 @@ roles.Modes = {
     BlueMagical = { Stats = { MATT = 2, INT = 1, MACC = 0.7, BLUE = 0.3 } },
     Geomancy = { Stats = { GEOMANCY_SKILL = 1, HANDBELL_SKILL = 1, GEOMANCY_BONUS = 4, INDI_DURATION = 2, CONSERVE_MP = 0.2 } },
 
-    -- shooting
-    Preshot = { Stats = { SNAPSHOT = 3, RAPID_SHOT = 1 }, Caps = { SNAPSHOT = 70 } },
-    Midshot = { Stats = { RACC = 1, RATT = 0.8, AGI = 0.6, STORETP = 0.5, CRITHITRATE = 0.5 } },
+    -- shooting. Luck of the Draw (FFXIAH node 326): Snapshot to its 70% cap first, then Rapid
+    -- Shot; in the shot itself ranged accuracy and Store TP come first, damage a distant second.
+    -- After the shot LuAshitacast puts Idle or the fighting set back on by itself.
+    Preshot = { Stats = { SNAPSHOT = 3, RAPID_SHOT = 1.5 }, Caps = { SNAPSHOT = 70 } },
+    Midshot = { Stats = { RACC = 1.5, STORETP = 2, AGI = 0.4, RATT = 0.4, CRITHITRATE = 0.3, TRIPLE_SHOT_RATE = 1 } },
+
+    -- Corsair abilities (Luck of the Draw)
+    PhantomRoll = {
+        Stats = { PHANTOM_ROLL = 10, PHANTOM_DURATION = 0.5, PHANTOM_RECAST = 2, PDT = -1, MDT = -1, MEVA = 0.05 },
+        Caps = { PDT = -50, MDT = -50 },
+    },
+    QuickDraw = { Stats = { MATT = 2, AGI = 1, MACC = 0.6, MAGIC_DAMAGE = 1.2, QUICK_DRAW_DMG = 1, QUICK_DRAW_DMG_PERCENT = 3 } },
+    QuickDrawAcc = { Stats = { MACC = 2, QUICK_DRAW_MACC = 2, AGI = 0.5 } },
+
+    -- Beastmaster abilities (Killer Instinct: The Beastmaster Compendium, FFXIAH node 227)
+    ReadyPrecast = { Stats = { SIC_READY_RECAST = 5 } },
+    Reward = { Stats = { REWARD_HP_BONUS = 2, MND = 1, REWARD_RECAST = 1 } },
+    Charm = { Stats = { CHR = 1, CHARM_CHANCE = 2, MACC = 0.4, CHARM_TIME = 0.5 } },
+    Call = { Stats = { JUG_LEVEL_RANGE = 10, CALL_BEAST_DELAY = 2 } },
 
     -- treasure hunter, laid over whatever else is on with /vg th
     TH = { Stats = { TREASURE_HUNTER = 10 } },

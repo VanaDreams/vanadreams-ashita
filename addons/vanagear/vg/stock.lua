@@ -91,7 +91,26 @@ stock.HandleDefault = function()
     overlays();
 end
 
+local quickDraw = { ['Fire Shot'] = 1, ['Ice Shot'] = 1, ['Wind Shot'] = 1, ['Earth Shot'] = 1, ['Thunder Shot'] = 1,
+    ['Water Shot'] = 1, ['Light Shot'] = 2, ['Dark Shot'] = 2 };
+
 stock.HandleAbility = function()
+    local action = gData.GetAction();
+    local name = action.Name or '';
+    if (string.find(name, ' Roll$')) or (name == 'Double-Up') then
+        wear('PhantomRoll');
+    elseif (quickDraw[name] ~= nil) then
+        -- Light Shot sleeps and Dark Shot dispels: they only need to land
+        wear((quickDraw[name] == 2 or gVana.Toggles.Nuke == 'acc') and 'QuickDrawAcc' or 'QuickDraw');
+    elseif (action.Type == 'Ready') or (name == 'Sic') then
+        wear('ReadyPrecast');
+    elseif (name == 'Reward') then
+        wear('Reward');
+    elseif (name == 'Charm') then
+        wear('Charm');
+    elseif (name == 'Call Beast') or (name == 'Bestial Loyalty') then
+        wear('Call');
+    end
 end
 
 stock.HandleItem = function()

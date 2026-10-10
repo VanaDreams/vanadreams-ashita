@@ -115,6 +115,7 @@ plan.For = function(who, equipment, opts)
     local shooting = (rangeSkill == 25) or (rangeSkill == 26) or (rangeSkill == 27);
     if (job.Shooter) or (shooting) then add(roles.Shooter); end
     if (job.Pet) then add(roles.Pet); end
+    add(job.Modes or {});
 
     -- slots: weapons held unless asked; ammo held under a bow or gun, which shoots it
     local slots, held = {}, {};
