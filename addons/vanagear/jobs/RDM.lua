@@ -23,10 +23,8 @@ return {
     Fighter = true, Skills = { 'Healing Magic', 'Enhancing Magic', 'Enfeebling Magic', 'Elemental Magic', 'Dark Magic', 'Divine Magic' },
     Tweaks = {
         Idle = { Stats = { REFRESH = 8, REGEN = 2, PDT = -2, MDT = -2 } },
-        Enfeebling = { Stats = { MACC = 2, ENFEEBLE = 1.2, MND = 0.8 } },
+        Enfeebling = { Stats = { MACC = 2, ENFEEBLE = 1.2, MND = 0.8, ENHANCES_SABOTEUR = 1 } },
         Enhancing = { Stats = { ENH_MAGIC_DURATION = 2.5, ENHANCE = 1.2 } },
     },
-    Abilities = {
-        ['Saboteur'] = { Stats = { ENHANCES_SABOTEUR = 1 } },
-    },
+    -- The server reads no gear when Saboteur goes off; its gear is weighed in the enfeebling set.
 };

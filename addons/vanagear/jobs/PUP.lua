@@ -24,8 +24,5 @@ return {
         PetAtk = { Pet = { PET_TP_BONUS = 0.02, TP_BONUS = 0.01 } },
         PetDT = { Pet = { REGEN = 1.5 } },
     },
-    Abilities = {
-        ['Repair'] = { Stats = { REPAIR_EFFECT = 1, REPAIR_POTENCY = 2 } },
-        ['Overdrive'] = { Stats = { OVERDRIVE_BONUS_DURATION = 1 }, Pet = { HASTE_GEAR = 3, DOUBLE_ATTACK = 2, TP_BONUS = 0.01 } },
-    },
+    -- Repair, Overdrive, Tactical Switch: their sets come from what the server reads on the press.
 };

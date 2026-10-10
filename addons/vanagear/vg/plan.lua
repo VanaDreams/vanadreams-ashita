@@ -146,12 +146,41 @@ plan.For = function(who, equipment, opts)
         out[#out + 1] = { Name = n, Mode = m, Slots = slots };
     end
 
-    -- job ability sets the job file names: worn on the ability, under the ability's own name
-    -- with spaces taken out (Blood Rage -> BloodRage), the same rule as weaponskill sets
-    for ability, m in pairs(job.Abilities or {}) do
-        local am = copy(m);
-        am.Name = plan.WsSetName(ability);
-        out[#out + 1] = { Name = am.Name, Mode = am, Slots = slots, Ability = ability };
+    -- Job ability sets, worn as the ability goes off, under the ability's own name with spaces
+    -- taken out (Blood Rage -> BloodRage). What each one values is what the server reads when
+    -- it goes off (data\abilities.lua, from the ability scripts); the job file's Abilities add
+    -- to that or change a weight, and its AbilityBase is laid under every ability set.
+    local resources = AshitaCore:GetResourceManager();
+    local byName = {};
+    local subLevel = who.SubLevel or 0;
+    for id, a in pairs(vdata.Abilities()) do
+        local mine = ((a.job == who.Job) and (a.level <= who.Level)) or ((a.job == who.Sub) and (a.level <= subLevel));
+        if (mine) then
+            local res = resources:GetAbilityById(id + 0x200);
+            local display = (res ~= nil) and res.Name[1] or a.key;
+            local m = { Name = plan.WsSetName(display), Stats = {} };
+            for k, v in pairs(job.AbilityBase or {}) do m.Stats[k] = v; end
+            for _, mod in ipairs(a.mods) do
+                -- a mod no gear carries cannot be dressed for
+                if (mod ~= 'ONE_HOUR_RECAST') and (vdata.ModId(mod) ~= nil) then m.Stats[mod] = 1; end
+            end
+            byName[display] = m;
+        end
+    end
+    for ability, extra in pairs(job.Abilities or {}) do
+        local m = byName[ability] or { Name = plan.WsSetName(ability), Stats = {} };
+        for _, part in ipairs({ 'Stats', 'Caps', 'Pet', 'PetCaps' }) do
+            if (extra[part] ~= nil) then
+                m[part] = m[part] or {};
+                for k, v in pairs(extra[part]) do m[part][k] = v; end
+            end
+        end
+        byName[ability] = m;
+    end
+    for ability, m in pairs(byName) do
+        if (next(m.Stats) ~= nil) or (m.Pet ~= nil) then
+            out[#out + 1] = { Name = m.Name, Mode = m, Slots = slots, Ability = ability };
+        end
     end
 
     -- a set for every weaponskill the weapons in hand can use

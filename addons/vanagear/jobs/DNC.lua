@@ -15,8 +15,10 @@
       Flourish (magic accuracy), Reverse Flourish, Samba and Jig duration.
 ]]--
 
-local waltz = { Stats = { WALTZ_POTENCY = 3, CHR = 0.5, VIT = 0.2, WALTZ_DELAY = 1 }, Caps = { WALTZ_POTENCY = 50 } };
-local step = { Stats = { STEP_ACCURACY = 1, ACC = 1, DEX = 0.3, STEP_FINISH = 2 } };
+-- Waltzes, Steps, Sambas, Jigs and Flourishes: the server reads the stats below when they go
+-- off (data\abilities.lua); waltz potency caps at 50% (the guide), and the step needs to land.
+local waltz = { Stats = { WALTZ_POTENCY = 3, CHR = 0.5 }, Caps = { WALTZ_POTENCY = 50 } };
+local step = { Stats = { ACC = 1 } };
 
 return {
     Fighter = true,
@@ -27,10 +29,6 @@ return {
         ['Curing Waltz'] = waltz, ['Curing Waltz II'] = waltz, ['Curing Waltz III'] = waltz,
         ['Curing Waltz IV'] = waltz, ['Curing Waltz V'] = waltz, ['Divine Waltz'] = waltz, ['Divine Waltz II'] = waltz,
         ['Box Step'] = step, ['Quickstep'] = step, ['Stutter Step'] = step, ['Feather Step'] = step,
-        ['Violent Flourish'] = { Stats = { MACC = 1, VFLOURISH_MACC = 1, ACC = 0.5 } },
-        ['Reverse Flourish'] = { Stats = { REVERSE_FLOURISH_EFFECT = 1 } },
-        ['Drain Samba III'] = { Stats = { SAMBA_DURATION = 1, SAMBA_PDURATION = 1 } },
-        ['Haste Samba'] = { Stats = { SAMBA_DURATION = 1, SAMBA_PDURATION = 1 } },
-        ['Spectral Jig'] = { Stats = { JIG_DURATION = 1 } },
+        ['Violent Flourish'] = { Stats = { MACC = 1 } },
     },
 };

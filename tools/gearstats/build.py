@@ -137,6 +137,77 @@ def weaponskill(script, adoulin=True):
     return {k: v for k, v in wsc.items() if v}, hits, kind
 
 
+# ---- job abilities --------------------------------------------------------------------------
+
+# Only the user's own mods count: target:getMod reads the monster or party member.
+GETMOD = re.compile(r'(?:player|caster|actor|user|charmer|beastmaster|master|pc)\s*:\s*get(?:Mod|Stat|MaxGearMod)\(\s*xi\.mod\.([A-Z0-9_]+)')
+UTIL_CALL = re.compile(r'xi\.job_utils\.(\w+)\.(\w+)\s*\(')
+EFFECT = re.compile(r'addStatusEffect\(\s*xi\.effect\.([A-Z0-9_]+)')
+DEF = re.compile(r'^(?:xi\.job_utils\.(\w+)\.(\w+)\s*=\s*function|local\s+function\s+(\w+)|local\s+(\w+)\s*=\s*function)', re.M)
+
+
+def job_utils(server):
+    """'job.fn' -> the text of that job_utils function, with the file's local helper functions
+    it calls appended, so a mod read inside a helper (corsair's roll math) still counts."""
+    out = {}
+    for f in (server / 'scripts' / 'globals' / 'job_utils').glob('*.lua'):
+        text = f.read_text(encoding='utf-8', errors='replace')
+        defs = []
+        for m in DEF.finditer(text):
+            name = f'{m.group(1)}.{m.group(2)}' if m.group(1) else (m.group(3) or m.group(4))
+            defs.append((m.start(), name, bool(m.group(1))))
+        bodies, locals_ = {}, {}
+        for i, (pos, name, public) in enumerate(defs):
+            end = defs[i + 1][0] if i + 1 < len(defs) else len(text)
+            (bodies if public else locals_)[name] = text[pos:end]
+        for name, body in bodies.items():
+            seen, todo, extra = set(), [body], []
+            while todo:
+                t = todo.pop()
+                for loc, lbody in locals_.items():
+                    if loc not in seen and re.search(rf'\b{re.escape(loc)}\s*\(', t):
+                        seen.add(loc)
+                        extra.append(lbody)
+                        todo.append(lbody)
+            out[name] = body + '\n'.join(extra)
+    return out
+
+
+def effect_gain(server, effect):
+    """The onEffectGain part of an effect script: mods it reads when the effect lands."""
+    f = server / 'scripts' / 'effects' / f'{effect.lower()}.lua'
+    if not f.exists():
+        return ''
+    text = f.read_text(encoding='utf-8', errors='replace')
+    m = re.search(r'effectObject\.onEffectGain.*?(?=effectObject\.on|\Z)', text, re.S)
+    return m.group(0) if m else ''
+
+
+def ability_mods(server, script, utils):
+    """Every mod the server reads while the ability goes off: in its script, in the job_utils
+    functions it calls (two levels), and in onEffectGain of the effects it gives."""
+    seen, texts, todo = set(), [script], [script]
+    for _ in range(2):
+        nxt = []
+        for t in todo:
+            for job, fn in UTIL_CALL.findall(t):
+                key = f'{job}.{fn}'
+                if key in utils and key not in seen:
+                    seen.add(key)
+                    nxt.append(utils[key])
+        texts += nxt
+        todo = nxt
+    for t in list(texts):
+        for eff in EFFECT.findall(t):
+            texts.append(effect_gain(server, eff))
+    mods = []
+    for t in texts:
+        for mod in GETMOD.findall(t):
+            if mod not in mods:
+                mods.append(mod)
+    return mods
+
+
 # ---- writing Lua --------------------------------------------------------------------------
 
 def lua_str(s):
@@ -244,6 +315,20 @@ def main(server):
         ws[ws_id] = {'key': snake, 'skill': skill_type, 'level': skill_level, 'element': element,
                      'wsc': wsc, 'hits': hits, 'kind': kind}
 
+    # job abilities: the mods the server reads when each one goes off, so gear that raises them
+    # can be worn for it
+    utils = job_utils(server)
+    abilities = {}
+    ab_dir = server / 'scripts' / 'actions' / 'abilities'
+    for r in rows(sql / 'abilities.sql', 'abilities'):
+        ab_id, snake, job, level = r[:4]
+        script = ab_dir / f'{snake}.lua'
+        if not script.exists() or job == 0:
+            continue
+        mods = ability_mods(server, script.read_text(encoding='utf-8', errors='replace'), utils)
+        if mods:
+            abilities[ab_id] = {'key': snake, 'job': job, 'level': level, 'mods': mods}
+
     used = set()
     for it in items.values():
         used.update(it.get('mods', {}))
@@ -264,9 +349,12 @@ def main(server):
                                        '(v > 0 and v + level or v - level) * max(m, 1).'], augments)
     write_table(OUT / 'weaponskills.lua', ['Weaponskill id = key, skill type, element, stat modifiers (wsc), hits, kind.',
                                            'Adoulin weaponskill values, the server default.'], ws)
+    write_table(OUT / 'abilities.lua', ['Job ability id = key, job, level, and the mods the server reads when it goes off',
+                                        '(the ability script, the job_utils functions it calls and the effects it gives).'], abilities)
     write_table(OUT / 'mods.lua', ['Server mod id = name (scripts/enum/mod.codegen.lua), for the mods any item uses.'],
                 {m: names.get(m, f'MOD_{m}') for m in sorted(used)})
-    print(f'items {len(items)} (weapons {weapons}), augments {len(augments)}, weaponskills {len(ws)}, mods {len(used)}')
+    print(f'items {len(items)} (weapons {weapons}), augments {len(augments)}, weaponskills {len(ws)}, '
+          f'abilities with gear {len(abilities)}, mods {len(used)}')
     for f in sorted(OUT.glob('*.lua')):
         print(f'  {f.name} {f.stat().st_size:,} bytes')
 
