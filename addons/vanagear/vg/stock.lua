@@ -63,6 +63,15 @@ stock.HandleDefault = function()
     local pet = gData.GetPet();
     local petAction = gData.GetPetAction();
 
+    if (petAction ~= nil) and (gVana.Sets.BPWard ~= nil) then
+        -- a summoner's avatar: the blood pact decides the set
+        local bp = petAction.Name or '';
+        if (lists.BPBuff[bp]) then wear('BPWard');
+        elseif (lists.BPDebuff[bp]) then wear('PetAcc');
+        elseif (lists.BPMagical[bp]) then wear('PetMab');
+        else wear('PetAtk'); end
+        return;
+    end
     if (petAction ~= nil) and (gVana.Sets.PetAtk ~= nil) then
         if (lists.EnfeebleReady[petAction.Name or ''] or t.Pet == 'acc') then
             wear('PetAcc');
@@ -97,7 +106,13 @@ local quickDraw = { ['Fire Shot'] = 1, ['Ice Shot'] = 1, ['Wind Shot'] = 1, ['Ea
 stock.HandleAbility = function()
     local action = gData.GetAction();
     local name = action.Name or '';
-    if (string.find(name, ' Roll$')) or (name == 'Double-Up') then
+    -- a set built for this very ability (jobs\<JOB>.lua Abilities) comes first
+    if (wear((string.gsub(name, '[^%w]', '')))) then
+        return;
+    end
+    if (string.find(action.Type or '', '^Blood Pact')) then
+        wear('BPDelay');
+    elseif (string.find(name, ' Roll$')) or (name == 'Double-Up') then
         wear('PhantomRoll');
     elseif (quickDraw[name] ~= nil) then
         -- Light Shot sleeps and Dark Shot dispels: they only need to land

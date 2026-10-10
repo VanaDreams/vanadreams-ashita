@@ -1,7 +1,7 @@
 --[[
     vanagear: name lists the handlers sort actions by.
 
-    The Blue Magic lists are from GetAwayCoxn's Luashitacast-Profiles (common/gcinclude.lua,
+    The Blue Magic and blood pact lists are from GetAwayCoxn's Luashitacast-Profiles (common/gcinclude.lua,
     MIT licence, Copyright (c) 2022 GetAwayCoxn). The magical Ready moves are Ferrin's BST
     profile's list.
 ]]--
@@ -40,6 +40,26 @@ lists.BluePhysical = set({
     'Benthic Typhoon', 'Quad. Continuum', 'Empty Thrash', 'Delta Thrust', 'Heavy Strike', 'Quadrastrike', 'Tourbillion',
     'Amorphic Spikes', 'Barbed Crescent', 'Bilgestorm', 'Bloodrake', 'Glutinous Dart', 'Paralyzing Triad',
     'Thrashing Assault', 'Sinker Drill', 'Sweeping Gouge', 'Saurian Slide',
+});
+
+-- Blood pacts by what they need (GetAwayCoxn's gcinclude.lua lists).
+lists.BPMagical = set({
+    'Searing Light', 'Meteorite', 'Holy Mist', 'Inferno', 'Fire II', 'Fire IV', 'Meteor Strike', 'Conflag Strike',
+    'Diamond Dust', 'Blizzard II', 'Blizzard IV', 'Heavenly Strike', 'Aerial Blast', 'Aero II', 'Aero IV', 'Wind Blade',
+    'Earthen Fury', 'Stone II', 'Stone IV', 'Geocrush', 'Judgement Bolt', 'Thunder II', 'Thunder IV', 'Thunderstorm',
+    'Thunderspark', 'Tidal Wave', 'Water II', 'Water IV', 'Grand Fall', 'Howling Moon', 'Lunar Bay', 'Ruinous Omen',
+    'Somnolence', 'Nether Blast', 'Night Terror', 'Level ? Holy', 'Flaming Crush', 'Burning Strike',
+});
+lists.BPDebuff = set({
+    'Diamond Storm', 'Sleepga', 'Shock Squall', 'Slowga', 'Tidal Roar', 'Pavor Nocturnus', 'Ultimate Terror', 'Nightmare',
+    'Mewing Lullaby', 'Eerie Eye',
+});
+lists.BPBuff = set({
+    'Shining Ruby', 'Glittering Ruby', 'Crimson Howl', 'Inferno Howl', 'Frost Armor', 'Crystal Blessing', 'Aerial Armor',
+    'Hastega II', 'Fleet Wind', 'Hastega', 'Earthen Ward', 'Earthen Armor', 'Rolling Thunder', 'Lightning Armor',
+    'Soothing Current', 'Ecliptic Growl', 'Heavenward Howl', 'Ecliptic Howl', 'Noctoshield', 'Dream Shroud',
+    'Altana\'s Favor', 'Reraise', 'Reraise II', 'Reraise III', 'Raise', 'Raise II', 'Raise III', 'Wind\'s Blessing',
+    'Healing Ruby', 'Healing Ruby II', 'Whispering Wind', 'Spring Water',
 });
 
 -- Gear used from the slot, by the word a player types: /vg warp, /vg xp. Any other usable piece
