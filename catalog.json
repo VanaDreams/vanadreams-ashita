@@ -3,6 +3,24 @@
   "interface": "4.30",
   "items": [
     {
+      "id": "meritfix",
+      "name": "meritfix",
+      "kind": "addon",
+      "maintainer": "Vanadreams",
+      "source": {
+        "type": "repo-folder",
+        "repo": "VanaDreams/vanadreams-ashita",
+        "path": "addons/meritfix",
+        "branch": "main"
+      },
+      "version": "0.1.0",
+      "install": "copy-to-addons",
+      "load": "/addon load meritfix",
+      "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/meritfix",
+      "onByDefault": true,
+      "description": "Shows your real merit points past 127 in the game's own merit window. Vanadreams lets you hold up to 969; the unpatched game wraps the number at 128. Changes nothing on the server."
+    },
+    {
       "id": "vanafish",
       "name": "vanafish",
       "kind": "addon",
