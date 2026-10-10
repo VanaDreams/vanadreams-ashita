@@ -42,7 +42,7 @@
                     <StackPanel>
                         <TextBlock Style="{StaticResource MenuItemText}" FontSize="17" Text="3. Your GearSwap sets"/>
                         <TextBlock Style="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap"
-                                   Text="Pick your GearSwap job files. Each job becomes a LuAshitacast profile with all your sets in it. Your rules stay behind: you get standard ones to tweak."/>
+                                   Text="Pick your GearSwap job files. Each job becomes a profile with all your sets in it. vanagear supplies the rules, and the gear for anything your sets leave out."/>
                         <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                             <TextBlock Style="{StaticResource Muted}" FontSize="12" VerticalAlignment="Center" Text="Character name" Margin="0,0,8,0"/>
                             <TextBox x:Name="CharacterBox" Width="160" VerticalAlignment="Center" ToolTip="Used for files named only by job, like WHM.lua"/>

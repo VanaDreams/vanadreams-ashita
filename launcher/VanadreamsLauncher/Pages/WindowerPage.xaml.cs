@@ -28,7 +28,7 @@ namespace Vanadreams.Pages
         {
             InitializeComponent();
             _win = win;
-            var named = WindowerPreset.Items.Where(l => !string.Equals(l.Windower, "GearSwap", StringComparison.OrdinalIgnoreCase) || l.CatalogId == "luashitacast").ToList();
+            var named = WindowerPreset.Items.Where(l => !string.Equals(l.Windower, "GearSwap", StringComparison.OrdinalIgnoreCase) || l.CatalogId == "vanagear").ToList();
             var pairs = named.Take(4).Select(l => l.Windower + " → " + (App.State.Catalog.Find(l.CatalogId)?.Name ?? l.CatalogId));
             PresetList.Text = string.Join(", ", pairs) + (named.Count > 4 ? ", and " + (named.Count - 4) + " more." : ".");
             PresetList.ToolTip = string.Join("\n", WindowerPreset.Items.Select(l => l.Windower + " → " + (App.State.Catalog.Find(l.CatalogId)?.Name ?? l.CatalogId) + ": " + l.Note));
@@ -246,11 +246,11 @@ namespace Vanadreams.Pages
             if (noJob.Count > 0) sb.AppendLine("Skipped, no job in the file name: " + string.Join(", ", noJob));
             if (wrote > 0)
             {
-                var lac = state.Catalog.Find("luashitacast");
+                var vg = state.Catalog.Find("vanagear");
                 sb.AppendLine();
-                sb.AppendLine(lac != null && lac.IsInstalled(state.AshitaRoot) && state.Settings.EnabledAddons.Contains("luashitacast", StringComparer.OrdinalIgnoreCase)
-                    ? "LuAshitacast loads the profile for your job when you log in. /lac load picks it up without logging out."
-                    : "LuAshitacast reads these profiles, and it is not ticked yet: step 1 installs it.");
+                sb.AppendLine(vg != null && vg.IsInstalled(state.AshitaRoot) && state.Settings.EnabledAddons.Contains("vanagear", StringComparer.OrdinalIgnoreCase)
+                    ? "vanagear loads the profile for your job when you log in, puts your sets on, and fills in what GearSwap left behind: the rules, and the best piece you carry for any slot your sets leave out. /vg help lists your commands; /gs c still works."
+                    : "vanagear reads these profiles and fills in what GearSwap left behind, and it is not ticked yet: step 1 installs it.");
             }
             Say(sb.ToString().TrimEnd(), wrote > 0 && noName.Count == 0 ? "Ok" : wrote > 0 ? "Warn" : "Bad", wrote > 0 ? folder : null);
         }

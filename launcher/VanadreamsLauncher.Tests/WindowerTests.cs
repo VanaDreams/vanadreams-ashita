@@ -83,10 +83,10 @@ namespace Vanadreams.Tests
         public void Preset_offers_only_what_the_catalogue_has()
         {
             var cat = new Catalog();
-            cat.Items.Add(new CatalogItem { Id = "luashitacast", Name = "LuAshitacast", Source = SourceType.GithubRelease });
+            cat.Items.Add(new CatalogItem { Id = "vanagear", Name = "vanagear", Source = SourceType.RepoFolder });
             cat.Items.Add(new CatalogItem { Id = "xiui", Name = "XIUI", Source = SourceType.None });
             cat.Items.Add(new CatalogItem { Id = "timestamp", Name = "timestamp", Source = SourceType.Bundled });
-            CollectionAssert.AreEqual(new[] { "luashitacast", "timestamp" }, WindowerPreset.CatalogItems(cat).Select(i => i.Id).ToList());
+            CollectionAssert.AreEqual(new[] { "vanagear", "timestamp" }, WindowerPreset.CatalogItems(cat).Select(i => i.Id).ToList());
             Assert.AreEqual("xiui", WindowerPreset.For("xivparty").CatalogId);
         }
     }

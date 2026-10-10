@@ -22,7 +22,7 @@ namespace Vanadreams.Services
     {
         public static readonly IReadOnlyList<Lookalike> Items = new List<Lookalike>
         {
-            new Lookalike { Windower = "GearSwap", CatalogId = "luashitacast", Note = "gear swapping, one Lua file per job" },
+            new Lookalike { Windower = "GearSwap", CatalogId = "vanagear", Note = "gear swapping with sets built from your bags; /gs c works" },
             new Lookalike { Windower = "GearSwap", CatalogId = "sequencer", Note = "keeps actions from double-firing while gear swaps" },
             new Lookalike { Windower = "XIVParty", CatalogId = "xiui", Note = "party list, target bar and player bar" },
             new Lookalike { Windower = "Battlemod", CatalogId = "simplelog", Note = "a cleaner combat log" },

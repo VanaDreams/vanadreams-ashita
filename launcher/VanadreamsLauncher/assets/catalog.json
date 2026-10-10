@@ -523,10 +523,31 @@
       "config": "config\\addons\\luashitacast\\",
       "docs": "https://github.com/ThornyFFXI/LuAshitacast",
       "description": "Gear swapping with Lua profiles, one per job. Wear a set and /lac addset <name> writes it into your profile; rules for weapon skills, spells, abilities, idle and engaged go in the same file. Same author as LegacyAC and Packer.",
+      "conflicts": [
+        "vanagear"
+      ],
       "v3": {
         "name": "Ashitacast",
         "note": "The author's newer swapper. LegacyAC keeps reading your v3 XMLs; this is for building new jobs in game."
       }
+    },
+    {
+      "id": "vanagear",
+      "name": "vanagear",
+      "kind": "addon",
+      "maintainer": "Vanadreams",
+      "source": {
+        "type": "repo-folder",
+        "repo": "VanaDreams/vanadreams-ashita",
+        "path": "addons/vanagear",
+        "branch": "main"
+      },
+      "version": "0.1.0",
+      "install": "copy-to-addons",
+      "load": "/addon load vanagear",
+      "config": "config\\addons\\luashitacast\\",
+      "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/vanagear",
+      "description": "Gear sets built for you from what you carry, for your job and level, and a list of commands for that job: type /vg. Built on LuAshitacast by ThornyFFXI and replaces it; your LuAshitacast profiles keep working. GearSwap's /gs c commands work too."
     },
     {
       "id": "multisend",
