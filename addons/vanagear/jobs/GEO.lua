@@ -24,11 +24,6 @@ return {
         Geomancy = { Stats = { GEOMANCY_SKILL = 1.5, HANDBELL_SKILL = 1.5, CONSERVE_MP = 0.3 } },
         PetDT = { Pet = { REGEN = 2, DMG = -5 } },
     },
-    Abilities = {
-        ['Bolster'] = { Stats = { BOLSTER_EFFECT = 1 } },
-        ['Life Cycle'] = { Stats = { LIFE_CYCLE_EFFECT = 1 } },
-        ['Full Circle'] = { Stats = { FULL_CIRCLE = 1 } },
-        ['Mending Halation'] = { Stats = { MENDING_HALATION = 1 } },
-        ['Radial Arcana'] = { Stats = { RADIAL_ARCANA = 1 } },
-    },
+    -- Bolster, Life Cycle, Full Circle, Theurgic Focus and the rest: their sets come from what
+    -- the server reads on the press.
 };

@@ -20,10 +20,7 @@ return {
     Tweaks = {
         Midshot = { Stats = { STORETP = 2.5 } },
     },
-    Abilities = {
-        ['Sharpshot'] = { Stats = { SHARPSHOT = 1 } },
-        ['Barrage'] = { Stats = { BARRAGE_ACC = 1, BARRAGE_COUNT = 5, RACC = 0.5 } },
-        ['Camouflage'] = { Stats = { CAMOUFLAGE_DURATION = 1 } },
-        ['Scavenge'] = { Stats = { SCAVENGE_EFFECT = 1 } },
-    },
+    -- Ability sets come from what the server reads when each ability goes off (Sharpshot,
+    -- Camouflage, Scavenge, Shadowbind, Bounty Shot). The server reads no gear when Barrage
+    -- goes off, so no set is worn for it.
 };

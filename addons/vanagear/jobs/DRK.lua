@@ -25,14 +25,10 @@ return {
         Dark = { Stats = { DARK = 1.5, ENHANCES_ABSORB_EFFECTS = 2 } },
         Drain = { Stats = { ENH_DRAIN_ASPIR = 3, DARK = 1 } },
     },
-    Modes = {},
+    -- Ability sets come from what the server reads when each ability goes off. Souleater's
+    -- script reads Muted Soul gear only; the Souleater effect gear the guide names is not read
+    -- on the press, so it is not worn for it.
     Abilities = {
-        ['Souleater'] = { Stats = { SOULEATER_EFFECT = 2, SOULEATER_EFFECT_II = 2 } },
-        ['Arcane Circle'] = { Stats = { ARCANE_CIRCLE_DURATION = 1, ARCANE_CIRCLE_POTENCY = 2 } },
-        ['Blood Weapon'] = { Stats = { ENHANCES_BLOOD_WEAPON = 1 } },
-        ['Nether Void'] = { Stats = { ENHANCES_NETHER_VOID = 1 } },
-        ['Dark Seal'] = { Stats = { ENHANCES_DARK_SEAL = 1 } },
-        ['Diabolic Eye'] = { Stats = { ENHANCES_DIABOLIC_EYE = 1 } },
-        ['Dread Spikes'] = { Stats = { HP = 1 } },
+        ['Arcane Circle'] = { Stats = { ARCANE_CIRCLE_POTENCY = 2 } },
     },
 };

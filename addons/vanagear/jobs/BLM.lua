@@ -25,8 +25,6 @@ return {
         Burst = { Stats = { MAGIC_BURST_BONUS_CAPPED = 4, MAGIC_BURST_BONUS_UNCAPPED = 4.5 } },
         Enfeebling = { Stats = { ENFEEBLE = 1.5, MACC = 1.2 } },
     },
+    -- The server reads no gear when Mana Wall goes off; for damage taken under it, /vg dt.
     Modes = { 'Macc' },
-    Abilities = {
-        ['Mana Wall'] = { Stats = { PDT = -5, MDT = -5 }, Caps = { PDT = -50, MDT = -50 } },
-    },
 };

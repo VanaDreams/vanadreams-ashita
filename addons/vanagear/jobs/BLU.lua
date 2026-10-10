@@ -25,9 +25,6 @@ return {
         BlueMagical = { Stats = { MAGIC_DAMAGE = 1.2 } },
         Cure = { Stats = { BLUE = 0.3 } },
     },
+    -- The server reads no gear when Burst or Chain Affinity goes off, so no set is worn for them.
     Modes = { 'Macc' },
-    Abilities = {
-        ['Burst Affinity'] = { Stats = { ENHANCES_BURST_AFFINITY = 1 } },
-        ['Chain Affinity'] = { Stats = { ENHANCES_CHAIN_AFFINITY = 1 } },
-    },
 };

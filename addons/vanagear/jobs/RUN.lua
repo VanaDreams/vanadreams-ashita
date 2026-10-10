@@ -22,15 +22,6 @@ return {
         Dt = { Stats = { MEVA = 0.15, HP = 0.06, ENMITY = 0.3 } },
         Tp_Default = { Stats = { PDT = -2, MDT = -2, ENMITY = 0.5, PARRY = 0.3, INQUARTATA = 1 } },
     },
-    Abilities = {
-        ['Swordplay'] = { Stats = { SWORDPLAY = 1 } },
-        ['Liement'] = { Stats = { LIEMENT = 1, LIEMENT_DURATION = 1 } },
-        ['Vallation'] = { Stats = { VALIANCE_VALLATION_DURATION = 1 } },
-        ['Valiance'] = { Stats = { VALIANCE_VALLATION_DURATION = 1 } },
-        ['Pflug'] = { Stats = { PFLUG = 1 } },
-        ['Rayke'] = { Stats = { RAYKE_DURATION = 1 } },
-        ['Gambit'] = { Stats = { GAMBIT_DURATION = 1 } },
-        ['Embolden'] = { Stats = { EMBOLDEN_DURATION = 1 } },
-        ['Battuta'] = { Stats = { ENHANCES_BATTUTA = 1, INQUARTATA = 1 } },
-    },
+    -- Swordplay, Liement, Vallation, Valiance, Pflug, Rayke, Gambit, Battuta and the rest:
+    -- their sets come from what the server reads on the press.
 };

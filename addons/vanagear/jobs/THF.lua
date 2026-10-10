@@ -19,12 +19,7 @@ return {
     Tweaks = {
         Tp_Default = { Stats = { TRIPLE_ATTACK = 3.5, TREASURE_HUNTER = 2 } },
     },
-    Abilities = {
-        ['Steal'] = { Stats = { STEAL = 1 } },
-        ['Feint'] = { Stats = { AUGMENTS_FEINT = 1 } },
-        ['Assassin\'s Charge'] = { Stats = { AUGMENTS_ASSASSINS_CHARGE = 1 } },
-        ['Aura Steal'] = { Stats = { AUGMENTS_AURA_STEAL = 1 } },
-        ['Sneak Attack'] = { Stats = { TREASURE_HUNTER = 5, DEX = 0.5, SNEAK_ATK_DEX = 0.5 } },
-        ['Trick Attack'] = { Stats = { AGI = 0.5, TRICK_ATK_AGI = 0.5 } },
-    },
+    -- Ability sets come from what the server reads when each ability goes off (Steal, Mug,
+    -- Flee, Hide, Feint, Accomplice, Conspirator, Despoil). The server reads no gear when
+    -- Sneak Attack or Trick Attack goes off, so no set is worn for them.
 };

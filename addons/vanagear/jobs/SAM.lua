@@ -21,10 +21,7 @@ return {
         Tp_Default = { Stats = { STORETP = 2.2, ZANSHIN = 0.5 } },
         Tp_Acc = { Stats = { STORETP = 1.5 } },
     },
-    Abilities = {
-        ['Meditate'] = { Stats = { MEDITATE_DURATION = 1 } },
-        ['Third Eye'] = { Stats = { THIRD_EYE_COUNTER_RATE = 1, THIRD_EYE_BONUS = 1 } },
-        ['Sengikori'] = { Stats = { SENGIKORI_BONUS = 1 } },
-        ['Seigan'] = { Stats = { SEIGAN_COUNTER_BONUS = 1 } },
-    },
+    -- Ability sets come from what the server reads when each ability goes off (Meditate,
+    -- Warding Circle). The server reads no gear when Third Eye, Seigan or Sengikori go off,
+    -- so no set is worn for them.
 };
