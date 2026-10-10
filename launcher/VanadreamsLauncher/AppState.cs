@@ -192,6 +192,18 @@ namespace Vanadreams
                 }
                 catch (Exception ex) { Log.Warn("default " + item.Id + " not installed, will try again: " + ex.Message); }
             }
+            // Any installed repo-folder addon the catalogue has moved past: its files are brought up to date now, so
+            // a fix reaches every player at their next start without the Update button. Their tick is left alone.
+            foreach (var item in AddonInstaller.InstalledToUpdate(Catalog, Settings.InstalledVersions))
+            {
+                try
+                {
+                    var plan = await AddonInstaller.InstallRepoFolderAsync(Downloader, Settings, AshitaRoot, item);
+                    changed = true;
+                    Log.Info(item.Id + " updated to " + item.Version + " at start: " + plan.Download.Count + " file(s) downloaded");
+                }
+                catch (Exception ex) { Log.Warn(item.Id + " not updated at start, will try again: " + ex.Message); }
+            }
             if (!changed) return;
             Settings.Save();
             ApplyEnabledAddons();
