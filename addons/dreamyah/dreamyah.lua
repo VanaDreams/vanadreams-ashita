@@ -1,6 +1,6 @@
 addon.name    = 'dreamyah'
 addon.author  = 'VanaDreams'
-addon.version = '1.0'
+addon.version = '1.1'
 addon.desc    = 'Searchable VanaDreams Auction House interface.'
 addon.link    = ''
 
@@ -97,6 +97,12 @@ local function itemName(itemId)
 end
 
 local function requestCatalog()
+    -- One catalog at a time: a second request replaces the id the fragments are matched on,
+    -- so the first catalog would be thrown away, and the server refuses a repeat within 5 seconds.
+    if state.catalogRequestId ~= nil and os.time() - (state.catalogSentAt or 0) < 10 then
+        return
+    end
+    state.catalogSentAt = os.time()
     clearSelection()
     state.fragments  = {}
     state.seen       = {}
@@ -145,12 +151,18 @@ local function rebuildCatalog()
     end
     catalog:set(items)
     catalogVersion = catalogVersion + 1
+    state.catalogRequestId = nil
     state.resultText = string.format('Catalog synchronized: %d AH-supported items.', catalog:size())
 end
 
 local function processCatalog(header, payload, bytes)
     local entrySize = ffi.sizeof('dreamyah_catalog_entry_t')
     local count = header.entryCount
+    if protocol.requestIdOf(header) == state.catalogRequestId and header.status ~= Status.Success then
+        state.catalogRequestId = nil
+        state.resultText = 'The Auction House is busy. Try again in a few seconds.'
+        return
+    end
     if protocol.requestIdOf(header) ~= state.catalogRequestId or header.fragmentCount == 0
         or header.fragmentIndex >= header.fragmentCount or bytes < count * entrySize then
         return
@@ -183,6 +195,10 @@ end
 
 local function processSummary(header)
     if protocol.requestIdOf(header) ~= state.inspectRequestId or header.itemId ~= state.selectedItemId then
+        return
+    end
+    if header.status == Status.RateLimited then
+        state.resultText = 'Slow down a little, then select the item again.'
         return
     end
     if header.status ~= Status.Success then
