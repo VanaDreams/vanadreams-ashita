@@ -72,5 +72,20 @@ namespace Vanadreams.Services
         public static List<CatalogItem> DefaultsToGive(Catalog catalog, IEnumerable<string> alreadyGiven) =>
             catalog.Items.Where(i => i.OnByDefault && i.HasV4 && string.IsNullOrEmpty(i.HeldBack)
                                      && !(alreadyGiven ?? Enumerable.Empty<string>()).Contains(i.Id, StringComparer.OrdinalIgnoreCase)).ToList();
+
+        /// <summary>
+        /// The repo-folder items this player has installed whose catalogue version has moved on since. These are
+        /// brought up to date at every start, with no button press, because players do not update by hand and a
+        /// fix to an addon that is crashing them has to reach them. Only the files are refreshed: whether the item is
+        /// ticked stays the player's choice. Items with no version in the catalogue are left to the Reinstall button.
+        /// </summary>
+        public static List<CatalogItem> InstalledToUpdate(Catalog catalog, IDictionary<string, string> installedVersions)
+        {
+            if (installedVersions == null) return new List<CatalogItem>();
+            return catalog.Items.Where(i => i.Source == SourceType.RepoFolder && !string.IsNullOrEmpty(i.Version)
+                                            && string.IsNullOrEmpty(i.HeldBack)
+                                            && installedVersions.TryGetValue(i.Id, out var have)
+                                            && !string.Equals(have, i.Version, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
     }
 }

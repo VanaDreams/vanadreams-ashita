@@ -141,5 +141,29 @@ namespace Vanadreams.Tests
             // given once already: the player may have unticked it since, and that sticks
             Assert.AreEqual(0, AddonInstaller.DefaultsToGive(cat, new List<string> { "VanaTunes" }).Count);
         }
+
+        [TestMethod]
+        public void InstalledRepoFolderAddons_AreUpdatedAtStartWhenTheCatalogueMovesOn()
+        {
+            var cat = Catalog.Parse(@"{ ""schema"": 1, ""items"": [
+  { ""id"": ""vanatunes"", ""kind"": ""addon"", ""version"": ""0.3.1"", ""onByDefault"": true, ""source"": { ""type"": ""repo-folder"", ""repo"": ""VanaDreams/vanatunes"", ""path"": ""vanatunes"" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load vanatunes"" },
+  { ""id"": ""crafty"", ""kind"": ""addon"", ""version"": ""0.1.0"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""VanaDreams/vanadreams-ashita"", ""path"": ""addons/crafty"" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load crafty"" },
+  { ""id"": ""oseem"", ""kind"": ""addon"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""ThornyFFXI/Oseem"", ""path"": """" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load oseem"" },
+  { ""id"": ""chatfix"", ""kind"": ""addon"", ""version"": ""9"", ""heldBack"": ""wrong here"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""x/y"", ""path"": ""chatfix"" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load chatfix"" },
+  { ""id"": ""bellhop"", ""kind"": ""plugin"", ""version"": ""1.22"", ""source"": { ""type"": ""github-release"", ""repo"": ""ThornyFFXI/Bellhop"", ""asset"": ""*.zip"" }, ""install"": ""unzip-to-root"", ""load"": ""/load bellhop"" }
+] }");
+            var installed = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "VanaTunes", "0.3.0" },   // the crashing version: must be brought up, case-insensitively
+                { "crafty", "0.1.0" },      // already current: left alone
+                { "oseem", "2026-09-20" },  // no catalogue version: left to Reinstall
+                { "chatfix", "1" },         // held back: never touched
+                { "bellhop", "1.20" },      // a release archive, not a repo folder: the Addons page handles it
+            };
+            CollectionAssert.AreEqual(new[] { "vanatunes" }, AddonInstaller.InstalledToUpdate(cat, installed).Select(i => i.Id).ToList());
+            // nothing installed yet, or nothing recorded: nothing to update (DefaultsToGive covers first installs)
+            Assert.AreEqual(0, AddonInstaller.InstalledToUpdate(cat, new Dictionary<string, string>()).Count);
+            Assert.AreEqual(0, AddonInstaller.InstalledToUpdate(cat, null).Count);
+        }
     }
 }
