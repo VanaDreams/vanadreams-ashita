@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32;
 
 namespace Vanadreams.Services
 {
@@ -202,8 +203,57 @@ namespace Vanadreams.Services
             catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223) { return false; }   // the prompt was cancelled
         }
 
-        /// <summary>True when this root is what the registry points xiloader and the launcher at.</summary>
-        public static bool IsRegistered(string root) =>
-            string.Equals(ClientVersion.FindFfxiFolder()?.TrimEnd('\\'), GameFolder(root).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
+        // xiloader starts the game through these two COM classes, so the DLLs registered under them
+        // decide which copy runs, whatever InstallFolder says.
+        public const string FfxiEntryClsid = "{989D790D-6236-11D4-80E9-00105A81E890}";
+        public const string PolcoreUsClsid = "{3501F5DD-7894-42DF-866A-A2B6527D8049}";
+
+        /// <summary>The four paths Windows holds for the game, 32-bit view; null where one is missing.</summary>
+        public static Registration ReadRegistration()
+        {
+            var r = new Registration();
+            try
+            {
+                using (var hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
+                using (var key = hklm.OpenSubKey(@"SOFTWARE\PlayOnlineUS\InstallFolder"))
+                {
+                    r.GameFolder = key?.GetValue("0001") as string;
+                    r.ViewerFolder = key?.GetValue("1000") as string;
+                }
+                using (var hkcr = RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, RegistryView.Registry32))
+                {
+                    using (var key = hkcr.OpenSubKey(@"CLSID\" + FfxiEntryClsid + @"\InprocServer32")) r.FfxiDll = key?.GetValue(null) as string;
+                    using (var key = hkcr.OpenSubKey(@"CLSID\" + PolcoreUsClsid + @"\InprocServer32")) r.PolcoreDll = key?.GetValue(null) as string;
+                }
+            }
+            catch (Exception ex) { Log.Warn("reading the game's registration: " + ex.Message); }
+            return r;
+        }
+
+        /// <summary>The first of the four paths that is not inside this root, in words for the log; null when all are.</summary>
+        public static string FirstStray(Registration r, string root)
+        {
+            Func<string, string> norm = p => (p ?? "").Trim().Trim('"').TrimEnd('\\');
+            Func<string, string, bool> same = (a, b) => string.Equals(norm(a), norm(b), StringComparison.OrdinalIgnoreCase);
+            Func<string, string, bool> under = (file, folder) => norm(file).StartsWith(norm(folder) + "\\", StringComparison.OrdinalIgnoreCase);
+            if (!same(r.GameFolder, GameFolder(root))) return "game folder is " + (r.GameFolder ?? "not set");
+            if (!same(r.ViewerFolder, ViewerFolder(root))) return "PlayOnline folder is " + (r.ViewerFolder ?? "not set");
+            if (!under(r.FfxiDll, GameFolder(root))) return "FFXi.dll is " + (r.FfxiDll ?? "not registered");
+            if (!under(r.PolcoreDll, ViewerFolder(root))) return "polcore.dll is " + (r.PolcoreDll ?? "not registered");
+            return null;
+        }
+
+        public static bool PointsAt(Registration r, string root) => FirstStray(r, root) == null;
+
+        /// <summary>True when this root is the copy Windows will run: both folders and both DLLs.</summary>
+        public static bool IsRegistered(string root) => PointsAt(ReadRegistration(), root);
+    }
+
+    public sealed class Registration
+    {
+        public string GameFolder { get; set; }
+        public string ViewerFolder { get; set; }
+        public string FfxiDll { get; set; }
+        public string PolcoreDll { get; set; }
     }
 }
