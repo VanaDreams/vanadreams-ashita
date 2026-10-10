@@ -71,5 +71,65 @@ namespace Vanadreams.Tests
             Assert.AreEqual(9, ClientInstall.ComServers.Length);
             StringAssert.Contains(s, "exit /b " + ClientInstall.RegisterSteps);
         }
+
+        private static Registration Ours() => new Registration
+        {
+            GameFolder = @"C:\Games\Vanadreams\FINAL FANTASY XI\",
+            ViewerFolder = @"C:\Games\Vanadreams\PlayOnlineViewer",
+            FfxiDll = @"C:\Games\Vanadreams\FINAL FANTASY XI\FFXi.dll",
+            PolcoreDll = @"C:\Games\Vanadreams\PlayOnlineViewer\viewer\com\polcore.dll",
+        };
+
+        [TestMethod]
+        public void PointsAt_IsTrueOnlyWhenBothFoldersAndBothDllsAreOurs()
+        {
+            const string root = @"C:\Games\Vanadreams";
+            const string old = @"C:\Program Files (x86)\PlayOnline\SquareEnix";
+            Assert.IsTrue(ClientInstall.PointsAt(Ours(), root));
+
+            var r = Ours(); r.GameFolder = old + @"\FINAL FANTASY XI\";
+            Assert.IsFalse(ClientInstall.PointsAt(r, root));
+
+            r = Ours(); r.ViewerFolder = old + @"\PlayOnlineViewer";
+            Assert.IsFalse(ClientInstall.PointsAt(r, root));
+
+            // folders right, the game's DLL still the old install's: the old game would run
+            r = Ours(); r.FfxiDll = old + @"\FINAL FANTASY XI\FFXi.dll";
+            Assert.IsFalse(ClientInstall.PointsAt(r, root));
+            StringAssert.Contains(ClientInstall.FirstStray(r, root), "FFXi.dll");
+
+            r = Ours(); r.PolcoreDll = null;
+            Assert.IsFalse(ClientInstall.PointsAt(r, root));
+        }
+
+        [TestMethod]
+        public void PointsAt_IgnoresCaseAndTrailingSlashes()
+        {
+            var r = new Registration
+            {
+                GameFolder = @"c:\games\vanadreams\final fantasy xi",
+                ViewerFolder = @"C:\Games\Vanadreams\PlayOnlineViewer\",
+                FfxiDll = @"c:\games\vanadreams\FINAL FANTASY XI\ffxi.dll",
+                PolcoreDll = @"C:\GAMES\VANADREAMS\PlayOnlineViewer\viewer\com\polcore.dll",
+            };
+            Assert.IsTrue(ClientInstall.PointsAt(r, @"C:\Games\Vanadreams\"));
+        }
+
+        [TestMethod]
+        public void PointsAt_IsNotFooledByAFolderWithTheSameStart()
+        {
+            var r = Ours();
+            r.FfxiDll = @"C:\Games\Vanadreams\FINAL FANTASY XI old\FFXi.dll";
+            Assert.IsFalse(ClientInstall.PointsAt(r, @"C:\Games\Vanadreams"));
+        }
+
+        [TestMethod]
+        public void ReadRegistration_ReadsWhatThisPcHoldsWithoutThrowing()
+        {
+            var r = ClientInstall.ReadRegistration();
+            Assert.IsNotNull(r);
+            // a PC with the game registered names FFXi.dll under the class xiloader asks for
+            if (r.FfxiDll != null) StringAssert.EndsWith(r.FfxiDll.ToLowerInvariant(), "ffxi.dll");
+        }
     }
 }
