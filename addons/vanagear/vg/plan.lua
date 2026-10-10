@@ -146,6 +146,14 @@ plan.For = function(who, equipment, opts)
         out[#out + 1] = { Name = n, Mode = m, Slots = slots };
     end
 
+    -- job ability sets the job file names: worn on the ability, under the ability's own name
+    -- with spaces taken out (Blood Rage -> BloodRage), the same rule as weaponskill sets
+    for ability, m in pairs(job.Abilities or {}) do
+        local am = copy(m);
+        am.Name = plan.WsSetName(ability);
+        out[#out + 1] = { Name = am.Name, Mode = am, Slots = slots, Ability = ability };
+    end
+
     -- a set for every weaponskill the weapons in hand can use
     local skillsInHand = {};
     local main = wornSkill(equipment, 'Main');

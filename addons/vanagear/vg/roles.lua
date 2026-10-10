@@ -94,6 +94,11 @@ roles.Modes = {
     QuickDraw = { Stats = { MATT = 2, AGI = 1, MACC = 0.6, MAGIC_DAMAGE = 1.2, QUICK_DRAW_DMG = 1, QUICK_DRAW_DMG_PERCENT = 3 } },
     QuickDrawAcc = { Stats = { MACC = 2, QUICK_DRAW_MACC = 2, AGI = 0.5 } },
 
+    -- Summoner: blood pact delay on the press (Blood Pact Delay II caps at -15 s), the summoning
+    -- skill and Blood Boon for wards (Summoner Guide by Lunareticc, FFXIAH node 245)
+    BPDelay = { Stats = { BP_DELAY = 3, BP_DELAY_II = 3 }, Caps = { BP_DELAY = 15, BP_DELAY_II = 15 } },
+    BPWard = { Stats = { SUMMONING = 1, BLOOD_BOON = 1 }, Pet = { TP_BONUS = 0.01 } },
+
     -- Beastmaster abilities (Killer Instinct: The Beastmaster Compendium, FFXIAH node 227)
     ReadyPrecast = { Stats = { SIC_READY_RECAST = 5 } },
     Reward = { Stats = { REWARD_HP_BONUS = 2, MND = 1, REWARD_RECAST = 1 } },
