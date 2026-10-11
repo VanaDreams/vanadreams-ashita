@@ -6,9 +6,11 @@
     /vg add write the same files. A line is any game command (/ja "Reward" <me>, /vg call fizzy);
     "wait 2" pauses two seconds before the next line.
 
-    Your own sets work the same way, in config\addons\vanagear\sets\<JOB>.lua: /vg save <name>
-    keeps what you are wearing under that name, /vg wear <name> puts it on and keeps it on, and
-    /vg look <name> puts it on and locks it as your look (/lockstyle) while the sets go on swapping.
+    Your own sets live in config\addons\vanagear\sets\<JOB>.lua, made in the window slot by slot,
+    with /vg set <name> <slot> <item>, or from what you wear with /vg save <name>. One named like a
+    built set (Idle, Tp_Default, Reward, a weaponskill or spell) replaces the slots it names in that
+    set wherever it goes on; any other name is a set of its own for /vg wear <name>, your commands,
+    or /gs equip. /vg look <name> locks one as your appearance (/lockstyle).
 ]]--
 
 local mine = {};
@@ -92,6 +94,7 @@ end
 mine.Reload = function()
     cache = {};
     setCache = nil;
+    require('vg.core').ApplyOwn();
 end
 
 -- word -> { lines, file } for this job, the job's own file winning over ALL.lua
@@ -193,7 +196,9 @@ mine.Tick = function()
         for w in string.gmatch(line, '%S+') do args[#args + 1] = (string.gsub(w, '^"(.*)"$', '%1')); end
         table.remove(args, 1);
         local commands = require('vg.commands');
+        commands.Raw = line;
         if (first == '/gs') or (first == '/gearswap') then commands.Gs(args); else commands.Vg(args); end
+        commands.Raw = nil;
         r.at = os.clock() + 0.3;
         return;
     end
@@ -274,23 +279,63 @@ mine.FindSet = function(name)
     return nil;
 end
 
+-- A set's name as the handlers look it up: letters, digits and _ only, so "Call Beast" is the
+-- set that goes on for Call Beast, the same as the built ones.
+mine.SetName = function(name)
+    name = string.gsub(name or '', '[^%w_]', '');
+    for k in pairs(gVana.Built or {}) do
+        if (string.lower(k) == string.lower(name)) then return k; end
+    end
+    local _, existing = mine.FindSet(name);
+    return existing or name;
+end
+
+local function changed()
+    saveSets();
+    require('vg.core').ApplyOwn();
+end
+
 -- /vg save <name>: what you are wearing now, slot by slot.
 mine.SaveSet = function(name)
-    name = string.match(name or '', '^%s*(.-)%s*$');
+    name = mine.SetName(name);
     if (name == '') then
         return false;
     end
-    local _, existing = mine.FindSet(name);
-    name = existing or name;
     local set = {};
     local count = 0;
+    local weapons = { Main = true, Sub = true, Range = true };
     for slot, worn in pairs(gData.GetEquipment()) do
-        set[slot] = worn.Name;
-        count = count + 1;
+        -- weapons only when vanagear is choosing them (/vg weapons on): swapping costs TP
+        if (gVana.Prefs.Weapons) or (not weapons[slot]) then
+            set[slot] = worn.Name;
+            count = count + 1;
+        end
     end
     loadSets()[name] = set;
-    saveSets();
+    changed();
+    if (mine.Dressing) then mine.Dress(false); end
     return true, name, count;
+end
+
+-- /vg dress: vanagear stops swapping so the player can put on what they like from the equipment
+-- menu; /vg save puts swapping back on.
+mine.Dressing = false;
+mine.Dress = function(on)
+    mine.Dressing = on;
+    for i = 1, 16 do gState.Disabled[i] = on; end
+end
+
+-- One slot of one of your sets; nil gives the slot back to the built set.
+mine.SetSlot = function(name, slot, piece)
+    name = mine.SetName(name);
+    if (name == '') then
+        return false;
+    end
+    local sets = loadSets();
+    sets[name] = sets[name] or {};
+    sets[name][slot] = piece;
+    changed();
+    return true, name;
 end
 
 mine.RemoveSet = function(name)
@@ -299,12 +344,36 @@ mine.RemoveSet = function(name)
         return false;
     end
     loadSets()[found] = nil;
-    saveSets();
+    changed();
     return true, found;
+end
+
+-- The built sets with yours laid over them: a set of yours named like a built one (Idle,
+-- Tp_Default, Reward, a weaponskill or spell) replaces the slots it names and keeps the rest;
+-- any other name is a set of its own.
+mine.Overlay = function(built)
+    local out, own = {}, {};
+    for name, set in pairs(built) do out[name] = set; end
+    for name, set in pairs(loadSets()) do
+        local key = name;
+        for k in pairs(built) do
+            if (string.lower(k) == string.lower(name)) then key = k; end
+        end
+        local merged = {};
+        for slot, piece in pairs(built[key] or {}) do merged[slot] = piece; end
+        own[key] = {};
+        for slot, piece in pairs(set) do
+            merged[slot] = piece;
+            own[key][slot] = true;
+        end
+        out[key] = merged;
+    end
+    return out, own;
 end
 
 mine.ReloadSets = function()
     setCache = nil;
+    require('vg.core').ApplyOwn();
 end
 
 return mine;
