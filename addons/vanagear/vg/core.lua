@@ -31,6 +31,8 @@ gVana = {
                 Stage = false, Pet = 'tp' },
     Prefs = { ZoneWait = 10, Weapons = false, Locked = {}, Underlay = {}, MoteKeys = false },
     Pieces = {},
+    Built = {},
+    Own = {},
 };
 
 -- ---------------------------------------------------------------- preferences on disk
@@ -167,14 +169,14 @@ local function stepBuild(budget)
     end
     if (q.i > #q.items) then
         -- swap in the new sets all at once, keeping the same table so profiles holding it see them
-        for k in pairs(gVana.Sets) do gVana.Sets[k] = nil; end
-        for k, v in pairs(q.sets) do gVana.Sets[k] = v; end
+        gVana.Built = q.sets;
         gVana.Explain = q.explain;
         gVana.Totals = q.totals;
         gVana.Held = q.held;
         gVana.Who = q.who;
         gVana.Pieces = q.pieces;
         gVana.BuiltAt = os.time();
+        core.ApplyOwn();
         local fc = vdata.ModId('FASTCAST');
         gVana.FastCast = (q.totals.Precast and fc) and (q.totals.Precast['m' .. fc] or 0) or 0;
         local count = 0;
@@ -183,6 +185,15 @@ local function stepBuild(budget)
             count, q.who.JobName, q.who.Level, q.who.SubName)));
         queue = nil;
     end
+end
+
+-- The sets the handlers wear: the built ones with the player's own laid over them (vg\mine.lua).
+-- Filled in place, so profiles holding gVana.Sets see the change.
+core.ApplyOwn = function()
+    local sets, own = require('vg.mine').Overlay(gVana.Built or {});
+    for k in pairs(gVana.Sets) do gVana.Sets[k] = nil; end
+    for k, v in pairs(sets) do gVana.Sets[k] = v; end
+    gVana.Own = own;
 end
 
 -- ---------------------------------------------------------------- watching for changes
