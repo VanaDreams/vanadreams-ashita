@@ -40,6 +40,7 @@ namespace Vanadreams
             var update = CheckForUpdateAsync();
             _statusTimer.Start();
             await State.RefreshStatusAsync();
+            await State.CheckClientUpdateAsync();
             await EnsureLoaderAsync();
             await State.RefreshCatalogAsync();
             await State.GiveDefaultsAsync();
@@ -99,6 +100,8 @@ namespace Vanadreams
             Updater.Restart(_updatedExe);
         }
 
+        private void GameUpdate_Click(object sender, RoutedEventArgs e) => Navigate(new InstallPage(this));
+
         public void Navigate(UserControl page)
         {
             Page.Content = page;
@@ -144,6 +147,9 @@ namespace Vanadreams
             }
             StatusDot.Fill = dot;
             StatusDot.Effect = new System.Windows.Media.Effects.DropShadowEffect { Color = ((SolidColorBrush)dot).Color, BlurRadius = 8, ShadowDepth = 0 };
+            var pending = State.PendingClientUpdate;
+            GameUpdateButton.Visibility = pending != null ? Visibility.Visible : Visibility.Collapsed;
+            if (pending != null) { GameUpdateButton.Content = "Game update ready · " + pending.Megabytes; GameUpdateButton.ToolTip = pending.Words + ". Only these are downloaded."; }
             var v = State.Version;
             VersionLine.Text = v.Sentence;
             VersionLine.Foreground = (Brush)FindResource(!v.ExpectedIsPublished ? "Mist" : v.Verdict == VersionVerdict.Ready ? "Ok" : v.Verdict == VersionVerdict.Unknown ? "Warn" : "Bad");

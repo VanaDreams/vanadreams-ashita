@@ -96,6 +96,21 @@ namespace Vanadreams.Services
             return copy;
         }
 
+        /// <summary>
+        /// A Vanadreams profile boots the xiloader in the Ashita folder it lives in, the one Setup, Repair and Play keep
+        /// at the version the server takes. Its file= is a full path, so an install moved or copied to another drive
+        /// still names the old one, and Ashita closes without a word when that file is gone. Point it back at this
+        /// folder's loader. True when the profile changed; the caller saves it.
+        /// </summary>
+        public bool PointLoaderAt(string ashitaRoot)
+        {
+            if (!IsVanadreams || string.IsNullOrWhiteSpace(ashitaRoot)) return false;
+            var loader = Loader.PathIn(ashitaRoot);
+            if (!File.Exists(loader) || string.Equals(BootFile, loader, StringComparison.OrdinalIgnoreCase)) return false;
+            BootFile = loader;
+            return true;
+        }
+
         public static string EscapePath(string p) => string.IsNullOrWhiteSpace(p) ? "" : p.Replace("\\", "\\\\");
         public static string UnescapePath(string p) => string.IsNullOrWhiteSpace(p) ? "" : p.Replace("\\\\", "\\");
 

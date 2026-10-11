@@ -22,6 +22,7 @@ namespace Vanadreams.Pages
             ExpectedBox.Text = string.IsNullOrEmpty(st.ClientVer) ? "not published by the server yet" : st.ClientVer + " · lock " + (st.Lock.HasValue ? ((int)st.Lock.Value).ToString() : "2") + " · from fairywitch.ca";
             DetectedBox.Text = ClientVersion.FindFfxiFolder() ?? "not registered by PlayOnline";
             MusicBox.IsChecked = s.MusicOn;
+            LowSpecBox.IsChecked = s.LowSpec;
             MusicCredit.Text = "made for Vanadreams with SoundBreak";
             About.Text = "Vanadreams Launcher " + typeof(App).Assembly.GetName().Version + " · github.com/VanaDreams/vanadreams-ashita · no telemetry";
         }
@@ -34,7 +35,10 @@ namespace Vanadreams.Pages
             var s = App.State.Settings;
             s.AshitaRoot = AshitaBox.Text.Trim(); s.FfxiFolderOverride = FfxiBox.Text.Trim(); s.CatalogUrl = CatalogBox.Text.Trim(); s.StatusUrl = StatusBox.Text.Trim();
             s.MusicOn = MusicBox.IsChecked == true;
+            var lowSpecChanged = s.LowSpec != (LowSpecBox.IsChecked == true);
+            s.LowSpec = LowSpecBox.IsChecked == true;
             s.Save();
+            if (lowSpecChanged && s.HasAshita) Effects.Apply(s.AshitaRoot, s.LowSpec);
             if (s.MusicOn) Music.Start(); else Music.Stop();
             _win.RefreshMute();
             App.State.CheckVersion();
