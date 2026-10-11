@@ -9,7 +9,7 @@
 
 addon.name      = 'vanagear';
 addon.author    = 'Vanadreams, on LuAshitacast by Thorny';
-addon.version   = '0.1.2';
+addon.version   = '0.1.3';
 addon.desc      = 'Gear sets built from your own bags for your job and level, on LuAshitacast.';
 addon.link      = 'https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/vanagear';
 
@@ -37,6 +37,7 @@ gPreservedGlobalKeys = T{};
 gVanaCore            = require('vg.core');
 gVanaStock           = require('vg.stock');
 gVanaUse             = require('vg.use');
+gVanaMine            = require('vg.mine');
 gVanaCommands        = require('vg.commands');
 gVanaWindow          = require('vg.window');
 
@@ -56,6 +57,7 @@ end);
 
 ashita.events.register('d3d_present', 'vanagear_render', function()
     gVanaCore.Tick();
+    gVanaMine.Tick();
     gConfigGUI:Render();
     gSetDisplay:Render();
     gVanaWindow.Render();

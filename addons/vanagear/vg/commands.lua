@@ -8,6 +8,7 @@
 local core = require('vg.core');
 local gsnames = require('vg.gsnames');
 local use = require('vg.use');
+local mine = require('vg.mine');
 
 local commands = {};
 
@@ -51,6 +52,12 @@ commands.Lines = function()
     if (s.Burst ~= nil) then line('/vg burst', 'magic burst gear on nukes, on or off'); end
     if (s.Interim ~= nil) then line('/vg stage', 'precast, then safety gear while casting, then midcast gear just before the spell lands'); end
     if (s.PetTP ~= nil) then line('/vg pet tp | dt | acc', 'what your gear does for your pet while it fights'); end
+    if (job() == 'BST') then
+        line('/vg call <jug>', 'put the jug in your ammo slot and Call Beast (no jug: the last one you called)');
+        line('/vg loyal <jug>', 'the same with Bestial Loyalty, which keeps the jug');
+        line('/vg reward [food]', 'put the pet food in and Reward: alpha ... theta, debuff (Roborant, else Poultice); no food: your best biscuit');
+        line('/vg jugs, /vg foods', 'the jugs and pet foods you carry');
+    end
     line('/vg weapons on | off', 'let vanagear choose your weapons (swapping them costs TP)');
     line('/vg lock <slot>, /vg unlock <slot>', 'keep a slot as you have it');
     line('/vg why <set> <slot>', 'the piece that won and the three behind it');
@@ -59,6 +66,18 @@ commands.Lines = function()
     for word, p in pairs(use.Words()) do
         line('/vg ' .. word, 'equip ' .. p.Name .. ', wait it out, use it, give the slot back');
     end
+    local own = mine.List();
+    local words = {};
+    for word in pairs(own) do words[#words + 1] = word; end
+    table.sort(words);
+    for _, word in ipairs(words) do
+        line('/vg ' .. word, 'yours: ' .. table.concat(own[word].lines, '; '));
+    end
+    line('/vg add <word> <command>; <command>', 'make your own command for this job (add "all" before the word for every job); "wait 2" pauses');
+    line('/vg save <name>', 'keep what you are wearing now as a set of your own');
+    line('/vg wear <name> | off', 'put on one of your sets and keep it on over the built sets');
+    line('/vg look <name> | off', 'lock one of your sets as your look (/lockstyle); the sets go on swapping underneath');
+    line('/vg remove <word>, /vg folder', 'delete one of yours; open the folder they are kept in, to write them by hand');
     line('/vg keys mote | off', 'Motenten\'s F9-F12 keys, as GearSwap players have them');
     line('/gs c <word>', 'the same as /vg <word>, so GearSwap macros keep working');
     line('/gs equip <set>', 'put on a set by its GearSwap or vanagear name');
@@ -75,6 +94,8 @@ end
 -- the set a name means: a built one, the profile's own, or a GearSwap name for either
 local function findSet(name)
     if (gVana.Sets[name] ~= nil) then return gVana.Sets[name], name; end
+    local own, ownName = mine.FindSet(name);
+    if (own ~= nil) then return own, ownName; end
     if (gProfile ~= nil) and (type(gProfile.Sets) == 'table') and (gProfile.Sets[name] ~= nil) then
         return gProfile.Sets[name], name;
     end
@@ -302,6 +323,67 @@ commands.Vg = function(args)
         local n = tonumber(args[2]);
         if (n ~= nil) and (n >= 0) then p.ZoneWait = n; save(); end
         say('Zone wait: ' .. tostring(p.ZoneWait) .. ' seconds after you are standing in the zone.');
+    elseif (cmd == 'call') or (cmd == 'loyal') or (cmd == 'loyalty') or (cmd == 'bl') then
+        use.Call((cmd == 'call') and 'Call Beast' or 'Bestial Loyalty', table.concat(args, ' ', 2));
+    elseif (cmd == 'reward') then
+        use.Reward(table.concat(args, ' ', 2));
+    elseif (cmd == 'jugs') or (cmd == 'foods') then
+        local list = (cmd == 'jugs') and use.Jugs() or use.Foods();
+        if (#list == 0) then say('You carry no ' .. ((cmd == 'jugs') and 'jugs.' or 'pet food.')); end
+        for _, piece in ipairs(list) do
+            say(string.format('%s (level %d)', piece.Name, piece.Server.level));
+        end
+    elseif (cmd == 'add') then
+        local everyJob = (arg == 'all');
+        local word = args[everyJob and 3 or 2];
+        local text = table.concat(args, ' ', everyJob and 4 or 3);
+        local ok, saved, file = mine.Add(word, mine.Split(text), everyJob);
+        if (ok) then
+            say(string.format('/vg %s saved (%s.lua).', saved, file));
+        else
+            say('Usage: /vg add <word> <command>; <command>, for example /vg add sheep /vg call wormy; wait 3; /ja "Sheep Song" <t>');
+        end
+    elseif (cmd == 'remove') or (cmd == 'delete') then
+        local name = table.concat(args, ' ', 2);
+        local ok, file = mine.Remove(arg);
+        if (ok) then
+            say(string.format('/vg %s removed (%s.lua).', arg, file));
+        elseif (mine.RemoveSet(name)) then
+            say('Your set ' .. name .. ' removed.');
+        else
+            say('You have no command or set called ' .. name .. '.');
+        end
+    elseif (cmd == 'save') then
+        local ok, name, count = mine.SaveSet(table.concat(args, ' ', 2));
+        say(ok and string.format('Saved %s: the %d pieces you are wearing.', name, count) or 'Usage: /vg save <name>');
+    elseif (cmd == 'wear') or (cmd == 'look') then
+        local name = table.concat(args, ' ', 2);
+        if (arg == 'off') then
+            if (cmd == 'wear') then use.Wear(nil); say('Back to the built sets.');
+            else AshitaCore:GetChatManager():QueueCommand(1, '/lockstyle off'); say('Look unlocked.'); end
+            return;
+        end
+        local set, found = findSet(name);
+        if (set == nil) then
+            local names = {};
+            for k in pairs(mine.Sets()) do names[#names + 1] = k; end
+            table.sort(names);
+            say(string.format('No set called %s. Yours: %s.', name, (#names > 0) and table.concat(names, ', ') or 'none yet (/vg save <name>)'));
+        elseif (cmd == 'wear') then
+            use.Wear(found, set);
+            say('Wearing ' .. found .. ' until /vg wear off.');
+        else
+            gFunc.LockStyle(set);
+            say(found .. ' locked as your look. /vg look off to unlock.');
+        end
+    elseif (cmd == 'folder') then
+        say('Your commands and sets are in ' .. mine.OpenFolder() .. '. After editing them by hand, type /vg mine reload.');
+    elseif (cmd == 'mine') then
+        if (arg == 'reload') then mine.Reload(); say('Your commands read again.'); end
+        gVana.Window.Open = true;
+        gVana.Window.Mine = true;
+    elseif (mine.Run(cmd)) then
+        -- one of the player's own commands
     elseif (use.Start(cmd)) then
         -- a usable ring or earring
     elseif (gProfile ~= nil) then

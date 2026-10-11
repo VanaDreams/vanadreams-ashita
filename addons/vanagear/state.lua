@@ -219,7 +219,7 @@ state.HandleEquipEvent = function(eventName, equipStyle)
             end
             gState.SafeCall(eventName);
             gEquip.SetFallback(fallback);
-            if (eventName == 'HandleDefault') or (eventName == 'HandleItem') then
+            if (eventName == 'HandleDefault') or (eventName == 'HandleItem') or (eventName == 'HandleAbility') then
                 gVanaUse.Tick();
             end
             if (eventName == 'HandleDefault') then
