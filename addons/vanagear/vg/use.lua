@@ -13,7 +13,7 @@ local vdata = require('vg.data');
 
 local use = {};
 
-local active = nil;   -- { piece, slot, phase, at }
+local active = nil;   -- { label, piece and slot or set, phase, at, command, kind }
 
 -- word -> piece, for every usable piece the player carries
 use.Words = function()
@@ -51,12 +51,12 @@ use.Start = function(word)
         return false;
     end
     if (active ~= nil) then
-        print(chat.header('vanagear') .. chat.message(active.piece.Name .. ' is still going.'));
+        print(chat.header('vanagear') .. chat.message(active.label .. ' is still going.'));
         return true;
     end
     local slot = slotFor(piece);
     gFunc.ForceEquip(slot, piece.Equip);
-    active = { piece = piece, slot = slot, phase = 'wait', at = os.clock() + piece.Server.use.delay + 0.5,
+    active = { label = piece.Name, piece = piece, slot = slot, phase = 'wait', at = os.clock() + piece.Server.use.delay + 0.5,
         command = '/item "' .. piece.Name .. '" <me>', kind = 'Item' };
     print(chat.header('vanagear') .. chat.message(string.format('%s on, using it in %d s.', piece.Name, piece.Server.use.delay)));
     return true;
@@ -122,11 +122,11 @@ end
 
 local function ammoThen(piece, ability)
     if (active ~= nil) then
-        say(active.piece.Name .. ' is still going.');
+        say(active.label .. ' is still going.');
         return;
     end
     gFunc.ForceEquip('Ammo', piece.Equip);
-    active = { piece = piece, slot = 'Ammo', phase = 'wait', at = os.clock() + 1,
+    active = { label = piece.Name, piece = piece, slot = 'Ammo', phase = 'wait', at = os.clock() + 1,
         command = '/ja "' .. ability .. '" <me>', kind = 'Ability' };
     say(string.format('%s in, then %s.', piece.Name, ability));
 end
@@ -153,6 +153,23 @@ use.Call = function(ability, word)
         require('vg.core').SavePrefs();
     end
     ammoThen(piece, ability);
+end
+
+-- /vg with <set> <command>: put the set on, send the command, keep the set on until the action is
+-- done, then give the gear back. /vg with lizard /ja "Bestial Loyalty" <me>
+local kinds = { ['/ja'] = 'Ability', ['/jobability'] = 'Ability', ['/pet'] = 'Ability', ['/ma'] = 'Spell',
+    ['/magic'] = 'Spell', ['/ws'] = 'Weaponskill', ['/weaponskill'] = 'Weaponskill', ['/item'] = 'Item',
+    ['/ra'] = 'Ranged', ['/range'] = 'Ranged' };
+
+use.With = function(name, set, command)
+    if (active ~= nil) then
+        say(active.label .. ' is still going.');
+        return;
+    end
+    gFunc.ForceEquipSet(set);
+    local first = string.lower(string.match(command, '^(%S+)') or '');
+    active = { label = name, set = set, phase = 'wait', at = os.clock() + 1, command = command, kind = kinds[first] or 'Ability' };
+    say(string.format('%s on, then %s', name, command));
 end
 
 -- Words for the pet foods that do something other than heal.
@@ -196,8 +213,8 @@ use.Worn = function()
 end
 
 -- Runs after the sets and the profile on every equip pass, so the slot stays held.
-use.Tick = function()
-    if (worn ~= nil) then
+use.Tick = function(event)
+    if (worn ~= nil) and ((event == nil) or (event == 'HandleDefault') or (event == 'HandleItem') or (event == 'HandleAbility')) then
         gFunc.EquipSet(worn.set);
     end
     local u = active;
@@ -215,21 +232,25 @@ use.Tick = function()
     elseif (u.phase == 'sent') then
         if (action ~= nil) and (action.ActionType == u.kind) then
             u.phase = 'active';
-        elseif (u.kind == 'Ability') and (now - u.at > 3) then
+        elseif ((u.kind == 'Ability') or (u.kind == 'Weaponskill')) and (now - u.at > 3) then
             -- a job ability can come and go between two passes; the slot was held long enough
             active = nil;
             return;
         elseif (now - u.at > 6) then
             active = nil;
-            print(chat.header('vanagear') .. chat.message(u.piece.Name .. ' did not go (on its reuse timer?); slot given back.'));
+            print(chat.header('vanagear') .. chat.message(u.label .. ' did not go (on its reuse timer?); gear given back.'));
             return;
         end
     elseif (u.phase == 'active') and (action == nil) then
         active = nil;
-        print(chat.header('vanagear') .. chat.message(u.piece.Name .. ' done; slot given back.'));
+        print(chat.header('vanagear') .. chat.message(u.label .. ' done; gear given back.'));
         return;
     end
-    gFunc.Equip(u.slot, u.piece.Equip);
+    if (u.set ~= nil) then
+        gFunc.EquipSet(u.set);
+    else
+        gFunc.Equip(u.slot, u.piece.Equip);
+    end
 end
 
 return use;
