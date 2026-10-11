@@ -17,3 +17,11 @@ The FFXI client guide shows Square Enix's own pictures of the download page and 
 ## Art
 
 The moon, the stars and the colours are the fairywitch.ca artwork, used with permission of its owners.
+
+## The modern look
+
+The HD faces, zone and gear textures are Ashenbubs' HD texture work for FINAL FANTASY XI.
+
+The post-processing runs on [ReShade](https://reshade.me) by crosire (BSD 3-Clause licence) through crosire's [d3d8to9](https://github.com/crosire/d3d8to9) wrapper (BSD 2-Clause licence). Its effects are MultiLUT by Marty McFly and Otis, AdaptiveSharpen by bacondither, Vignette from SweetFX, and MagicBloom by luluco250. Each licence ships beside them in `bootloader\reshade-licenses`.
+
+The colour grade takes its inspiration from Prabs' Prettypaws Vibrant Vana'diel.
