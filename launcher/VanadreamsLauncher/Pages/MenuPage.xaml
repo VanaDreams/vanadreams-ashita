@@ -25,7 +25,8 @@
         </Ellipse>
 
         <!-- profile card -->
-        <Border Grid.Column="0" Style="{StaticResource Box}" Height="376" VerticalAlignment="Top">
+        <!-- 404 high: the eight facts down to "Last played" plus Play; 376 cut the last row off -->
+        <Border Grid.Column="0" Style="{StaticResource Box}" Height="404" VerticalAlignment="Top">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -51,7 +52,7 @@
         </Border>
 
         <!-- command list -->
-        <Border Grid.Column="2" Style="{StaticResource Box}" Height="376" VerticalAlignment="Top">
+        <Border Grid.Column="2" Style="{StaticResource Box}" Height="404" VerticalAlignment="Top">
             <StackPanel>
                 <TextBlock Style="{StaticResource Eyebrow}" Text="✦ Menu"/>
                 <ItemsControl x:Name="Commands">
