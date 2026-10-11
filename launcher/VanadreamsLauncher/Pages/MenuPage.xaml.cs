@@ -273,6 +273,14 @@ namespace Vanadreams.Pages
                         Log.Info("loader replaced before play");
                 }
                 catch (Exception ex) { Log.Warn("loader check on play: " + ex.Message); }
+                // 11 Oct 2026: a player's install sat on B: while her profile still booted a loader elsewhere,
+                // and Ashita closed the moment it opened. Every check on the menu read the folder, so all looked right.
+                try
+                {
+                    var was = _profile.BootFile;
+                    if (_profile.PointLoaderAt(state.AshitaRoot)) { _profile.Save(); Log.Info("profile loader moved from " + was + " to " + _profile.BootFile); }
+                }
+                catch (Exception ex) { Log.Warn("loader path on play: " + ex.Message); }
             }
             // The game reads its own location from Windows, not from this launcher, and Windows holds one
             // such location for the whole machine. When it does not point at the copy this profile belongs to,
