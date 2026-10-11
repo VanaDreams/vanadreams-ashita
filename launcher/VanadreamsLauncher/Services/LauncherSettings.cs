@@ -42,6 +42,8 @@ namespace Vanadreams.Services
         public int VerLock { get; set; } = 2;
         public bool SetupDone { get; set; }
         public bool MusicOn { get; set; } = true;
+        /// <summary>Low spec: the modern look's effects (d3d8to9 and ReShade in bootloader\) are renamed to .off (Effects).</summary>
+        public bool LowSpec { get; set; }
         public List<string> EnabledAddons { get; set; } = new List<string>();
         public List<string> GivenDefaults { get; set; } = new List<string>();   // on-by-default items already given once; unticking one sticks
         public Dictionary<string, string> InstalledVersions { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -68,6 +70,7 @@ namespace Vanadreams.Services
                 s.VerLock = Json.Int(d, "verLock", 2);
                 s.SetupDone = Json.Bool(d, "setupDone");
                 s.MusicOn = Json.Bool(d, "musicOn", true);
+                s.LowSpec = Json.Bool(d, "lowSpec");
                 s.EnabledAddons = Json.Strings(d, "enabledAddons");
                 s.GivenDefaults = Json.Strings(d, "givenDefaults");
                 s.GuideDone = Json.Strings(d, "guideDone");
@@ -96,6 +99,7 @@ namespace Vanadreams.Services
                 { "verLock", VerLock },
                 { "setupDone", SetupDone },
                 { "musicOn", MusicOn },
+                { "lowSpec", LowSpec },
                 { "enabledAddons", EnabledAddons.ToList() },
                 { "givenDefaults", GivenDefaults.ToList() },
                 { "guideDone", GuideDone.ToList() },
