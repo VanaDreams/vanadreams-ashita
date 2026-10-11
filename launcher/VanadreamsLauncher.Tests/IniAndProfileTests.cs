@@ -151,7 +151,8 @@ sandbox = 0
             Assert.IsFalse(ProfileStore.IsValidId("a:b"));
             Assert.IsTrue(ProfileStore.IsValidId("Ferrin on Vanadreams"));
         }
-            [TestMethod]
+
+        [TestMethod]
         public void Vanadreams_profile_moved_to_another_drive_boots_this_folders_loader()
         {
             // 11 Oct 2026: the install sat on B: and the profile still named a loader on another drive
