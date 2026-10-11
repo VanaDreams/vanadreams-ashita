@@ -662,7 +662,7 @@
         "path": "grampsshop",
         "branch": "main"
       },
-      "version": "0.1.7",
+      "version": "0.1.8",
       "install": "copy-to-addons",
       "load": "/addon load grampsshop",
       "docs": "https://github.com/VanaDreams/grampsshop/tree/main/grampsshop",
@@ -679,7 +679,7 @@
         "path": "addons/crafty",
         "branch": "main"
       },
-      "version": "0.1.0",
+      "version": "0.1.1",
       "install": "copy-to-addons",
       "load": "/addon load crafty",
       "config": "config\\crafty\\",
