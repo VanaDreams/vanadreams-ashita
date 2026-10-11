@@ -98,8 +98,8 @@ end
 
 local function requestCatalog()
     -- One catalog at a time: a second request replaces the id the fragments are matched on,
-    -- so the first catalog would be thrown away, and the server refuses a repeat within 5 seconds.
-    if state.catalogRequestId ~= nil and os.time() - (state.catalogSentAt or 0) < 10 then
+    -- so the first catalog would be thrown away, and the server refuses a repeat within 60 seconds. A request that never completed is retried after that.
+    if state.catalogRequestId ~= nil and os.time() - (state.catalogSentAt or 0) < 65 then
         return
     end
     state.catalogSentAt = os.time()
@@ -160,7 +160,7 @@ local function processCatalog(header, payload, bytes)
     local count = header.entryCount
     if protocol.requestIdOf(header) == state.catalogRequestId and header.status ~= Status.Success then
         state.catalogRequestId = nil
-        state.resultText = 'The Auction House is busy. Try again in a few seconds.'
+        state.resultText = 'The Auction House is busy. Try again in a minute.'
         return
     end
     if protocol.requestIdOf(header) ~= state.catalogRequestId or header.fragmentCount == 0
