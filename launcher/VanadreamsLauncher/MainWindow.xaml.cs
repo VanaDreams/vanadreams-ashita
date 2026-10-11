@@ -81,6 +81,7 @@ namespace Vanadreams
                 NewsLine.Text = "Launcher " + asset.Tag + " is ready.";
                 UpdateButton.Content = "Restart into " + asset.Tag;
                 UpdateButton.Visibility = Visibility.Visible;
+                RefreshStrip();
             }
             catch (Exception ex) { Log.Warn("update: " + ex.Message); }
         }
@@ -147,9 +148,14 @@ namespace Vanadreams
             }
             StatusDot.Fill = dot;
             StatusDot.Effect = new System.Windows.Media.Effects.DropShadowEffect { Color = ((SolidColorBrush)dot).Color, BlurRadius = 8, ShadowDepth = 0 };
+            // The News corner is about 60 px tall and 170 wide: an eyebrow and one more thing. A game update takes the
+            // news line's place with one short button; the launcher's own restart button wins when both are there, and
+            // the menu's Update row still names the game update. 0.2.37 stacked both and the button was cut in half.
             var pending = State.PendingClientUpdate;
-            GameUpdateButton.Visibility = pending != null ? Visibility.Visible : Visibility.Collapsed;
-            if (pending != null) { GameUpdateButton.Content = "Game update ready · " + pending.Megabytes; GameUpdateButton.ToolTip = pending.Words + ". Only these are downloaded."; }
+            var showGame = pending != null && UpdateButton.Visibility != Visibility.Visible;
+            GameUpdateButton.Visibility = showGame ? Visibility.Visible : Visibility.Collapsed;
+            NewsLine.Visibility = showGame ? Visibility.Collapsed : Visibility.Visible;
+            if (showGame) { GameUpdateButton.Content = "Update game · " + pending.Megabytes; GameUpdateButton.ToolTip = "Game update ready: " + pending.Words + ". Only these are downloaded."; }
             var v = State.Version;
             VersionLine.Text = v.Sentence;
             VersionLine.Foreground = (Brush)FindResource(!v.ExpectedIsPublished ? "Mist" : v.Verdict == VersionVerdict.Ready ? "Ok" : v.Verdict == VersionVerdict.Unknown ? "Warn" : "Bad");
@@ -172,7 +178,11 @@ namespace Vanadreams
         private async Task SnapshotAndExit()
         {
             UserControl page;
-            switch ((App.SnapshotPage ?? "menu").ToLowerInvariant())
+            var key = (App.SnapshotPage ?? "menu").ToLowerInvariant();
+            // "<page>-update": the same page with a game update waiting, so a layout change can be checked with it showing
+            if (key.EndsWith("-update")) { key = key.Substring(0, key.Length - "-update".Length); State.ShowSampleClientUpdate(); }
+            RefreshStrip();
+            switch (key)
             {
                 case "profiles": page = new ProfilesPage(this); break;
                 case "addons": page = new AddonsPage(this); break;

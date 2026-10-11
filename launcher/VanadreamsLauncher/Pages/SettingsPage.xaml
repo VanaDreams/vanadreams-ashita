@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Focusable="True">
     <Grid Margin="40,36,40,0">
-        <Border Style="{StaticResource Box}" Height="412" VerticalAlignment="Top">
+        <!-- 424 high with 32 rows: the action buttons under Music were cut off at 412 with 34 rows -->
+        <Border Style="{StaticResource Box}" Height="424" VerticalAlignment="Top">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -17,8 +18,8 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="34"/><RowDefinition Height="34"/><RowDefinition Height="34"/><RowDefinition Height="34"/>
-                        <RowDefinition Height="34"/><RowDefinition Height="34"/><RowDefinition Height="34"/><RowDefinition Height="*"/>
+                        <RowDefinition Height="32"/><RowDefinition Height="32"/><RowDefinition Height="32"/><RowDefinition Height="32"/>
+                        <RowDefinition Height="32"/><RowDefinition Height="32"/><RowDefinition Height="32"/><RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <TextBlock Text="Ashita folder" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
                     <TextBox Grid.Column="1" x:Name="AshitaBox" VerticalAlignment="Center"/>
