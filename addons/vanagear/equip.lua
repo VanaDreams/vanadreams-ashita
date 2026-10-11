@@ -4,6 +4,7 @@ local Buffer = {};
 local ImmediateBuffer = {};
 local EquippedItems = {};
 local Internal = {};
+local Fallback = nil; -- vanagear: built pieces for slots whose named piece is not carried
 local CurrentJob = 0;
 local CurrentLevel = 0;
 local inventoryManager = AshitaCore:GetMemoryManager():GetInventory();
@@ -532,7 +533,30 @@ local EquipSet = function(set, style)
     end
     
     LocateItems(set);
-    
+
+    -- vanagear: a piece the profile names that is not in an equippable bag is noted for
+    -- /vg status, and where vanagear built a piece for that slot it is worn instead
+    local missing, retry = {}, {};
+    for slot, equipTable in pairs(set) do
+        if (equipTable.Index == nil) and (type(equipTable.Name) == 'string') then
+            missing[#missing + 1] = equipTable.Name;
+            if (Fallback ~= nil) and (Fallback[slot] ~= nil) then
+                local copy = {};
+                for k, v in pairs(Fallback[slot]) do copy[k] = v; end
+                copy.Index = nil; copy.Container = nil; copy.Skip = nil;
+                set[slot] = copy;
+                retry[slot] = copy;
+            end
+        end
+    end
+    if (next(retry) ~= nil) then
+        LocateItems(retry);
+    end
+    if (gVana ~= nil) then
+        gVana.LastMissing = missing;
+        gVana.LastEquipAt = os.clock();
+    end
+
     --Prepare table of equip packets.
     local equipInfo = PrepareEquip(set);
     if (#equipInfo == 0) then
@@ -687,7 +711,18 @@ local LockStyle = function(set)
     end
 end
 
+-- vanagear: the built pieces to fall back on for the equip pass in progress, by slot
+local SetFallback = function(set)
+    Fallback = set;
+end
+
+local GetBuffer = function()
+    return Buffer;
+end
+
 local exports = {
+    SetFallback = SetFallback,
+    GetBuffer = GetBuffer,
     CheckItemMatch = CheckItemMatch,
     ClearBuffer = ClearBuffer,
     EquipItemToBuffer = EquipItemToBuffer,
