@@ -42,7 +42,7 @@ window.Render = function()
                 window.Selected = gVana.Sets.Idle and 'Idle' or names[1];
             end
 
-            imgui.BeginChild('sets', { 180, -60 }, true);
+            imgui.BeginChild('sets', { 180, -60 }, ImGuiChildFlags_Borders);
             for _, name in ipairs(names) do
                 if (imgui.Selectable(name, window.Selected == name)) then
                     window.Selected = name;
@@ -51,7 +51,7 @@ window.Render = function()
             imgui.EndChild();
             imgui.SameLine();
 
-            imgui.BeginChild('slots', { 0, -60 }, true);
+            imgui.BeginChild('slots', { 0, -60 }, ImGuiChildFlags_Borders);
             local ex = gVana.Explain[window.Selected];
             if (ex ~= nil) then
                 imgui.Text(window.Selected .. (ex.weaponskill and ('  (' .. ex.weaponskill .. ')') or ''));
