@@ -201,15 +201,24 @@ state.HandleEquipEvent = function(eventName, equipStyle)
         if (event ~= nil) and (type(event) == 'function') then
             gEquip.ClearBuffer();
             gState.CurrentCall = eventName;
-            -- vanagear: the built sets first, then the profile's own rules over them, then a
-            -- ring being used holds its slot over both
-            if (gVanaCore.Underlay()) and (gVanaStock[eventName] ~= nil) then
+            -- vanagear: the built sets go on first. With the underlay on they stay under the
+            -- profile's own sets; with it off they are kept aside, and only used for a slot
+            -- whose piece the profile names but the player does not carry. Then the profile's
+            -- rules, then a ring being used holds its slot over both.
+            local fallback = nil;
+            if (gVanaStock[eventName] ~= nil) and (next(gVana.Sets) ~= nil) then
                 local ok, err = pcall(gVanaStock[eventName]);
                 if (not ok) then
                     print(chat.header('vanagear') .. chat.error('Error in ' .. eventName .. ': ' .. tostring(err)));
                 end
+                fallback = {};
+                for slot, item in pairs(gEquip.GetBuffer()) do fallback[slot] = item; end
+                if (not gVanaCore.Underlay()) then
+                    gEquip.ClearBuffer();
+                end
             end
             gState.SafeCall(eventName);
+            gEquip.SetFallback(fallback);
             if (eventName == 'HandleDefault') or (eventName == 'HandleItem') then
                 gVanaUse.Tick();
             end
@@ -224,6 +233,7 @@ state.HandleEquipEvent = function(eventName, equipStyle)
                     gEquip.ProcessBuffer(equipStyle);
                 end
             end
+            gEquip.SetFallback(nil);
             gState.CurrentCall = 'N/A';
         end
     end

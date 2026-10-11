@@ -37,6 +37,7 @@ commands.Lines = function()
     local function line(cmd, text) lines[#lines + 1] = { cmd, text }; end
     line('/vg', 'open the window: your sets, the piece in each slot and why');
     line('/vg build', 'rebuild the sets now (also happens on job change, level up and new gear)');
+    line('/vg status', 'what is running, and any piece your sets name that you do not carry');
     line('/vg dt', 'damage taken gear over everything else, on or off');
     line('/vg kite', 'movement gear over everything else, on or off');
     if (s.TH ~= nil) then line('/vg th', 'treasure hunter gear over everything else, on or off'); end
@@ -155,6 +156,33 @@ local function save()
     core.SavePrefs();
 end
 
+-- /vg status: what is running and why gear did or did not change.
+commands.Status = function()
+    local count = 0;
+    for _ in pairs(gVana.Sets) do count = count + 1; end
+    say(string.format('Waiting after zone-in: %s.', core.Holding() and 'yes, nothing is equipped yet' or 'no'));
+    if (gProfile == nil) then
+        say('No profile loaded.');
+    else
+        say(string.format('Profile: %s. Built sets under it: %s.', tostring(gProfile.FileName),
+            core.Underlay() and 'on' or 'off (used only where it names gear you do not carry)'));
+    end
+    if (gVana.Who ~= nil) then
+        say(string.format('Built %d sets for %s%d/%s from %d pieces you carry.', count, gVana.Who.JobName, gVana.Who.Level,
+            gVana.Who.SubName, #gVana.Pieces));
+    else
+        say('No sets built yet.');
+    end
+    local missing = gVana.LastMissing or {};
+    if (#missing > 0) then
+        say('Last gear change asked for pieces not in your inventory or wardrobes: ' .. table.concat(missing, ', '));
+    elseif (gVana.LastEquipAt ~= nil) then
+        say('Last gear change found every piece it asked for.');
+    else
+        say('No gear change has been asked for yet.');
+    end
+end
+
 -- /gs validate: pieces the profile's sets name that are not in a bag you can equip from.
 commands.Validate = function()
     if (gProfile == nil) or (type(gProfile.Sets) ~= 'table') or (gProfile.IsVanagearStock) then
@@ -213,6 +241,8 @@ commands.Vg = function(args)
         gVana.Window.Open = not gVana.Window.Open;
     elseif (cmd == 'help') or (cmd == 'commands') then
         help();
+    elseif (cmd == 'status') then
+        commands.Status();
     elseif (cmd == 'build') or (cmd == 'reload') then
         core.Request();
         say('Rebuilding.');
