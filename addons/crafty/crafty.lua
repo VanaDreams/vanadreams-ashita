@@ -27,7 +27,7 @@
 
 addon.name    = 'crafty';
 addon.author  = 'Vanadreams';
-addon.version = '0.1.0';
+addon.version = '0.1.1';
 addon.desc    = 'Repeat a synthesis on the Vanadreams server.';
 addon.link    = 'https://github.com/VanaDreams/vanadreams-ashita';
 
@@ -71,12 +71,34 @@ local function stop(reason)
     say('stopped: ' .. bot.stop_reason);
 end
 
+-- Every way a player reaches Vanadreams: its public name (or any fairywitch name), the Tailscale
+-- address the launcher switches to when a network blocks the game's ports, and the home network.
+-- Kept here rather than in the settings file, so a list saved by an older version never hides one.
+local VANADREAMS_NAMES = { 'vanadreams', 'fairywitch' };
+local VANADREAMS_ADDRS = { '100.114.52.41', '192.168.0.19' };
+local VANADREAMS_HOST  = 'vanadreams.fairywitch.ca';
+
+local function resolve(host)
+    local ok, ip = pcall(function() return require('socket').dns.toip(host); end);
+    return (ok and type(ip) == 'string') and ip or nil;
+end
+
 local function check_server()
     local cmd = '';
     pcall(function() cmd = AshitaCore:GetConfigurationManager():GetString('boot', 'ashita.boot', 'command') or ''; end);
     cmd = cmd:lower();
-    for _, name in ipairs(cfg.servers) do
-        if #name > 0 and cmd:find(name:lower(), 1, true) then bot.allowed = true; bot.allowed_reason = 'server: ' .. name; return true; end
+    local server = cmd:match('%-%-server%s+"([^"]+)"') or cmd:match('%-%-server%s+(%S+)') or '';
+    for _, list in ipairs({ VANADREAMS_NAMES, cfg.servers or {} }) do
+        for _, name in ipairs(list) do
+            if type(name) == 'string' and #name > 0 and cmd:find(name:lower(), 1, true) then bot.allowed = true; bot.allowed_reason = 'server: ' .. name; return true; end
+        end
+    end
+    if #server > 0 then
+        for _, addr in ipairs(VANADREAMS_ADDRS) do
+            if server == addr then bot.allowed = true; bot.allowed_reason = 'server: ' .. addr; return true; end
+        end
+        local mine, ours = resolve(server), resolve(VANADREAMS_HOST);
+        if mine and ours and mine == ours then bot.allowed = true; bot.allowed_reason = 'server: ' .. server; return true; end
     end
     bot.allowed = false; bot.allowed_reason = 'this addon runs on Vanadreams only (boot command does not name it)';
     return false;
