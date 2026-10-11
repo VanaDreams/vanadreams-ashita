@@ -129,6 +129,13 @@ namespace Vanadreams
         /// so the strip and the menu can say an update is ready. Only a copy this launcher installed from the version the
         /// server runs is checked; anything else is the version check's business.
         /// </summary>
+        /// <summary>Snapshot hook (--snapshot file.png menu-update): a made-up 8-part, 569 MB update, the size seen on 11 Oct 2026.</summary>
+        public void ShowSampleClientUpdate()
+        {
+            var parts = Enumerable.Range(1, 8).Select(i => new ClientChunk { Name = "looks-0" + i + ".zip", Size = 569L * 1048576 / 8 }).ToList();
+            PendingClientUpdate = new ClientUpdate { Root = Settings.GameInstallRoot, Parts = parts };
+        }
+
         public async Task CheckClientUpdateAsync()
         {
             var root = Settings.GameInstallRoot;

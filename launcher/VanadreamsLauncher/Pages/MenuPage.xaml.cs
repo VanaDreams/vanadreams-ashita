@@ -89,15 +89,19 @@ namespace Vanadreams.Pages
                 ? (when.Date == DateTime.Today ? "Today, " + when.ToString("HH:mm") : when.ToString("d MMM, HH:mm")) : "Not yet";
             var cred = state.Credentials.Get(_profile.Id);
             AddFact("Server", state.Status.StateWord + (string.IsNullOrEmpty(state.Status.CheckedWord) ? "" : " · " + state.Status.CheckedWord), null);
-            AddFact("Client",
-                !v.ExpectedIsPublished ? (string.IsNullOrEmpty(v.Installed) ? "Version unknown" : v.Installed + " · server hasn't published its version")
-                : v.Verdict == VersionVerdict.Ready ? "✓ " + v.Installed + " · matches the server"
-                : v.Verdict == VersionVerdict.Unknown ? "Version unknown"
-                : "✗ " + v.Installed + " · server expects " + v.Expected,
-                !v.ExpectedIsPublished ? "Mist" : v.Verdict == VersionVerdict.Ready ? "Ok" : v.Verdict == VersionVerdict.Unknown ? "Warn" : "Bad");
-            if (state.PendingClientUpdate != null)
-                AddFact("Update", "Ready · " + state.PendingClientUpdate.Words + " · Install game gets them", "Warn");
-            AddFact("Ashita", "v4 beta, updated " + state.AshitaUpdated() + " · " + state.AshitaRoot, null);
+            var update = state.PendingClientUpdate;
+            // the update goes on the Client row, not a row of its own: the panel has no room for another row
+            // (0.2.37 added one and pushed the last rows out of sight)
+            if (update != null && v.ExpectedIsPublished && v.Verdict == VersionVerdict.Ready)
+                AddFact("Client", v.Installed + " · update ready, " + update.Megabytes + " · Install game", "Warn");
+            else
+                AddFact("Client",
+                    !v.ExpectedIsPublished ? (string.IsNullOrEmpty(v.Installed) ? "Version unknown" : v.Installed + " · server hasn't published its version")
+                    : v.Verdict == VersionVerdict.Ready ? "✓ " + v.Installed + " · matches the server"
+                    : v.Verdict == VersionVerdict.Unknown ? "Version unknown"
+                    : "✗ " + v.Installed + " · server expects " + v.Expected,
+                    !v.ExpectedIsPublished ? "Mist" : v.Verdict == VersionVerdict.Ready ? "Ok" : v.Verdict == VersionVerdict.Unknown ? "Warn" : "Bad");
+            AddFact("Ashita", "v4 beta, updated " + state.AshitaUpdated() + " · " + ShortPath(state.AshitaRoot, 28), null);
             if (_profile.IsRetail)
                 AddFact("Loader", File.Exists(_profile.BootFile) ? "PlayOnline Viewer" : "PlayOnline Viewer missing · install the retail client", File.Exists(_profile.BootFile) ? null : "Bad");
             else
@@ -109,12 +113,22 @@ namespace Vanadreams.Pages
             AddFact("Last played", last, null);
         }
 
+        /// <summary>A long folder as drive, "…" and its last folders, so it fits the facts column.</summary>
+        public static string ShortPath(string path, int max)
+        {
+            if (string.IsNullOrEmpty(path) || path.Length <= max) return path ?? "";
+            var parts = path.TrimEnd('\\').Split('\\');
+            var tail = parts[parts.Length - 1];
+            for (var i = parts.Length - 2; i > 0 && parts[0].Length + 3 + parts[i].Length + 1 + tail.Length <= max; i--) tail = parts[i] + "\\" + tail;
+            return parts[0] + "\\…\\" + tail;
+        }
+
         private void AddFact(string label, string value, string brushKey)
         {
             var row = Facts.RowDefinitions.Count;
             Facts.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             var l = new TextBlock { Text = label, Style = (Style)FindResource("Muted"), Margin = new Thickness(0, 0, 0, 5) };
-            var v = new TextBlock { Text = value, Style = (Style)FindResource("Mono"), Margin = new Thickness(0, 0, 0, 5), TextTrimming = TextTrimming.CharacterEllipsis };
+            var v = new TextBlock { Text = value, Style = (Style)FindResource("Mono"), Margin = new Thickness(0, 0, 0, 5), TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = value };
             if (brushKey != null) v.Foreground = (Brush)FindResource(brushKey);
             Grid.SetRow(l, row); Grid.SetRow(v, row); Grid.SetColumn(v, 1);
             Facts.Children.Add(l); Facts.Children.Add(v);
