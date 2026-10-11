@@ -15,8 +15,10 @@ namespace Vanadreams.Services
         public string Name { get; set; }
         public long Size { get; set; }
         public string Sha256 { get; set; }
-        /// <summary>Folder under the install root the zip unpacks into: "FINAL FANTASY XI" or "PlayOnlineViewer".</summary>
+        /// <summary>Folder the zip unpacks into: under the install root ("FINAL FANTASY XI", "PlayOnlineViewer"), or under
+        /// the Ashita folder when it starts with {ashita} ("{ashita}/bootloader", where the effects DLLs go beside xiloader).</summary>
         public string Dest { get; set; }
+        public bool ToAshita => ClientInstall.IsAshitaDest(Dest);
         public long Unpacked { get; set; }
     }
 
@@ -74,6 +76,8 @@ namespace Vanadreams.Services
         public const string GameFolderName = "FINAL FANTASY XI";
         public const string ViewerFolderName = "PlayOnlineViewer";
         public const string RecordName = ".vanadreams-client.txt";
+        /// <summary>Dest prefix for a chunk that unpacks under the Ashita folder rather than the game's install root.</summary>
+        public const string AshitaDest = "{ashita}";
 
         public static string DefaultRoot => @"C:\Games\Vanadreams";
         public static string ManifestUrl(string version) => BaseUrl + version + "/manifest.json";
@@ -81,16 +85,38 @@ namespace Vanadreams.Services
         public static string GameFolder(string root) => Path.Combine(root, GameFolderName);
         public static string ViewerFolder(string root) => Path.Combine(root, ViewerFolderName);
 
-        /// <summary>Zips already unpacked into this root for this version, from the record.</summary>
-        public static HashSet<string> Done(string root, string version)
+        public static bool IsAshitaDest(string dest) => dest != null && dest.StartsWith(AshitaDest, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>The folder a chunk unpacks into; null for an Ashita chunk while no Ashita folder is set.</summary>
+        public static string DestFolder(ClientChunk c, string root, string ashitaRoot)
         {
-            var path = Path.Combine(root, RecordName);
+            var parts = (c.Dest ?? GameFolderName).Substring(c.ToAshita ? AshitaDest.Length : 0)
+                .Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Any(x => x == "..")) throw new InvalidDataException("The game's download list names a folder outside the install: " + c.Dest);
+            var start = c.ToAshita ? ashitaRoot : root;
+            if (string.IsNullOrWhiteSpace(start)) return null;
+            return parts.Aggregate(start, Path.Combine);
+        }
+
+        /// <summary>Where a chunk's line in the record goes: an Ashita chunk is recorded in the Ashita folder, so a fresh
+        /// Ashita folder gets it again even though the game's own record says it was done.</summary>
+        public static string RecordFolder(ClientChunk c, string root, string ashitaRoot) => c.ToAshita ? ashitaRoot : root;
+
+        /// <summary>Zips already unpacked for this version, from the record in the game's root and, for the chunks that
+        /// go under Ashita, the one in the Ashita folder.</summary>
+        public static HashSet<string> Done(string root, string version, string ashitaRoot = null)
+        {
             var done = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (!File.Exists(path)) return done;
-            foreach (var line in File.ReadAllLines(path))
+            foreach (var folder in new[] { root, ashitaRoot })
             {
-                var f = line.Split(' ');
-                if (f.Length >= 3 && f[0] == version) done.Add(f[1] + " " + f[2]);
+                if (string.IsNullOrWhiteSpace(folder)) continue;
+                var path = Path.Combine(folder, RecordName);
+                if (!File.Exists(path)) continue;
+                foreach (var line in File.ReadAllLines(path))
+                {
+                    var f = line.Split(' ');
+                    if (f.Length >= 3 && f[0] == version) done.Add(f[1] + " " + f[2]);
+                }
             }
             return done;
         }
@@ -99,6 +125,20 @@ namespace Vanadreams.Services
         public static List<ClientChunk> Remaining(ClientManifest m, HashSet<string> done) =>
             m.Chunks.Where(c => !done.Contains(c.Name + " " + c.Sha256)).ToList();
 
+        /// <summary>
+        /// The new or changed zips for a copy this launcher installed from this version: the update the launcher offers
+        /// at start. Empty when the record holds nothing for this version (not installed here, or an older version, which
+        /// the version check deals with as a fresh install), and Ashita chunks wait until there is an Ashita folder.
+        /// 11 Oct 2026: the modern look's zips were appended to 30260904_1, and nothing told an installed player they were there.
+        /// </summary>
+        public static List<ClientChunk> Updates(ClientManifest m, string root, string ashitaRoot)
+        {
+            var mine = Done(root, m.Version);
+            if (mine.Count == 0) return new List<ClientChunk>();
+            var hasAshita = !string.IsNullOrWhiteSpace(ashitaRoot) && Directory.Exists(ashitaRoot);
+            return Remaining(m, Done(root, m.Version, ashitaRoot)).Where(c => !c.ToAshita || hasAshita).ToList();
+        }
+
         public static string Sha256Of(string path)
         {
             using (var sha = SHA256.Create())
@@ -106,11 +146,15 @@ namespace Vanadreams.Services
                 return BitConverter.ToString(sha.ComputeHash(f)).Replace("-", "").ToLowerInvariant();
         }
 
+        /// <summary>Unpacks every zip still to do. Ashita chunks are left for later when no Ashita folder is set; the
+        /// start-up check offers them once there is one. Low spec is put back on the effects after they unpack.</summary>
         public static async Task InstallFilesAsync(Downloader downloader, ClientManifest m, string root, string downloads,
-            IProgress<InstallProgress> progress, CancellationToken ct)
+            IProgress<InstallProgress> progress, CancellationToken ct, string ashitaRoot = null, bool lowSpec = false)
         {
             Directory.CreateDirectory(root);
-            var todo = Remaining(m, Done(root, m.Version));
+            var hasAshita = !string.IsNullOrWhiteSpace(ashitaRoot) && Directory.Exists(ashitaRoot);
+            var todo = Remaining(m, Done(root, m.Version, ashitaRoot)).Where(c => !c.ToAshita || hasAshita).ToList();
+            var touchedAshita = false;
             var total = m.TotalSize;
             var before = total - todo.Sum(c => c.Size);
             var staging = Path.Combine(downloads, "client", m.Version);
@@ -129,11 +173,14 @@ namespace Vanadreams.Services
                     File.Delete(zip);
                     throw new IOException(c.Name + " came down damaged and was thrown away. Press Install game again to fetch it.");
                 }
-                await Task.Run(() => Downloader.ExtractZipOverwrite(zip, Path.Combine(root, c.Dest)), ct).ConfigureAwait(false);
-                File.AppendAllText(Path.Combine(root, RecordName), $"{m.Version} {c.Name} {c.Sha256}{Environment.NewLine}");
+                var dest = DestFolder(c, root, ashitaRoot);
+                await Task.Run(() => Downloader.ExtractZipOverwrite(zip, dest), ct).ConfigureAwait(false);
+                File.AppendAllText(Path.Combine(RecordFolder(c, root, ashitaRoot), RecordName), $"{m.Version} {c.Name} {c.Sha256}{Environment.NewLine}");
                 File.Delete(zip);
                 before += c.Size;
+                touchedAshita |= c.ToAshita;
             }
+            if (touchedAshita) Effects.Apply(ashitaRoot, lowSpec);
             foreach (var d in m.CreateDirs) Directory.CreateDirectory(Path.Combine(GameFolder(root), d));
             foreach (var d in m.ViewerCreateDirs) Directory.CreateDirectory(Path.Combine(ViewerFolder(root), d.Replace('/', '\\')));
         }
