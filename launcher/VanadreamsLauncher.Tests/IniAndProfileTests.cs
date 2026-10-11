@@ -151,5 +151,25 @@ sandbox = 0
             Assert.IsFalse(ProfileStore.IsValidId("a:b"));
             Assert.IsTrue(ProfileStore.IsValidId("Ferrin on Vanadreams"));
         }
+
+        [TestMethod]
+        public void Vanadreams_profile_moved_to_another_drive_boots_this_folders_loader()
+        {
+            // 11 Oct 2026: the install sat on B: and the profile still named a loader on another drive
+            var loader = Loader.PathIn(_dir);
+            Directory.CreateDirectory(Path.GetDirectoryName(loader));
+            File.WriteAllText(loader, "");
+            var p = new Profile { BootFile = @"C:\Games\Vanadreams\bootloader\xiloader.exe", Command = LoaderCommand.Parse("--server " + LoaderCommand.TailscaleServer + " --hairpin") };
+            Assert.IsTrue(p.PointLoaderAt(_dir));
+            Assert.AreEqual(loader, p.BootFile);
+            Assert.IsFalse(p.PointLoaderAt(_dir), "already right: nothing to save");
+
+            var other = new Profile { BootFile = @"C:\HorizonXI\bootloader\xiloader.exe", Command = LoaderCommand.Parse("--server homepointxi.com") };
+            Assert.IsFalse(other.PointLoaderAt(_dir), "other servers keep their own loader");
+
+            File.Delete(loader);
+            var noLoader = new Profile { BootFile = @"C:\old\xiloader.exe", Command = LoaderCommand.Parse("--server vanadreams.fairywitch.ca") };
+            Assert.IsFalse(noLoader.PointLoaderAt(_dir), "no loader here yet: left for Repair");
+        }
     }
 }

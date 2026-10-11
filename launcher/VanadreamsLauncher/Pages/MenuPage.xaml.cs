@@ -95,6 +95,8 @@ namespace Vanadreams.Pages
                 : v.Verdict == VersionVerdict.Unknown ? "Version unknown"
                 : "✗ " + v.Installed + " · server expects " + v.Expected,
                 !v.ExpectedIsPublished ? "Mist" : v.Verdict == VersionVerdict.Ready ? "Ok" : v.Verdict == VersionVerdict.Unknown ? "Warn" : "Bad");
+            if (state.PendingClientUpdate != null)
+                AddFact("Update", "Ready · " + state.PendingClientUpdate.Words + " · Install game gets them", "Warn");
             AddFact("Ashita", "v4 beta, updated " + state.AshitaUpdated() + " · " + state.AshitaRoot, null);
             if (_profile.IsRetail)
                 AddFact("Loader", File.Exists(_profile.BootFile) ? "PlayOnline Viewer" : "PlayOnline Viewer missing · install the retail client", File.Exists(_profile.BootFile) ? null : "Bad");
@@ -273,7 +275,17 @@ namespace Vanadreams.Pages
                         Log.Info("loader replaced before play");
                 }
                 catch (Exception ex) { Log.Warn("loader check on play: " + ex.Message); }
+                // 11 Oct 2026: a player's install sat on B: while her profile still booted a loader elsewhere,
+                // and Ashita closed the moment it opened. Every check on the menu read the folder, so all looked right.
+                try
+                {
+                    var was = _profile.BootFile;
+                    if (_profile.PointLoaderAt(state.AshitaRoot)) { _profile.Save(); Log.Info("profile loader moved from " + was + " to " + _profile.BootFile); }
+                }
+                catch (Exception ex) { Log.Warn("loader path on play: " + ex.Message); }
             }
+            // Low spec is only a rename in bootloader\, so it is put right on every Play, in case an update put a wrapper back
+            if (state.HasAshita) Effects.Apply(state.AshitaRoot, state.Settings.LowSpec);
             // The game reads its own location from Windows, not from this launcher, and Windows holds one
             // such location for the whole machine. When it does not point at the copy this profile belongs to,
             // the wrong game starts: an older copy kept for another server, which Vanadreams turns away, or

@@ -7,6 +7,17 @@ using Vanadreams.Services;
 
 namespace Vanadreams
 {
+    public sealed class ClientUpdate
+    {
+        public string Root { get; set; }
+        public ClientManifest Manifest { get; set; }
+        public System.Collections.Generic.List<ClientChunk> Parts { get; set; }
+        public long Size => Parts.Sum(c => c.Size);
+        public string Megabytes => Math.Max(1, Size / 1048576) + " MB";
+        /// <summary>"3 new parts, 412 MB"</summary>
+        public string Words => Parts.Count + (Parts.Count == 1 ? " new part, " : " new parts, ") + Megabytes;
+    }
+
     /// <summary>Everything the pages share: settings, stores, the last status and version check.</summary>
     public sealed class AppState
     {
@@ -109,6 +120,30 @@ namespace Vanadreams
         }
 
         public void Notify() => Changed?.Invoke();
+
+        /// <summary>New or changed parts of the game the launcher installed, found at start; null when there are none.</summary>
+        public ClientUpdate PendingClientUpdate { get; private set; }
+
+        /// <summary>
+        /// Compares the server's download list with the record in the installed copy and keeps what is new or changed,
+        /// so the strip and the menu can say an update is ready. Only a copy this launcher installed from the version the
+        /// server runs is checked; anything else is the version check's business.
+        /// </summary>
+        public async Task CheckClientUpdateAsync()
+        {
+            var root = Settings.GameInstallRoot;
+            var version = Status.ClientVer;
+            if (string.IsNullOrEmpty(version) || !GameRegistration.HasGame(root)) { PendingClientUpdate = null; Notify(); return; }
+            try
+            {
+                var m = ClientManifest.Parse(await Downloader.GetStringAsync(ClientInstall.ManifestUrl(version)));
+                var todo = ClientInstall.Updates(m, root, HasAshita ? AshitaRoot : null);
+                PendingClientUpdate = todo.Count == 0 ? null : new ClientUpdate { Root = root, Manifest = m, Parts = todo };
+                if (PendingClientUpdate != null) Log.Info("game update ready: " + string.Join(", ", todo.Select(c => c.Name)));
+            }
+            catch (Exception ex) { Log.Warn("game update check: " + ex.Message); }
+            Notify();
+        }
 
         public VersionCheck CheckVersion()
         {

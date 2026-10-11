@@ -18,7 +18,7 @@
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="34"/><RowDefinition Height="34"/><RowDefinition Height="34"/><RowDefinition Height="34"/>
-                        <RowDefinition Height="34"/><RowDefinition Height="34"/><RowDefinition Height="*"/>
+                        <RowDefinition Height="34"/><RowDefinition Height="34"/><RowDefinition Height="34"/><RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <TextBlock Text="Ashita folder" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
                     <TextBox Grid.Column="1" x:Name="AshitaBox" VerticalAlignment="Center"/>
@@ -32,12 +32,16 @@
                     <TextBlock Grid.Row="4" Grid.Column="1" x:Name="ExpectedBox" Style="{StaticResource Mono}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Row="5" Text="Detected FFXI folder" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Row="5" Grid.Column="1" x:Name="DetectedBox" Style="{StaticResource Mono}" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Row="6" Text="Music" Style="{StaticResource Muted}" VerticalAlignment="Top" Margin="0,10,0,0"/>
-                    <StackPanel Grid.Row="6" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Margin="0,8,0,0">
+                    <TextBlock Grid.Row="6" Text="Graphics" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+                    <CheckBox Grid.Row="6" Grid.Column="1" x:Name="LowSpecBox" VerticalAlignment="Center"
+                              Content="Low spec: turn the modern look's effects off (textures stay)"
+                              ToolTip="Renames d3d8.dll and d3d9.dll in Ashita's bootloader folder to .off. Untick to turn them back on."/>
+                    <TextBlock Grid.Row="7" Text="Music" Style="{StaticResource Muted}" VerticalAlignment="Top" Margin="0,10,0,0"/>
+                    <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Margin="0,8,0,0">
                         <CheckBox x:Name="MusicBox" Content="Play “The Lanterns Are Lit” while the launcher is open" VerticalAlignment="Center"/>
                         <TextBlock x:Name="MusicCredit" Style="{StaticResource Muted}" FontSize="12" VerticalAlignment="Center" Margin="14,0,0,0"/>
                     </StackPanel>
-                    <StackPanel Grid.Row="6" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Margin="0,44,0,0">
+                    <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Margin="0,44,0,0">
                         <Button Style="{StaticResource GhostButton}" Content="Refresh catalogue" Click="Catalog_Click"/>
                         <Button Style="{StaticResource GhostButton}" Content="Open data folder" Margin="8,0,0,0" Click="Data_Click"/>
                         <Button Style="{StaticResource GhostButton}" Content="Open log" Margin="8,0,0,0" Click="Log_Click"/>

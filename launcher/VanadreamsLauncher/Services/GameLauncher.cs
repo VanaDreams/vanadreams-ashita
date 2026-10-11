@@ -19,6 +19,11 @@ namespace Vanadreams.Services
         {
             var cli = Path.Combine(ashitaRoot, "Ashita-cli.exe");
             if (!File.Exists(cli)) throw new FileNotFoundException("Ashita-cli.exe is missing from " + ashitaRoot + "; run Repair.", cli);
+            // Ashita-cli closes in a blink, with nothing on screen, when the profile's boot file is not there
+            var boot = string.IsNullOrWhiteSpace(profile.BootFile) ? "" : Path.Combine(ashitaRoot, profile.BootFile);
+            if (!File.Exists(boot))
+                throw new FileNotFoundException("This profile starts " + (boot.Length > 0 ? boot : "no loader at all") +
+                    ", and that file is not there. Edit the profile and browse to the loader, or run Repair.", boot);
 
             var iniName = profile.FileName;
             string temp = null;
@@ -49,7 +54,7 @@ namespace Vanadreams.Services
                     throw new InvalidOperationException("Windows asked to run Ashita as administrator and the prompt was cancelled. Press Play again and choose Yes.");
                 throw;
             }
-            Log.Info("Launched " + profile.Name + " via " + iniName);
+            Log.Info("Launched " + profile.Name + " via " + iniName + ", booting " + boot);
 
             if (temp != null)
             {

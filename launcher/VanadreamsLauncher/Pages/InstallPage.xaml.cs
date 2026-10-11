@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -34,6 +35,16 @@ namespace Vanadreams.Pages
 
         private static string Gb(long bytes) => (bytes / 1073741824.0).ToString("0.0") + " GB";
         private string Expected => App.State.Version.ExpectedIsPublished ? App.State.Version.Expected : null;
+        /// <summary>The update found at start, when it is for the folder this page installs to.</summary>
+        private ClientUpdate Pending
+        {
+            get
+            {
+                var u = App.State.PendingClientUpdate;
+                return u != null && !_asNewPlayer && GameRegistration.SameFolder(u.Root, _root) ? u : null;
+            }
+        }
+        private string AshitaFolder => App.State.HasAshita ? App.State.AshitaRoot : null;
 
         private void Refresh()
         {
@@ -46,7 +57,12 @@ namespace Vanadreams.Pages
             var matches = found != null && have != null && want != null && string.CompareOrdinal(have.Substring(0, 6), want.Substring(0, 6)) >= 0;
             State.Text = found == null ? "Not installed yet." : matches ? "✓ Installed · matches the server" : "Installed, but older than the server needs. Install game fetches the right one.";
             State.Foreground = (Brush)FindResource(found == null ? "Warn" : matches ? "Ok" : "Warn");
-            InstallButton.Content = _cancel != null ? "Stop" : found == null ? "Install game" : "Install a fresh copy";
+            if (Pending != null && _cancel == null)
+            {
+                State.Text = "Update ready · " + Pending.Words + ". Only these are downloaded.";
+                State.Foreground = (Brush)FindResource("Warn");
+            }
+            InstallButton.Content = _cancel != null ? "Stop" : Pending != null ? "Update game" : found == null ? "Install game" : "Install a fresh copy";
 
         }
 
@@ -57,7 +73,10 @@ namespace Vanadreams.Pages
             try
             {
                 _manifest = ClientManifest.Parse(await App.State.Downloader.GetStringAsync(ClientInstall.ManifestUrl(Expected)));
-                SizeText.Text = Gb(_manifest.TotalSize) + " · " + Gb(_manifest.TotalUnpacked) + " on disk";
+                var left = ClientInstall.Remaining(_manifest, ClientInstall.Done(_root, _manifest.Version, AshitaFolder));
+                SizeText.Text = left.Count > 0 && left.Count < _manifest.Chunks.Count
+                    ? Gb(left.Sum(c => c.Size)) + " still to fetch, of " + Gb(_manifest.TotalSize)
+                    : Gb(_manifest.TotalSize) + " · " + Gb(_manifest.TotalUnpacked) + " on disk";
             }
             catch (Exception ex)
             {
@@ -72,7 +91,10 @@ namespace Vanadreams.Pages
             if (_manifest == null) { await LoadManifestAsync(); if (_manifest == null) { ProgressText.Text = "The game download isn't available right now. Try again in a while."; return; } }
 
             var drive = new DriveInfo(Path.GetPathRoot(_root));
-            var needed = _manifest.TotalSize + _manifest.TotalUnpacked;
+            var todo = ClientInstall.Remaining(_manifest, ClientInstall.Done(_root, _manifest.Version, AshitaFolder));
+            var needed = todo.Sum(c => c.Size + c.Unpacked);
+            // only new parts for a copy that is already registered: no permission prompt at the end
+            var updateOnly = todo.Count < _manifest.Chunks.Count && ClientInstall.IsRegistered(_root);
             if (drive.AvailableFreeSpace < needed) { ProgressText.Text = $"{drive.Name} has {Gb(drive.AvailableFreeSpace)} free and the install needs {Gb(needed)}. Pick another folder."; return; }
 
             var state = App.State;
@@ -91,13 +113,19 @@ namespace Vanadreams.Pages
             });
             try
             {
-                await ClientInstall.InstallFilesAsync(state.Downloader, _manifest, _root, state.Settings.DownloadsFolder, progress, _cancel.Token);
-                ProgressText.Text = "Files in place. Windows will ask for permission to register the game…";
+                await ClientInstall.InstallFilesAsync(state.Downloader, _manifest, _root, state.Settings.DownloadsFolder, progress, _cancel.Token,
+                    AshitaFolder, state.Settings.LowSpec);
                 state.Settings.GameInstallRoot = _root;
                 state.Settings.Save();
-                var ok = await Task.Run(() => ClientInstall.RunRegister(_root, state.Settings.DownloadsFolder));
-                ProgressText.Text = ok ? "Installed. Run Setup if you haven't, then press Play."
-                                       : "The permission prompt was refused, so the game isn't registered yet. Press Install game again to finish; nothing downloads twice.";
+                if (updateOnly) ProgressText.Text = "Updated. Press Play.";
+                else
+                {
+                    ProgressText.Text = "Files in place. Windows will ask for permission to register the game…";
+                    var ok = await Task.Run(() => ClientInstall.RunRegister(_root, state.Settings.DownloadsFolder));
+                    ProgressText.Text = ok ? "Installed. Run Setup if you haven't, then press Play."
+                                           : "The permission prompt was refused, so the game isn't registered yet. Press Install game again to finish; nothing downloads twice.";
+                }
+                await state.CheckClientUpdateAsync();
                 state.CheckVersion();
                 state.Notify();
             }

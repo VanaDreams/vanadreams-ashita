@@ -58,6 +58,73 @@ namespace Vanadreams.Tests
             finally { Directory.Delete(root, true); }
         }
 
+        private const string LooksManifest = @"{
+  ""client_ver"": ""30260904_1"",
+  ""chunks"": [
+    { ""name"": ""base.zip"", ""size"": 100, ""sha256"": ""aa"" },
+    { ""name"": ""looks-01.zip"", ""size"": 30, ""sha256"": ""dd"" },
+    { ""name"": ""effects.zip"", ""size"": 5, ""sha256"": ""ee"", ""dest"": ""{ashita}/bootloader"" }
+  ]
+}";
+
+        private static string TempDir()
+        {
+            var d = Path.Combine(Path.GetTempPath(), "vdl-client-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(d);
+            return d;
+        }
+
+        [TestMethod]
+        public void DestFolder_AshitaChunksGoUnderTheAshitaFolder()
+        {
+            var m = ClientManifest.Parse(LooksManifest);
+            Assert.IsFalse(m.Chunks[1].ToAshita);
+            Assert.IsTrue(m.Chunks[2].ToAshita);
+            Assert.AreEqual(Path.Combine("G", "FINAL FANTASY XI"), ClientInstall.DestFolder(m.Chunks[1], "G", "A"));
+            Assert.AreEqual(Path.Combine("A", "bootloader"), ClientInstall.DestFolder(m.Chunks[2], "G", "A"));
+            Assert.IsNull(ClientInstall.DestFolder(m.Chunks[2], "G", null));   // no Ashita folder yet: wait
+            Assert.AreEqual("A", ClientInstall.RecordFolder(m.Chunks[2], "G", "A"));
+            var escape = new ClientChunk { Name = "x.zip", Dest = "{ashita}/../Windows" };
+            Assert.ThrowsException<InvalidDataException>(() => ClientInstall.DestFolder(escape, "G", "A"));
+        }
+
+        [TestMethod]
+        public void Updates_OffersOnlyNewParts_ToACopyInstalledFromThisVersion()
+        {
+            var game = TempDir(); var ashita = TempDir();
+            try
+            {
+                var m = ClientManifest.Parse(LooksManifest);
+                // installed before the looks were appended: only base.zip in the record
+                File.WriteAllLines(Path.Combine(game, ClientInstall.RecordName), new[] { "30260904_1 base.zip aa" });
+                CollectionAssert.AreEqual(new[] { "looks-01.zip", "effects.zip" }, ClientInstall.Updates(m, game, ashita).Select(c => c.Name).ToList());
+                // with no Ashita folder the effects wait
+                CollectionAssert.AreEqual(new[] { "looks-01.zip" }, ClientInstall.Updates(m, game, null).Select(c => c.Name).ToList());
+                // the effects are recorded in the Ashita folder; a new Ashita folder gets them again
+                File.AppendAllText(Path.Combine(game, ClientInstall.RecordName), "30260904_1 looks-01.zip dd\n");
+                File.WriteAllLines(Path.Combine(ashita, ClientInstall.RecordName), new[] { "30260904_1 effects.zip ee" });
+                Assert.AreEqual(0, ClientInstall.Updates(m, game, ashita).Count);
+                var fresh = TempDir();
+                try { CollectionAssert.AreEqual(new[] { "effects.zip" }, ClientInstall.Updates(m, game, fresh).Select(c => c.Name).ToList()); }
+                finally { Directory.Delete(fresh, true); }
+            }
+            finally { Directory.Delete(game, true); Directory.Delete(ashita, true); }
+        }
+
+        [TestMethod]
+        public void Updates_NothingForACopyThisVersionNeverInstalled()
+        {
+            var game = TempDir();
+            try
+            {
+                var m = ClientManifest.Parse(LooksManifest);
+                Assert.AreEqual(0, ClientInstall.Updates(m, game, null).Count);   // no record: not ours to patch
+                File.WriteAllLines(Path.Combine(game, ClientInstall.RecordName), new[] { "30260805_0 base.zip aa" });
+                Assert.AreEqual(0, ClientInstall.Updates(m, game, null).Count);   // older version: the version check's job
+            }
+            finally { Directory.Delete(game, true); }
+        }
+
         [TestMethod]
         public void RegisterScript_WritesFoldersLanguageControllerAndAllNineServers()
         {
