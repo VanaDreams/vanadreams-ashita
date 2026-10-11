@@ -73,8 +73,11 @@ commands.Lines = function()
     for _, word in ipairs(words) do
         line('/vg ' .. word, 'yours: ' .. table.concat(own[word].lines, '; '));
     end
-    line('/vg add <word> <command>; <command>', 'make your own command for this job (add "all" before the word for every job); "wait 2" pauses');
-    line('/vg save <name>', 'keep what you are wearing now as a set of your own');
+    line('/vg add <word> <command>; <command>', 'make your own command for this job, run with /vg <word> or just /<word> (add "all" before the word for every job); "wait 2" pauses');
+    line('/vg with <set> <command>', 'put a set on, then the command (/ja, /ma, /pet, /ws), and keep the set on until it is done');
+    line('/vg dress', 'stop swapping so you can put on what you like from the equipment menu');
+    line('/vg save <name>', 'save what you are wearing as a set (swapping comes back on). Named like a built set (Idle, Tp_Default, Reward, a weaponskill) it replaces those slots there');
+    line('/vg set <name> <slot> <item>', 'change one slot of a set (any set in the /vg window too); /vg sets lists yours');
     line('/vg wear <name> | off', 'put on one of your sets and keep it on over the built sets');
     line('/vg look <name> | off', 'lock one of your sets as your look (/lockstyle); the sets go on swapping underneath');
     line('/vg remove <word>, /vg folder', 'delete one of yours; open the folder they are kept in, to write them by hand');
@@ -353,6 +356,42 @@ commands.Vg = function(args)
         else
             say('You have no command or set called ' .. name .. '.');
         end
+    elseif (cmd == 'with') then
+        -- the command is taken from the raw text, so its quotes survive
+        local raw = commands.Raw or table.concat(args, ' ');
+        local setName, command = string.match(raw, '^%S+%s+[Ww][Ii][Tt][Hh]%s+(%S+)%s+(/.+)$');
+        if (setName == nil) then
+            setName, command = string.match(raw, '^[Ww][Ii][Tt][Hh]%s+(%S+)%s+(/.+)$');
+        end
+        local set, found = findSet(setName or '');
+        if (command == nil) or (set == nil) then
+            say('Usage: /vg with <set> <command>, for example /vg with lizard /ja "Bestial Loyalty" <me>');
+        else
+            use.With(found, set, command);
+        end
+    elseif (cmd == 'dress') then
+        mine.Dress(arg ~= 'off');
+        say(mine.Dressing and 'Swapping paused: put on what you like, then /vg save <name>. /vg dress off to stop.'
+            or 'Swapping back on.');
+    elseif (cmd == 'sets') then
+        local names = {};
+        for k, set in pairs(mine.Sets()) do
+            local n = 0;
+            for _ in pairs(set) do n = n + 1; end
+            names[#names + 1] = string.format('%s (%d)', k, n);
+        end
+        table.sort(names);
+        say('Your sets: ' .. ((#names > 0) and table.concat(names, ', ') or 'none yet. /vg dress, put gear on, /vg save <name>.'));
+    elseif (cmd == 'set') then
+        local slot = slotNames[string.lower(args[3] or '')];
+        local piece = table.concat(args, ' ', 4);
+        if (args[2] == nil) or (slot == nil) or (piece == '') then
+            say('Usage: /vg set <name> <slot> <item>, for example /vg set Reward Body Totemic Jackcoat +1 (item "built" gives the slot back)');
+        else
+            local slotName = gData.Constants.EquipSlotNames[slot];
+            local _, name = mine.SetSlot(args[2], slotName, (string.lower(piece) ~= 'built') and piece or nil);
+            say(string.format('%s %s: %s.', name, slotName, (string.lower(piece) ~= 'built') and piece or 'built piece'));
+        end
     elseif (cmd == 'save') then
         local ok, name, count = mine.SaveSet(table.concat(args, ' ', 2));
         say(ok and string.format('Saved %s: the %d pieces you are wearing.', name, count) or 'Usage: /vg save <name>');
@@ -462,9 +501,16 @@ commands.Handle = function(e)
     end
     local word = string.lower(args[1]);
     if (word ~= '/vg') and (word ~= '/vanagear') and (word ~= '/gs') and (word ~= '/gearswap') then
+        -- one of the player's own commands typed straight: /lizard
+        if (string.sub(word, 1, 1) == '/') and (#args == 1) and (mine.List()[string.sub(word, 2)] ~= nil) then
+            e.blocked = true;
+            mine.Run(string.sub(word, 2));
+            return true;
+        end
         return false;
     end
     e.blocked = true;
+    commands.Raw = e.command;
     local rest = {};
     for i = 2, #args do rest[#rest + 1] = args[i]; end
     if (word == '/gs') or (word == '/gearswap') then
@@ -472,6 +518,7 @@ commands.Handle = function(e)
     else
         commands.Vg(rest);
     end
+    commands.Raw = nil;
     return true;
 end
 

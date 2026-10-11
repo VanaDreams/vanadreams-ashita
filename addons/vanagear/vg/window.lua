@@ -1,6 +1,8 @@
 --[[
     vanagear: the /vg window. The sets built for the job you are on, the piece in each slot and
-    what it scored, and the commands that mean something for this job.
+    what it scored, and the commands that mean something for this job. Every slot can be changed
+    here: the piece you pick is yours (vg\mine.lua) and replaces the built one in that set, and
+    New set makes a set of your own.
 ]]--
 
 local imgui = require('imgui');
@@ -15,15 +17,17 @@ local newLines = { '' };
 local everyJob = { false };
 local mineNote = nil;
 local newSet = { '' };
+local setNote = nil;
 
 local function sayNote(text) mineNote = text; end
+local renderSlots;
 
 -- Your own commands: what /vg <word> runs, a form to add one, and the folder they are kept in.
 local function renderMine()
     local mine = require('vg.mine');
     mineOpen[1] = true;
-    imgui.SetNextWindowSize({ 560, 520 }, ImGuiCond_FirstUseEver);
-    if (imgui.Begin('vanagear: your commands and sets', mineOpen)) then
+    imgui.SetNextWindowSize({ 560, 380 }, ImGuiCond_FirstUseEver);
+    if (imgui.Begin('vanagear: your commands', mineOpen)) then
         imgui.TextWrapped('/vg <word> runs the lines in order. A line is any game command; "wait 2" pauses two seconds. '
             .. 'Put several lines in one box by ending each with ;');
         imgui.Separator();
@@ -83,56 +87,6 @@ local function renderMine()
             sayNote('Read the files again.');
         end
 
-        imgui.Spacing();
-        imgui.Separator();
-        imgui.Text('Your sets');
-        imgui.TextDisabled('Save keeps what you wear now. Wear keeps it on; Look locks it as how you look.');
-        local use = require('vg.use');
-        local sets = mine.Sets();
-        local names = {};
-        for name in pairs(sets) do names[#names + 1] = name; end
-        table.sort(names);
-        for _, name in ipairs(names) do
-            local wearing = (use.Worn() == name);
-            if (imgui.SmallButton((wearing and 'Take off' or 'Wear') .. '##wear_' .. name)) then
-                if (wearing) then use.Wear(nil); else use.Wear(name, sets[name]); end
-            end
-            imgui.SameLine();
-            if (imgui.SmallButton('Look##look_' .. name)) then
-                gFunc.LockStyle(sets[name]);
-                sayNote(name .. ' locked as your look.');
-            end
-            imgui.SameLine();
-            if (imgui.SmallButton('Delete##delset_' .. name)) then
-                mine.RemoveSet(name);
-            end
-            imgui.SameLine();
-            imgui.Text(name);
-            if (imgui.IsItemHovered()) then
-                local lines = {};
-                for _, slot in ipairs(gData.Constants.EquipSlotNames) do
-                    if (sets[name][slot] ~= nil) then lines[#lines + 1] = slot .. ': ' .. tostring(sets[name][slot]); end
-                end
-                imgui.SetTooltip(table.concat(lines, '\n'));
-            end
-        end
-        imgui.PushItemWidth(200);
-        imgui.InputText('##vg_mine_set', newSet, 64);
-        imgui.PopItemWidth();
-        imgui.SameLine();
-        if (imgui.Button('Save what I wear')) then
-            local ok, name, count = mine.SaveSet(newSet[1]);
-            if (ok) then
-                sayNote(string.format('%s saved, %d pieces.', name, count));
-                newSet[1] = '';
-            else
-                sayNote('Name the set first.');
-            end
-        end
-        imgui.SameLine();
-        if (imgui.Button('Unlock look')) then
-            AshitaCore:GetChatManager():QueueCommand(1, '/lockstyle off');
-        end
         if (mineNote ~= nil) then
             imgui.TextDisabled(mineNote);
         end
@@ -148,6 +102,100 @@ local function sortedNames()
     for name in pairs(gVana.Sets) do names[#names + 1] = name; end
     table.sort(names);
     return names;
+end
+
+-- The pieces the player carries that can go in this slot now, one per name.
+local function choices(slot)
+    local bags = require('vg.bags');
+    local list, seen = {}, {};
+    for _, p in ipairs(gVana.Pieces) do
+        if (not seen[p.Name]) and (gVana.Who ~= nil) and (bags.CanWear(p, slot, gVana.Who)) then
+            seen[p.Name] = true;
+            list[#list + 1] = p.Name;
+        end
+    end
+    table.sort(list);
+    return list;
+end
+
+local function pieceName(entry)
+    if (type(entry) == 'table') then return entry.Name; end
+    return entry;
+end
+
+-- The right pane: every slot of the selected set, each one a list to pick a piece from.
+renderSlots = function(name)
+    local mine = require('vg.mine');
+    local ex = gVana.Explain[name];
+    local set = gVana.Sets[name] or {};
+    local own = gVana.Own[name] or {};
+    local built = gVana.Built[name] or {};
+    local yours = next(own) ~= nil;
+    imgui.Text(name .. ((ex and ex.weaponskill) and ('  (' .. ex.weaponskill .. ')') or ''));
+    imgui.SameLine();
+    imgui.TextDisabled(yours and (gVana.Built[name] and '  built, with your changes' or '  your own set') or '  built');
+    imgui.Separator();
+    for slot = 1, 16 do
+        local slotName = gData.Constants.EquipSlotNames[slot];
+        local entry = pieceName(set[slotName]);
+        local ranks = ex and ex.ranks[slot];
+        imgui.Text(string.format('%-6s', slotName));
+        imgui.SameLine(80);
+        if (gVana.Held[slot] ~= nil) and (not own[slotName]) then
+            imgui.TextDisabled(gVana.Held[slot]);
+        else
+            imgui.PushItemWidth(260);
+            local preview = (entry or '(nothing)') .. (own[slotName] and '  *' or '');
+            if (imgui.BeginCombo('##vg_slot_' .. slotName, preview, ImGuiComboFlags_None)) then
+                local builtPiece = pieceName(built[slotName]);
+                if (imgui.Selectable('Built: ' .. (builtPiece or 'nothing') .. '##vg_built_' .. slotName, not own[slotName])) then
+                    mine.SetSlot(name, slotName, nil);
+                end
+                if (imgui.Selectable('Nothing (take it off)##vg_none_' .. slotName, own[slotName] and entry == 'remove')) then
+                    mine.SetSlot(name, slotName, 'remove');
+                end
+                for _, piece in ipairs(choices(slot)) do
+                    if (imgui.Selectable(piece .. '##vg_pick_' .. slotName, own[slotName] and entry == piece)) then
+                        mine.SetSlot(name, slotName, piece);
+                    end
+                end
+                imgui.EndCombo();
+            end
+            imgui.PopItemWidth();
+            if (not own[slotName]) and (ranks ~= nil) and (ranks[1] ~= nil) then
+                imgui.SameLine();
+                imgui.TextDisabled(string.format('+%.1f', ranks[1].gain));
+                if (imgui.IsItemHovered()) and (ranks[2] ~= nil) then
+                    local lines = {};
+                    for i = 2, math.min(4, #ranks) do
+                        lines[#lines + 1] = string.format('%s  +%.1f', ranks[i].c.piece.Name, ranks[i].gain);
+                    end
+                    imgui.SetTooltip('Behind it:\n' .. table.concat(lines, '\n'));
+                end
+            end
+        end
+    end
+    imgui.Separator();
+    if (imgui.Button('Wear it')) then
+        require('vg.use').Wear(name, set);
+        setNote = 'Wearing ' .. name .. ' until /vg wear off.';
+    end
+    imgui.SameLine();
+    if (imgui.Button('Take what I wear')) then
+        mine.SaveSet(name);
+        setNote = name .. ' now holds what you wear.';
+    end
+    if (yours) then
+        imgui.SameLine();
+        if (imgui.Button(gVana.Built[name] and 'Undo my changes' or 'Delete this set')) then
+            mine.RemoveSet(name);
+            setNote = gVana.Built[name] and (name .. ' is back to the built set.') or (name .. ' deleted.');
+        end
+    end
+    imgui.TextDisabled('* = your pick. Name a set after an ability, weaponskill or spell and it goes on for it.');
+    if (setNote ~= nil) then
+        imgui.TextDisabled(setNote);
+    end
 end
 
 window.Render = function()
@@ -185,37 +233,37 @@ window.Render = function()
             imgui.SameLine();
 
             imgui.BeginChild('slots', { 0, -60 }, ImGuiChildFlags_Borders);
-            local ex = gVana.Explain[window.Selected];
-            if (ex ~= nil) then
-                imgui.Text(window.Selected .. (ex.weaponskill and ('  (' .. ex.weaponskill .. ')') or ''));
-                imgui.Separator();
-                for slot = 1, 16 do
-                    local slotName = gData.Constants.EquipSlotNames[slot];
-                    local ranks = ex.ranks[slot];
-                    local set = gVana.Sets[window.Selected];
-                    local entry = set and set[slotName];
-                    imgui.Text(string.format('%-6s', slotName));
-                    imgui.SameLine(80);
-                    if (gVana.Held[slot] ~= nil) then
-                        imgui.TextDisabled(gVana.Held[slot]);
-                    elseif (entry ~= nil) and (ranks ~= nil) and (ranks[1] ~= nil) then
-                        imgui.Text(string.format('%s  +%.1f', entry.Name, ranks[1].gain));
-                        if (imgui.IsItemHovered()) and (ranks[2] ~= nil) then
-                            local lines = {};
-                            for i = 2, math.min(4, #ranks) do
-                                lines[#lines + 1] = string.format('%s  +%.1f', ranks[i].c.piece.Name, ranks[i].gain);
-                            end
-                            imgui.SetTooltip('Behind it:\n' .. table.concat(lines, '\n'));
-                        end
-                    else
-                        imgui.TextDisabled('nothing you carry adds to this set here');
-                    end
-                end
-            end
+            renderSlots(window.Selected);
             imgui.EndChild();
         end
         imgui.Separator();
-        if (imgui.Button('Your commands and sets')) then
+        imgui.PushItemWidth(160);
+        imgui.InputText('##vg_new_set', newSet, 64);
+        imgui.PopItemWidth();
+        imgui.SameLine();
+        if (imgui.Button('New set')) then
+            local mine = require('vg.mine');
+            local name = mine.SetName(newSet[1]);
+            if (name == '') then
+                setNote = 'Type a name first.';
+            elseif (gVana.Sets[name] ~= nil) and (not mine.Dressing) then
+                window.Selected = name;
+                setNote = name .. ' is already a set: change its slots on the right.';
+            else
+                local _, _, count = mine.SaveSet(name);
+                window.Selected = name;
+                newSet[1] = '';
+                setNote = string.format('%s saved from what you wear (%d pieces). Change any slot on the right.', name, count or 0);
+            end
+        end
+        imgui.SameLine();
+        local mine = require('vg.mine');
+        if (imgui.Button(mine.Dressing and 'Swap again' or 'Dress')) then
+            mine.Dress(not mine.Dressing);
+            setNote = mine.Dressing and 'Swapping paused: put gear on, type a name and press New set (or /vg save <name>).' or nil;
+        end
+        imgui.SameLine();
+        if (imgui.Button('Your commands')) then
             window.Mine = not window.Mine;
         end
         imgui.SameLine();

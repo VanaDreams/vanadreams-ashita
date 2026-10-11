@@ -34,15 +34,29 @@ built sets underneath automatically, so anything they leave out is filled.
 `/vg <word>`, and Motenten's mode commands and F9-F12 keys (`/vg keys mote`) work for players
 coming from GearSwap.
 
-## Your own commands and sets
+## Your own sets
 
-- `/vg add <word> <command>; <command>` makes `/vg <word>` run those lines in order (`wait 2`
-  pauses). `/vg add all <word> ...` makes it for every job. The window's **Your commands and
-  sets** button does the same, and **Open folder** opens `config\addons\vanagear\`, where they
-  are kept as `commands\<JOB>.lua` and `sets\<JOB>.lua` to edit by hand (`/vg mine reload` after).
-- `/vg save <name>` keeps what you are wearing as a set. `/vg wear <name>` keeps it on over the
-  built sets until `/vg wear off`; `/vg look <name>` locks it as your look (lockstyle) while the
-  built sets go on swapping, `/vg look off` unlocks.
+- `/vg dress` stops the swapping. Put on what you like from the equipment menu, then
+  `/vg save <name>` saves it under that name and swapping comes back on. Weapons are left out
+  unless `/vg weapons on`.
+- Every slot in the `/vg` window is a list: pick a piece and it is yours in that set (marked *).
+  **New set** saves what you wear under the typed name.
+- A set of yours named like a built one (`Idle`, `Tp_Default`, `Reward`, `CallBeast`, a
+  weaponskill or spell) replaces the slots it names wherever that set goes on. Any other name is a
+  set of its own: `/vg wear <name>` (until `/vg wear off`), `/vg with <name> <command>`,
+  `/gs equip <name>`, `/vg look <name>` (lockstyle).
+- `/vg set <name> <slot> <item>` changes one slot from chat; `/vg sets` lists yours.
+- Kept in `config\addons\vanagear\sets\<JOB>.lua`.
+
+## Your own commands
+
+- `/vg add <word> <command>; <command>` makes `/<word>` (and `/vg <word>`) run those lines in
+  order; `wait 2` pauses. `/vg add all <word> ...` makes it for every job.
+- `/vg with <set> <command>` puts a set on, sends the command and keeps the set on until the
+  action is done. Example: `/vg dress`, equip the jug, `/vg save lizard`, then
+  `/vg add lizard /vg with lizard /ja "Bestial Loyalty" <me>` and type `/lizard`.
+- **Your commands** in the window adds, edits, runs and deletes them; **Open folder** opens
+  `config\addons\vanagear\` to write them by hand (`/vg mine reload` after).
 
 ## Beastmaster
 

@@ -171,6 +171,8 @@ stock.HandleMidcast = function()
         wear('Macc');
     end
     family(spell);
+    -- a set named for this very spell (one of the player's own, as Cure IV or CureIV)
+    wear((string.gsub(spell.Name or '', '[^%w]', '')));
     if (t.TH) then wear('TH'); end
 end
 
