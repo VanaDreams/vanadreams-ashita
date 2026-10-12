@@ -33,7 +33,7 @@ namespace Vanadreams.Services
             "https://aka.ms/vs/17/release/vc_redist.x86.exe",
         };
 
-        /// <summary>Microsoft's Visual C++ 2005 SP1 x86 redistributable (MFC security update, 8.0.50727.6195).</summary>
+        /// <summary>Microsoft's Visual C++ 2005 SP1 x86 redistributable, MFC security update (installs 8.0.50727.x into WinSxS).</summary>
         public const string Vc80InstallerUrl = "https://download.microsoft.com/download/8/B/4/8B42259F-5D70-43F4-AC2E-4B208FD8D66A/vcredist_x86.EXE";
 
         /// <summary>The oldest msvcp140.dll that carries what Ashita 4.3.2 and xiloader v2.2.0 were built against.</summary>
