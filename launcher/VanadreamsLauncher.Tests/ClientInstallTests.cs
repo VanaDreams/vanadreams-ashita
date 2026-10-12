@@ -139,6 +139,19 @@ namespace Vanadreams.Tests
             StringAssert.Contains(s, "exit /b " + ClientInstall.RegisterSteps);
         }
 
+        [TestMethod]
+        public void RegisterScript_AddsRetailPlayOnlineSettingsOnlyWhereMissing()
+        {
+            var s = ClientInstall.RegisterScript(@"C:\Games\Vanadreams");
+            foreach (var v in ClientInstall.RetailDefaults)
+                StringAssert.Contains(s, $@"reg query ""{v[0]}"" /v {v[1]} /reg:32 >nul 2>&1 || reg add ""{v[0]}"" /v {v[1]} /t {v[2]}");
+            StringAssert.Contains(s, @"/v CommonFilesFolder /t REG_SZ /d ""C:\Program Files\Common Files\\"" /f");
+            StringAssert.Matches(s, new System.Text.RegularExpressions.Regex(@"Interface"" /v 1000 /t REG_SZ /d ""[0-9A-F]{8}"" /f"));
+            StringAssert.Contains(s, @"Product"" /v 0001 /t REG_BINARY /f /reg:32");
+            Assert.IsFalse(s.Contains("SPS"), "sign-in data is never written");
+            StringAssert.Contains(s, "exit /b " + ClientInstall.RegisterSteps);
+        }
+
         private static Registration Ours() => new Registration
         {
             GameFolder = @"C:\Games\Vanadreams\FINAL FANTASY XI\",
