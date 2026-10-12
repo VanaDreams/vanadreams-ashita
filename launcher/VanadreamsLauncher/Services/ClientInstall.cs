@@ -185,7 +185,7 @@ namespace Vanadreams.Services
             foreach (var d in m.ViewerCreateDirs) Directory.CreateDirectory(Path.Combine(ViewerFolder(root), d.Replace('/', '\\')));
         }
 
-        public static int RegisterSteps => 7 + ComServers.Length;
+        public static int RegisterSteps => 7 + RetailDefaults.Length + ComServers.Length;
 
         /// <summary>The elevated step, 32-bit registry view as PlayOnline writes it: both folders into InstallFolder,
         /// the PlayOnline language xiloader reads (English), a controller mapping so a gamepad works from the first
@@ -213,8 +213,51 @@ namespace Vanadreams.Services
                 padIfMissing("padguid000", "{00000000-0000-0000-0000-000000000000}", 5),
                 padIfMissing("padmode000", "1,1,0,0,0,1", 6),
                 padIfMissing("padsin000", "8,9,13,12,10,0,1,3,2,15,-1,-1,14,-33,-33,32,32,-36,-36,35,35,6,7,5,4,11,-1", 7),
-            }.Concat(ComServers.Select((rel, i) => $"\"{regsvr}\" /s \"{Path.Combine(root, rel)}\" || exit /b {8 + i}"))
+            }.Concat(RetailDefaults.Select((v, i) => IfMissing(v, 8 + i)))
+             .Concat(ComServers.Select((rel, i) => $"\"{regsvr}\" /s \"{Path.Combine(root, rel)}\" || exit /b {8 + RetailDefaults.Length + i}"))
              .Concat(new[] { "exit /b 0" })) + "\r\n";
+        }
+
+        /// <summary>The rest of what Square Enix's installer writes under PlayOnlineUS (read from Ferrin's retail
+        /// install, 12 Oct 2026), so the Retail profile can start the package's own pol.exe on a PC that never had
+        /// FFXI. Each is only added where missing, so a player's own PlayOnline settings are kept. Key, name, type, data
+        /// (null data writes an empty value). Sign-in data is never written.</summary>
+        public static readonly string[][] RetailDefaults =
+        {
+            new[] { @"HKLM\SOFTWARE\PlayOnlineUS", "CommonFilesFolder", "REG_SZ", @"C:\Program Files\Common Files\" },
+            new[] { @"HKLM\SOFTWARE\PlayOnlineUS\Interface", "0001", "REG_SZ", "0" },
+            new[] { @"HKLM\SOFTWARE\PlayOnlineUS\Interface", "1000", "REG_SZ", null },   // filled with a fresh install id
+            new[] { @"HKLM\SOFTWARE\PlayOnlineUS\Product", "0001", "REG_BINARY", null },
+            new[] { @"HKLM\SOFTWARE\PlayOnlineUS\SquareEnix\FinalFantasyXI", "bFirst", "REG_BINARY", "00" },
+            new[] { @"HKLM\SOFTWARE\PlayOnlineUS\SquareEnix\PlayOnlineViewer", "FirstBootPlayMovie", "REG_DWORD", "0" },
+            new[] { Pol + "Settings", "FullScreen", "REG_DWORD", "0" },
+            new[] { Pol + "Settings", "PlayAudio", "REG_DWORD", "1" },
+            new[] { Pol + "Settings", "PlayOpeningMovie", "REG_DWORD", "1" },
+            new[] { Pol + "Settings", "ResetSettings", "REG_DWORD", "0" },
+            new[] { Pol + "Settings", "UseGameController", "REG_DWORD", "0" },
+            new[] { Pol + @"Settings\Controler", "AnchorDown", "REG_DWORD", "0x34" },   // Square's spelling
+            new[] { Pol + @"Settings\Controler", "AnchorLeft", "REG_DWORD", "0x36" },
+            new[] { Pol + @"Settings\Controler", "AnchorRight", "REG_DWORD", "0x32" },
+            new[] { Pol + @"Settings\Controler", "AnchorUp", "REG_DWORD", "0x30" },
+            new[] { Pol + @"Settings\Controler", "Cancel", "REG_DWORD", "2" },
+            new[] { Pol + @"Settings\Controler", "ChrCsrNext", "REG_DWORD", "7" },
+            new[] { Pol + @"Settings\Controler", "ChrCsrPrev", "REG_DWORD", "6" },
+            new[] { Pol + @"Settings\Controler", "ID", "REG_DWORD", "0" },
+            new[] { Pol + @"Settings\Controler", "Menu", "REG_DWORD", "0" },
+            new[] { Pol + @"Settings\Controler", "Navi", "REG_DWORD", "3" },
+            new[] { Pol + @"Settings\Controler", "Ok", "REG_DWORD", "1" },
+            new[] { Pol + @"Settings\Controler", "PageNext", "REG_DWORD", "5" },
+            new[] { Pol + @"Settings\Controler", "PagePrev", "REG_DWORD", "4" },
+        };
+
+        private const string Pol = @"HKLM\SOFTWARE\PlayOnlineUS\SquareEnix\PlayOnlineViewer\";
+
+        private static string IfMissing(string[] v, int step)
+        {
+            var data = v[1] == "1000" && v[0].EndsWith("Interface") ? Guid.NewGuid().ToString("N").Substring(0, 8).ToUpperInvariant() : v[3];
+            // reg.exe reads \" as an escaped quote, so a trailing backslash is doubled
+            var d = data == null ? "" : " /d \"" + (data.EndsWith("\\") ? data + "\\" : data) + "\"";
+            return $"reg query \"{v[0]}\" /v {v[1]} /reg:32 >nul 2>&1 || reg add \"{v[0]}\" /v {v[1]} /t {v[2]}{d} /f /reg:32 || exit /b {step}";
         }
 
         /// <summary>Every COM server Square Enix's installer registers (read from a retail PC, 25 Sept 2026).
