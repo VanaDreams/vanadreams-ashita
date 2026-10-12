@@ -15,3 +15,7 @@ logs/
 # Tool build output
 tools/bgw/bin/
 tools/bgw/obj/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
