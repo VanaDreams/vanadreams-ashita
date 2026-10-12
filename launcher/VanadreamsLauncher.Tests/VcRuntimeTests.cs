@@ -28,6 +28,27 @@ namespace Vanadreams.Tests
         }
 
         [TestMethod]
+        public void Vc80_is_found_by_its_side_by_side_folder()
+        {
+            var sxs = Path.Combine(Path.GetTempPath(), "vdl-sxs-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(sxs);
+            try
+            {
+                Assert.IsFalse(VcRuntime.HasVc80(sxs));
+                // the 64-bit one does not count: the game is 32-bit
+                var amd64 = Directory.CreateDirectory(Path.Combine(sxs, "amd64_microsoft.vc80.crt_1fc8b3b9a1e18e3b_8.0.50727.6195_none_88e41e092fab0294")).FullName;
+                File.WriteAllBytes(Path.Combine(amd64, "msvcr80.dll"), new byte[] { 0 });
+                Assert.IsFalse(VcRuntime.HasVc80(sxs));
+                var x86 = Directory.CreateDirectory(Path.Combine(sxs, "x86_microsoft.vc80.crt_1fc8b3b9a1e18e3b_8.0.50727.9680_none_d08f9da24428a3ab")).FullName;
+                Assert.IsFalse(VcRuntime.HasVc80(sxs));   // an empty leftover folder is not the runtime
+                File.WriteAllBytes(Path.Combine(x86, "msvcr80.dll"), new byte[] { 0 });
+                Assert.IsTrue(VcRuntime.HasVc80(sxs));
+            }
+            finally { Directory.Delete(sxs, true); }
+            Assert.IsFalse(VcRuntime.HasVc80(null));
+        }
+
+        [TestMethod]
         public void Installer_codes_that_mean_the_runtime_is_there()
         {
             Assert.IsTrue(VcRuntime.InstallerSucceeded(0));
