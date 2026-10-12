@@ -126,6 +126,9 @@ namespace Vanadreams.Pages
                 Mark(Step2);
                 Say("Fetching xiloader " + Loader.Tag + "…");
                 await Loader.InstallAsync(state.Downloader, state.Settings.DownloadsFolder, root, true, progress);
+                // and the Microsoft runtime it and Ashita need, without which Ashita's console hangs on its banner
+                Say("Checking Microsoft's Visual C++ runtime…");
+                await VcRuntime.EnsureAsync(state.Downloader, state.Settings.DownloadsFolder, progress);
                 Done(Step2);
 
                 // 3. profile
