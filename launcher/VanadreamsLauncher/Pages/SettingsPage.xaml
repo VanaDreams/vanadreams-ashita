@@ -23,16 +23,17 @@
                     </Grid.RowDefinitions>
                     <TextBlock Text="Ashita folder" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
                     <TextBox Grid.Column="1" x:Name="AshitaBox" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Row="1" Text="FFXI folder override" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
-                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="FfxiBox" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Row="1" Text="Vanadreams game folder" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="FfxiBox" VerticalAlignment="Center"
+                             ToolTip="Blank: the launcher picks the copy that fits the server. A FINAL FANTASY XI folder here is always the one Vanadreams plays (same as the Game folder box on a Vanadreams profile)."/>
                     <TextBlock Grid.Row="2" Text="Catalogue address" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
                     <TextBox Grid.Row="2" Grid.Column="1" x:Name="CatalogBox" VerticalAlignment="Center"/>
                     <TextBlock Grid.Row="3" Text="Status address" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
                     <TextBox Grid.Row="3" Grid.Column="1" x:Name="StatusBox" VerticalAlignment="Center"/>
                     <TextBlock Grid.Row="4" Text="Server's client version" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Row="4" Grid.Column="1" x:Name="ExpectedBox" Style="{StaticResource Mono}" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Row="5" Text="Detected FFXI folder" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Row="5" Grid.Column="1" x:Name="DetectedBox" Style="{StaticResource Mono}" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Row="5" Text="Vanadreams plays" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Row="5" Grid.Column="1" x:Name="DetectedBox" Style="{StaticResource Mono}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                     <TextBlock Grid.Row="6" Text="Graphics" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
                     <CheckBox Grid.Row="6" Grid.Column="1" x:Name="LowSpecBox" VerticalAlignment="Center"
                               Content="Low spec: turn the modern look's effects off (textures stay)"
