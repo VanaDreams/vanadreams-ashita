@@ -192,6 +192,15 @@ namespace Vanadreams.Pages
         }
 
         /// <summary>
+        /// Ashita runs as the player unless something here needs administrator: the profile asks for it, it is a retail
+        /// profile (PlayOnline updates itself), or Ashita or the game sits under Program Files, where only an
+        /// administrator can write the game's settings and screenshots.
+        /// </summary>
+        private bool NeedsAdmin(Profile profile, string gameRoot) =>
+            profile.RunAsAdmin || profile.IsRetail ||
+            ClientVersion.IsUnderProgramFiles(App.State.AshitaRoot) || ClientVersion.IsUnderProgramFiles(gameRoot);
+
+        /// <summary>
         /// The copy of the game this profile should start. Vanadreams looks across every copy on the PC for the one
         /// that fits the server (AppState.VanadreamsGameRoot); any other server, retail included, plays the profile's
         /// own game folder or the copy Windows had before we took it.
@@ -333,7 +342,7 @@ namespace Vanadreams.Pages
 
             try
             {
-                GameLauncher.Launch(state.AshitaRoot, _profile, state.Credentials.Get(_profile.Id));
+                GameLauncher.Launch(state.AshitaRoot, _profile, state.Credentials.Get(_profile.Id), NeedsAdmin(_profile, root ?? GameRegistration.CurrentRoot(reg)));
                 Music.FadeOut(3);
                 state.Settings.LastProfile = _profile.Id;
                 state.Settings.LastPlayed[_profile.Id] = DateTime.Now.ToString("o");
