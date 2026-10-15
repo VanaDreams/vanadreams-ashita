@@ -64,6 +64,39 @@ namespace Vanadreams.Services
             return zip;
         }
 
+        /// <summary>
+        /// Brings toGameFolder\USER up to date from fromGameFolder\USER, file by file: a macro book or config file is
+        /// copied when it is missing here or was written more recently there. Nothing is deleted. Returns the character
+        /// folders that received at least one file.
+        ///
+        /// 15 Oct 2026: Terry's PC had two games, C:\Program Files (x86)\...\FINAL FANTASY XI and D:\fancy ffxi. Each
+        /// keeps its own USER folder, so whichever one a launch started showed that copy's macros, and the other set
+        /// looked wiped. Play takes the backup of toGameFolder first, so this can always be undone.
+        /// </summary>
+        public static List<string> CarryOver(string fromGameFolder, string toGameFolder)
+        {
+            var carried = new List<string>();
+            if (string.IsNullOrWhiteSpace(fromGameFolder) || string.IsNullOrWhiteSpace(toGameFolder)) return carried;
+            var from = Path.Combine(fromGameFolder, "USER");
+            var to = Path.Combine(toGameFolder, "USER");
+            if (!Directory.Exists(from) || string.Equals(Path.GetFullPath(from).TrimEnd('\\', '/'), Path.GetFullPath(to).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase))
+                return carried;
+
+            foreach (var f in Directory.GetFiles(from, "*", SearchOption.AllDirectories))
+            {
+                var rel = f.Substring(from.Length).TrimStart('\\', '/');
+                var dest = Path.Combine(to, rel);
+                var when = File.GetLastWriteTimeUtc(f);
+                if (File.Exists(dest) && File.GetLastWriteTimeUtc(dest) >= when) continue;
+                Directory.CreateDirectory(Path.GetDirectoryName(dest));
+                File.Copy(f, dest, true);
+                File.SetLastWriteTimeUtc(dest, when);
+                var character = rel.Split('\\', '/')[0];
+                if (!carried.Contains(character, StringComparer.OrdinalIgnoreCase)) carried.Add(character);
+            }
+            return carried;
+        }
+
         /// <summary>The copies in a folder, newest first.</summary>
         public static List<string> Copies(string backupFolder) =>
             Directory.Exists(backupFolder)
