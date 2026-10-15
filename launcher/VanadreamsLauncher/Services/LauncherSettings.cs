@@ -46,6 +46,7 @@ namespace Vanadreams.Services
         public bool LowSpec { get; set; }
         public List<string> EnabledAddons { get; set; } = new List<string>();
         public List<string> GivenDefaults { get; set; } = new List<string>();   // on-by-default items already given once; unticking one sticks
+        public bool TickAllTidied { get; set; }   // the pre-0.2.24 "every Ashita addon on" list has been checked for, once (AddonInstaller.TidyTickAll)
         public Dictionary<string, string> InstalledVersions { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, string> LastPlayed { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         public List<string> GuideDone { get; set; } = new List<string>();
@@ -73,6 +74,7 @@ namespace Vanadreams.Services
                 s.LowSpec = Json.Bool(d, "lowSpec");
                 s.EnabledAddons = Json.Strings(d, "enabledAddons");
                 s.GivenDefaults = Json.Strings(d, "givenDefaults");
+                s.TickAllTidied = Json.Bool(d, "tickAllTidied");
                 s.GuideDone = Json.Strings(d, "guideDone");
                 var inst = Json.Obj(d.ContainsKey("installedVersions") ? d["installedVersions"] : null);
                 if (inst != null) foreach (var kv in inst) s.InstalledVersions[kv.Key] = Convert.ToString(kv.Value);
@@ -102,6 +104,7 @@ namespace Vanadreams.Services
                 { "lowSpec", LowSpec },
                 { "enabledAddons", EnabledAddons.ToList() },
                 { "givenDefaults", GivenDefaults.ToList() },
+                { "tickAllTidied", TickAllTidied },
                 { "guideDone", GuideDone.ToList() },
                 { "installedVersions", InstalledVersions.ToDictionary(k => k.Key, k => (object)k.Value) },
                 { "lastPlayed", LastPlayed.ToDictionary(k => k.Key, k => (object)k.Value) },
