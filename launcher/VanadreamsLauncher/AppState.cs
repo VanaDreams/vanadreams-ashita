@@ -220,6 +220,18 @@ namespace Vanadreams
         {
             if (!HasAshita) return;
             var changed = false;
+            // once per player, and only with a real catalogue to tell Ashita's own addons from ours
+            if (!Settings.TickAllTidied && Catalog.Items.Count > 0)
+            {
+                var tidied = AddonInstaller.TidyTickAll(Catalog, Settings.EnabledAddons);
+                if (tidied != null)
+                {
+                    Log.Info("old every-addon list switched off: " + (Settings.EnabledAddons.Count - tidied.Count) + " of Ashita's addons unticked, " + tidied.Count + " kept");
+                    Settings.EnabledAddons = tidied;
+                }
+                Settings.TickAllTidied = true;
+                changed = true;
+            }
             foreach (var item in AddonInstaller.DefaultsToGive(Catalog, Settings.GivenDefaults))
             {
                 try
