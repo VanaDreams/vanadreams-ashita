@@ -1,6 +1,6 @@
 addon.name    = 'dreamyah'
 addon.author  = 'VanaDreams'
-addon.version = '1.1'
+addon.version = '1.2'
 addon.desc    = 'Searchable VanaDreams Auction House interface.'
 addon.link    = ''
 
@@ -133,9 +133,10 @@ local function submitBid()
     state.bidRequestId = protocol.sendRequest(Operation.BidRequest, state.selectedItemId, form, bid)
 end
 
-local function rebuildCatalog()
+-- entries: arrays of { itemId, category, stackSize }. Items the client has no name for are left out.
+local function setCatalog(fragments)
     local items = {}
-    for _, fragment in ipairs(state.fragments) do
+    for _, fragment in ipairs(fragments) do
         for _, entry in ipairs(fragment) do
             local name = itemName(entry.itemId)
             if name ~= nil then
@@ -151,8 +152,29 @@ local function rebuildCatalog()
     end
     catalog:set(items)
     catalogVersion = catalogVersion + 1
+end
+
+local function rebuildCatalog()
+    setCatalog(state.fragments)
     state.catalogRequestId = nil
     state.resultText = string.format('Catalog synchronized: %d AH-supported items.', catalog:size())
+end
+
+-- The catalog shipped with the addon (data/catalog.lua, generated from the server's item table), so search works
+-- the moment the window opens instead of after the server sends the whole list. Refresh Catalog still asks the
+-- server for its own. Returns false when the file is missing or unreadable.
+local function loadShippedCatalog()
+    local ok, flat = pcall(require, 'data/catalog')
+    if not ok or type(flat) ~= 'table' or #flat == 0 then
+        return false
+    end
+    local entries = {}
+    for i = 1, #flat - 2, 3 do
+        entries[#entries + 1] = { itemId = flat[i], category = flat[i + 1], stackSize = flat[i + 2] }
+    end
+    setCatalog({ entries })
+    state.resultText = string.format('Ready: %d AH-supported items. Type to search.', catalog:size())
+    return catalog:size() > 0
 end
 
 local function processCatalog(header, payload, bytes)
@@ -253,7 +275,7 @@ end
 
 local function toggleWindow()
     state.open[1] = not state.open[1]
-    if state.open[1] and catalog:size() == 0 then
+    if state.open[1] and catalog:size() == 0 and not loadShippedCatalog() then
         requestCatalog()
     end
 end
