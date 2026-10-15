@@ -10,7 +10,7 @@
     <AssemblyName>VanadreamsLauncher</AssemblyName>
     <AssemblyTitle>Vanadreams Launcher</AssemblyTitle>
     <Product>Vanadreams Launcher</Product>
-    <Version>0.2.39</Version>
+    <Version>0.2.40</Version>
     <ApplicationIcon>assets\moon.ico</ApplicationIcon>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <Deterministic>true</Deterministic>
@@ -20,6 +20,7 @@
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Security" />
     <Reference Include="System.Net.Http" />
+    <Reference Include="System.Management" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="Microsoft.VisualBasic" />
