@@ -10,7 +10,7 @@
 
 addon.name    = 'charcapture';
 addon.author  = 'Vanadreams';
-addon.version = '0.1.6';
+addon.version = '0.1.7';
 addon.desc    = 'Captures a character snapshot for porting to Vanadreams.';
 addon.link    = 'https://github.com/VanaDreams/vanadreams-ashita';
 
@@ -29,7 +29,7 @@ end
 -- and go into the next snapshot.
 --   0x08C: u16 count at 0x04, then count entries of { u16 merit id, u8 next cost, u8 upgrades }
 --   0x08D: 64 entries of { u16 index:5 | job:11, u16 next:10 | level:6 } from 0x04
-local seen = T{ merits = T{}, merits_at = nil, job_points = T{}, job_points_at = nil, logs = T{}, logs_at = nil, currencies = T{}, currencies1_at = nil, currencies2_at = nil };
+local seen = T{ merits = T{}, merits_at = nil, job_points = T{}, job_points_at = nil, logs = T{}, logs_at = nil, currencies = T{}, currencies1_at = nil, currencies2_at = nil, skills_by_job = T{}, skills_due = nil };
 
 -- Quest and mission logs arrive as 0x056 packets when you zone: a 32-byte block at 0x04 and a
 -- 'port' at 0x24 saying which log it is (current or completed quests per area, completed
@@ -96,7 +96,8 @@ local CURRENCY_1 = {
     { 170, 'H', 'login_points' }, { 172, 'i', 'cruor' }, { 176, 'i', 'resistance_credit' },
     { 180, 'i', 'dominion_note' }, { 184, 'B', 'fifth_echelon_trophy' }, { 185, 'B', 'fourth_echelon_trophy' },
     { 186, 'B', 'third_echelon_trophy' }, { 187, 'B', 'second_echelon_trophy' }, { 188, 'B', 'first_echelon_trophy' },
-    { 189, 'B', 'cave_points' }, { 190, 'B', 'id_tags' }, { 191, 'B', 'op_credits' }, { 196, 'i', 'voidstones' },
+    { 189, 'B', 'cave_points' }, { 190, 'B', 'id_tags' }, { 191, 'B', 'op_credits' }, { 192, 'i', 'traverser_stones' },
+    { 196, 'i', 'voidstones' },
     { 200, 'i', 'kupofried_corundums' }, { 204, 'B', 'pheromone_sacks' }, { 206, 'B', 'rems_ch1' },
     { 207, 'B', 'rems_ch2' }, { 208, 'B', 'rems_ch3' }, { 209, 'B', 'rems_ch4' }, { 210, 'B', 'rems_ch5' },
     { 211, 'B', 'rems_ch6' }, { 212, 'B', 'rems_ch7' }, { 213, 'B', 'rems_ch8' }, { 214, 'B', 'rems_ch9' },
@@ -204,6 +205,22 @@ local STORAGE_NAME = {
     [14] = 'Mog Wardrobe 6', [15] = 'Mog Wardrobe 7', [16] = 'Mog Wardrobe 8',
 };
 
+-- The game only shows the skills of the job you are on (packet 0x062, sent again on every job change), so
+-- each job pair seen this session keeps its own reading. Change jobs in your Mog House before /capture and
+-- every job's skills come along; anything never seen is filled in at its cap on import.
+local function read_job_skills()
+    local player = AshitaCore:GetMemoryManager():GetPlayer();
+    if player:GetLoginStatus() ~= 2 then return; end
+    local main, sub = player:GetMainJob(), player:GetSubJob();
+    if main == nil or main == 0 then return; end
+    local r = T{ main = main, main_level = player:GetMainJobLevel(), sub = sub, sub_level = player:GetSubJobLevel(), combat = T{} };
+    for i = 0, COMBAT_SKILLS - 1 do
+        local s = player:GetCombatSkill(i);
+        if s then r.combat[tostring(i)] = T{ skill = s:GetSkill(), capped = s:IsCapped() }; end
+    end
+    seen.skills_by_job[('%d/%d'):format(main, sub or 0)] = r;
+end
+
 local function say(msg)
     print(('\30\08[charcapture]\30\01 %s'):format(msg));
 end
@@ -262,7 +279,7 @@ local function capture()
             limit_points = safe(function() return player:GetLimitPoints(); end, 0),
             exp = T{ current = safe(function() return player:GetExpCurrent(); end, 0), needed = safe(function() return player:GetExpNeeded(); end, 0) },
         },
-        skills = T{ combat = T{}, craft = T{} },
+        skills = T{ combat = T{}, craft = T{}, by_job = T{} },
         spells = T{}, abilities = T{}, weaponskills = T{}, traits = T{}, key_items = T{},
         gil = 0,
         inventory = T{},
@@ -302,7 +319,9 @@ local function capture()
         };
     end
 
-    -- skills
+    -- skills: this job's reading at the top, every job pair seen this session under by_job
+    pcall(read_job_skills);
+    for k, v in pairs(seen.skills_by_job) do snap.skills.by_job[k] = v; end
     for i = 0, COMBAT_SKILLS - 1 do
         local s = safe(function() return player:GetCombatSkill(i); end, nil);
         if s then snap.skills.combat[tostring(i)] = T{ skill = safe(function() return s:GetSkill(); end, 0), rank = safe(function() return s:GetRank(); end, 0), capped = safe(function() return s:IsCapped(); end, false) }; end
@@ -402,9 +421,17 @@ ashita.events.register('packet_in', 'charcapture_packet_in', function (e)
     elseif e.id == 0x08D then pcall(read_job_points, e.data);
     elseif e.id == 0x113 then pcall(read_currencies_1, e.data);
     elseif e.id == 0x118 then pcall(read_currencies_2, e.data);
-    elseif e.id == 0x056 then pcall(read_log, e.data); end
+    elseif e.id == 0x056 then pcall(read_log, e.data);
+    elseif e.id == 0x062 then seen.skills_due = os.clock() + 2; end   -- read once the client has applied it
+end);
+
+ashita.events.register('d3d_present', 'charcapture_present', function ()
+    if seen.skills_due and os.clock() >= seen.skills_due then
+        seen.skills_due = nil;
+        pcall(read_job_skills);
+    end
 end);
 
 ashita.events.register('load', 'charcapture_load', function ()
-    say('loaded. Zone once, open the Merit Points, Job Points and both Currencies menus, then /capture writes your character snapshot.');
+    say('loaded. Zone once, open the Merit Points, Job Points and both Currencies menus, then /capture writes your character snapshot. The game only shows the skills of the job you are on: switch to your other jobs in your Mog House first and their skills come too.');
 end);
