@@ -21,8 +21,9 @@ namespace Vanadreams.Services
     ///
     /// From 3 Oct to 12 Oct 2026 seven players reported the same thing on Discord: Ashita connects, then the
     /// window closes and the game never starts. Behind it were a loader the server refused, a second copy of the
-    /// game, a game at the top of a drive, an old C++ runtime, a network that could not reach the server, and
-    /// antivirus taking the loader away. All of them looked identical, because xiloader's console closes the
+    /// game, a game at the top of a drive, an old C++ runtime, a network that could not reach the server (milky,
+    /// fixed by Tailscale), and no game where Windows pointed (Mogsy). Antivirus taking the loader is the one
+    /// known cause none of them named. All of them looked identical, because xiloader's console closes the
     /// moment it gives up and the launcher never looked at what happened after Play.
     ///
     /// So: before Play, the files antivirus takes are checked and the server's login ports are tried; after
@@ -314,6 +315,11 @@ namespace Vanadreams.Services
             "The loader closed before the game opened, and nothing on this PC says why.\n\n" +
             "The loader's own window prints the reason just before it closes, most often a wrong password or an account that is already logged in. " +
             "Press Play again and watch that window; if it closes too fast to read, take a screenshot and post it in the Vanadreams Discord bug channel.";
+
+        public const string NoGameSentence =
+            "No complete copy of FINAL FANTASY XI was found on this PC: FFXi.dll, FFXiMain.dll or PlayOnline's polcore.dll is missing " +
+            "everywhere the launcher looks, including the copy Windows has registered. The loader would log in and then close with no game to start.\n\n" +
+            "Open Install game on the menu to install or repair it, or set your game folder in Settings if it is somewhere else.\n\nPlay anyway?";
 
         public const string NeverStartedNoCause =
             "Ashita closed without starting the loader.\n\n" +
