@@ -331,6 +331,15 @@ namespace Vanadreams.Pages
                 return;
             }
 
+            // macros and config live only in the game's USER folder; a copy before every launch lets a lost set come back
+            try
+            {
+                var gameFolder = root != null ? ClientInstall.GameFolder(root) : reg.GameFolder;
+                var copy = UserFolderBackup.Take(gameFolder, UserFolderBackup.BackupFolder, DateTime.Now);
+                if (copy != null) Log.Info("USER folder copied to " + copy);
+            }
+            catch (Exception ex) { Log.Warn("USER backup on play: " + ex.Message); }
+
             try
             {
                 GameLauncher.Launch(state.AshitaRoot, _profile, state.Credentials.Get(_profile.Id));
