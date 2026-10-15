@@ -322,6 +322,11 @@ namespace Vanadreams.Pages
             var reg = GameRegistration.Read();
             var root = GameRootFor(_profile, reg);
             if (root != null && !EnsureGameIsRegistered(root, reg)) return;
+            // 12 Oct 2026: Mogsy's loader logged in and closed, because neither pol.exe nor FFXiMain.dll was where
+            // Windows pointed. When no copy we know of is a whole game, the launch is all but sure to do the same.
+            if (_profile.IsVanadreams && root == null &&
+                MessageBox.Show(PlayCheck.NoGameSentence, "Vanadreams Launcher", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                return;
 
             state.CheckVersion();
             if (_profile.IsVanadreams && state.Version.BlocksPlay)   // the Vanadreams version rule has no say over other servers
