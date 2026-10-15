@@ -17,3 +17,10 @@ Talks to the server over packet `0x120`; the protocol lives in `src/protocol.lua
 `server/src/common/dreamy_ah_protocol.h`.
 
 Do not run this together with the `DreamyAH.dll` plugin; both consume packet `0x120`.
+
+## Item list
+The list of searchable items ships with the addon in `data/catalog.lua`, so search works as soon as the window
+opens. **Refresh Catalog** still asks the server for its current list. When the server's item table changes (an
+AH category added or changed), regenerate the file and bump the addon version:
+
+    python tools/dreamyah_catalog/generate.py <server checkout>\sql\item_basic.sql
