@@ -60,7 +60,7 @@ roles.Modes = {
     Cursna = { Stats = { ENHANCES_CURSNA = 3, HEALING = 1 } },
     Enhancing = { Stats = { ENHANCE = 1, ENH_MAGIC_DURATION = 2, CONSERVE_MP = 0.2 } },
     Stoneskin = { Stats = { STONESKIN_BONUS_HP = 1, MND = 0.3, ENHANCE = 0.4 } },
-    Phalanx = { Stats = { PHALANX = 5, ENHANCE = 0.5 } },
+    Phalanx = { Stats = { PHALANX_RECEIVED = 5, ENHANCE = 0.5 } },
     Regen = { Stats = { REGEN_DURATION = 2, ENH_MAGIC_DURATION = 1, ENHANCE = 0.2 } },
     Refresh = { Stats = { ENHANCES_REFRESH = 3, ENH_MAGIC_DURATION = 1, ENHANCE = 0.2 } },
     Enfeebling = { Stats = { MACC = 1.5, ENFEEBLE = 1, MND = 0.6, INT = 0.6, CONSERVE_MP = 0.1 } },

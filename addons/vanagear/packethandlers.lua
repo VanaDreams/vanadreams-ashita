@@ -313,6 +313,8 @@ end
 packethandlers.HandleIncomingPacket = function(e)
     if (e.id == 0x00A) then
         gPacketHandlers.HandleIncoming0x0A(e);
+    elseif (e.id == 0x00B) then
+        gVanaCore.ZoneOut(); -- vanagear: hold from the moment the zone is left
     elseif (e.id == 0x1B) then
         gPacketHandlers.HandleIncoming0x1B(e);
     elseif (e.id == 0x61) then
