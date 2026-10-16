@@ -10,6 +10,8 @@ namespace Vanadreams
         public static AppState State { get; private set; }
         public static string SnapshotPath { get; private set; }
         public static string SnapshotPage { get; private set; }
+        /// <summary>The window switcher; made with the main window, running only when the player turned it on.</summary>
+        public static WindowSwitcher Switcher { get; set; }
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -60,6 +62,7 @@ namespace Vanadreams
         protected override void OnExit(ExitEventArgs e)
         {
             Music.Stop();
+            Switcher?.Dispose();
             GameLauncher.Sweep(State?.AshitaRoot);   // a launch copy must not outlive the launcher
             base.OnExit(e);
         }
