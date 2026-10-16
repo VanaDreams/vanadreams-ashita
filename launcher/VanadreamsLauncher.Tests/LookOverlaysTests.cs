@@ -28,6 +28,7 @@ namespace Vanadreams.Tests
         {
             Assert.AreEqual(LookOverlays.Looks, LookOverlays.OverlayFor("looks-03.zip"));
             Assert.AreEqual(LookOverlays.Title, LookOverlays.OverlayFor("vanadreams-title-01.zip"));
+            Assert.AreEqual(LookOverlays.Text, LookOverlays.OverlayFor("vanadreams-text-01.zip"));
             Assert.IsNull(LookOverlays.OverlayFor("looks-effects.zip"));   // the effects DLLs stay in bootloader
             Assert.IsNull(LookOverlays.OverlayFor("ROM-05.zip"));
         }
@@ -96,6 +97,10 @@ namespace Vanadreams.Tests
             Directory.CreateDirectory(Path.Combine(PivotConfig.OverlaysRoot(ashita), LookOverlays.Title));
             LookOverlays.GiveOnce(ashita, given);
             CollectionAssert.AreEqual(new[] { LookOverlays.Looks, LookOverlays.Title }, PivotConfig.ReadOverlays(ashita));
+            // so do the text fixes, which only ever ship as an overlay
+            Directory.CreateDirectory(Path.Combine(PivotConfig.OverlaysRoot(ashita), LookOverlays.Text));
+            CollectionAssert.AreEqual(new[] { LookOverlays.Text }, LookOverlays.GiveOnce(ashita, given));
+            CollectionAssert.AreEqual(new[] { LookOverlays.Looks, LookOverlays.Title, LookOverlays.Text }, PivotConfig.ReadOverlays(ashita));
         }
 
         [TestMethod]
