@@ -20,7 +20,7 @@ ffi.cdef[[
     } GearListEvent_t;
 ]]
 
-ashita.events.register('plugin_event', 'plugin_event_cb', function (e)
+ashita.events.register('plugin_event', 'plugin_event_cb', function (e) gVanaGuard('plugin event', function () -- vanagear: errors don't unload it
     if (e.name == 'luashitacast_naked') or (e.name == 'ashitacastany_naked') then
         for i = 1,16,1 do
             gEquip.UnequipSlot(i);
@@ -38,7 +38,7 @@ ashita.events.register('plugin_event', 'plugin_event_cb', function (e)
         AshitaCore:GetPluginManager():RaiseEvent('luashitacast_unloading', {});
         AshitaCore:GetChatManager():QueueCommand(-1, '/addon unload LuAshitacast');
     end
-end);
+end); end);
 
 local compareFields = { 'Name', 'AugPath', 'AugRank', 'AugTrial', 'AugCount' };
 --Checks if 2 fetch orders are equal.
