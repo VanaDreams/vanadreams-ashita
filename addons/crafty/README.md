@@ -16,7 +16,7 @@ The server decides how a synth ends the moment it starts, and the animation it s
 
 ### Looks
 
-The window is in the Vanadreams colours and see-through by default, so it can sit beside the game's crafting menu. The small button at the top right switches it between see-through and solid, and the choice is remembered.
+The window is see-through by default, so it can sit beside the game's crafting menu. The **see-through / solid** switch in its title bar changes that, and the choice is remembered.
 
 The window shows the counters (synths, success, HQ, failed, free slots) and the settings: seconds between synths (the server refuses anything under 15), the free-slot floor, and the failure streak that stops it.
 
