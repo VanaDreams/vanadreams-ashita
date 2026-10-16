@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Vanadreams.Services;
+using KeyBinding = Vanadreams.Services.KeyBinding;
 
 namespace Vanadreams.Pages
 {
