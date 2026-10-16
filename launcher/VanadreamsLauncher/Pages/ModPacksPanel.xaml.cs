@@ -69,7 +69,7 @@ namespace Vanadreams.Pages
             var row = ((FrameworkElement)sender).Tag as PackRow;
             if (row == null || !row.Pack.CanSwitch) return;
             row.Pack.On = !row.Pack.On;
-            row.Pack.Detail = row.Pack.On ? "Overlay" : "Overlay, off";
+            row.Pack.Detail = row.Pack.On ? "On" : "Off";
             // a pack switched on joins at the top, losing to the ones already on; one switched off leaves the order
             _packs.Remove(row.Pack);
             var firstOn = _packs.FindIndex(p => p.CanSwitch && p.On);
