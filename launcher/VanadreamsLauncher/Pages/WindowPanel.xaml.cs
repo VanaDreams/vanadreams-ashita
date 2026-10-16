@@ -38,7 +38,15 @@ namespace Vanadreams.Pages
             foreach (var m in ModeChoices) Modes.Children.Add(Chip(m.Item2, p != null && p.Mode == m.Item1, (s, e) => Set(x => x.Mode = m.Item1)));
 
             Sizes.Children.Clear();
+            // the chosen display's own size first: the right one for borderless and fullscreen
+            var monitors = Graphics.Monitors();
+            var screen = monitors.FirstOrDefault(m => p != null && string.Equals(m.Device, p.Monitor, StringComparison.OrdinalIgnoreCase)) ?? monitors.FirstOrDefault(m => m.Primary);
             var sizes = SizeChoices.ToList();
+            if (screen != null)
+            {
+                sizes.RemoveAll(s => s[0] == screen.Width && s[1] == screen.Height);
+                sizes.Insert(0, new[] { screen.Width, screen.Height });
+            }
             // a size the player typed on an older launcher stays offered, so picking nothing never changes it
             if (p != null && p.Width > 0 && p.Height > 0 && !sizes.Any(s => s[0] == p.Width && s[1] == p.Height)) sizes.Add(new[] { p.Width, p.Height });
             foreach (var s in sizes)

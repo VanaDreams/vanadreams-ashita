@@ -144,14 +144,15 @@ namespace Vanadreams.Services
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
                 var ticked = s.EnabledAddons.Contains("fps", StringComparer.OrdinalIgnoreCase);
                 File.WriteAllLines(path, ScriptLines(p.Fps, ticked), new UTF8Encoding(false));
-                // the display: placed from where it sits today, so a rearranged desk still lands on the right one
-                if (!string.IsNullOrEmpty(p.Monitor))
-                {
-                    var m = Monitors().FirstOrDefault(x => string.Equals(x.Device, p.Monitor, StringComparison.OrdinalIgnoreCase));
-                    var at = StartFor(m, p.Mode, p.Width, p.Height);
-                    if (at.Item1 != p.StartX || at.Item2 != p.StartY) { p.StartX = at.Item1; p.StartY = at.Item2; p.Save(); }
-                }
-                else if (p.StartX != -1 || p.StartY != -1) { p.StartX = -1; p.StartY = -1; p.Save(); }
+                // the display: placed from where it sits today, so a rearranged desk still lands on the right one. A borderless
+                // or fullscreen window always starts at its display's corner, the main one when none was picked: left to
+                // Windows, a borderless window smaller than the screen opened wherever it liked (16 Oct 2026, Ferrin's 2560x1440
+                // on a 2560x1600 screen).
+                var monitors = Monitors();
+                var m = monitors.FirstOrDefault(x => string.Equals(x.Device, p.Monitor, StringComparison.OrdinalIgnoreCase))
+                        ?? (p.Mode == WindowMode.Windowed || p.Mode == WindowMode.Registry ? null : monitors.FirstOrDefault(x => x.Primary));
+                var at = StartFor(m, p.Mode, p.Width, p.Height);
+                if (at.Item1 != p.StartX || at.Item2 != p.StartY) { p.StartX = at.Item1; p.StartY = at.Item2; p.Save(); }
             }
             catch (Exception ex) { Log.Warn("graphics on play: " + ex.Message); }
         }
