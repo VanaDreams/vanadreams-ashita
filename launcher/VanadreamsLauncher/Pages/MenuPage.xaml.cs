@@ -383,6 +383,18 @@ namespace Vanadreams.Pages
                 return;
             }
 
+            // The launcher can sit in the tray for days, and the catalogue was only read at start, so an addon update
+            // pushed after that never reached the game (16 Oct 2026). Read it again and bring installed addons up to date.
+            if (state.HasAshita)
+            {
+                try
+                {
+                    await state.RefreshCatalogAsync();
+                    if (await state.UpdateInstalledAddonsAsync("before play")) state.Settings.Save();
+                }
+                catch (Exception ex) { Log.Warn("addon update on play: " + ex.Message); }
+            }
+
             // macros and config live only in the game's USER folder; a copy before every launch lets a lost set come back
             try
             {
