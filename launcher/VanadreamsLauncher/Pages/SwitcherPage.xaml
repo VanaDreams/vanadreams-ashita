@@ -57,7 +57,12 @@
 
                 <TextBlock Grid.Row="2" Style="{StaticResource Eyebrow}" Text="✦ Layouts" Margin="0,8,0,8"/>
                 <StackPanel Grid.Row="3" Orientation="Horizontal">
-                    <ComboBox x:Name="LayoutBox" Width="200" VerticalAlignment="Center" ToolTip="Your saved layouts"/>
+                    <ComboBox x:Name="LayoutBox" Width="200" VerticalAlignment="Center" ToolTip="Your saved layouts">
+                        <ComboBox.Resources>
+                            <!-- the page's text style is cream with a shadow, unreadable on the light list: dark here -->
+                            <Style TargetType="TextBlock"><Setter Property="Foreground" Value="#FF2A1C0A"/><Setter Property="Effect" Value="{x:Null}"/></Style>
+                        </ComboBox.Resources>
+                    </ComboBox>
                     <Button Style="{StaticResource GhostButton}" Padding="14,5" Content="Restore" Margin="8,0,0,0" Click="Restore_Click"
                             ToolTip="Put every window back where this layout has it"/>
                     <Button Style="{StaticResource GhostButton}" Padding="14,5" Content="Delete" Margin="8,0,0,0" Click="Delete_Click"/>
@@ -101,9 +106,19 @@
                     <Button Grid.Row="1" Grid.Column="1" x:Name="PrevKey" Style="{StaticResource GhostButton}" Padding="10,4" FontSize="12" Tag="prev" Click="Key_Click"
                             ToolTip="Click, then press the key; Esc clears it"/>
                     <TextBlock Grid.Row="2" Text="Pad next" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
-                    <ComboBox Grid.Row="2" Grid.Column="1" x:Name="PadNextBox" VerticalAlignment="Center" FontSize="12" SelectionChanged="Pad_Changed"/>
+                    <ComboBox Grid.Row="2" Grid.Column="1" x:Name="PadNextBox" VerticalAlignment="Center" FontSize="12" SelectionChanged="Pad_Changed">
+                        <ComboBox.Resources>
+                            <!-- the page's text style is cream with a shadow, unreadable on the light list: dark here -->
+                            <Style TargetType="TextBlock"><Setter Property="Foreground" Value="#FF2A1C0A"/><Setter Property="Effect" Value="{x:Null}"/></Style>
+                        </ComboBox.Resources>
+                    </ComboBox>
                     <TextBlock Grid.Row="3" Text="Pad previous" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
-                    <ComboBox Grid.Row="3" Grid.Column="1" x:Name="PadPrevBox" VerticalAlignment="Center" FontSize="12" SelectionChanged="Pad_Changed"/>
+                    <ComboBox Grid.Row="3" Grid.Column="1" x:Name="PadPrevBox" VerticalAlignment="Center" FontSize="12" SelectionChanged="Pad_Changed">
+                        <ComboBox.Resources>
+                            <!-- the page's text style is cream with a shadow, unreadable on the light list: dark here -->
+                            <Style TargetType="TextBlock"><Setter Property="Foreground" Value="#FF2A1C0A"/><Setter Property="Effect" Value="{x:Null}"/></Style>
+                        </ComboBox.Resources>
+                    </ComboBox>
                 </Grid>
                 <CheckBox Grid.Row="3" x:Name="AnywhereBox" Margin="0,10,0,0" Click="Anywhere_Click"
                           ToolTip="Off: the keys only work while a game window is in front, so they never get in the way elsewhere.">
