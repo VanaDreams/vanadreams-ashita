@@ -149,6 +149,20 @@ namespace Vanadreams.Tests
         }
 
         [TestMethod]
+        public void A_copy_the_player_picked_is_started_even_when_another_is_registered_and_fits()
+        {
+            // 7 Oct 2026: a newer copy kept for another server was registered and fitted, so Vanadreams started it
+            Assert.AreEqual(Old, Chosen(Old, new[] { Ours }, new[] { Ours, Old }, new[] { Ours, Old }));
+            Assert.AreEqual(Ours, GameRegistration.Choose(Old, new[] { Ours },
+                r => GameRegistration.SameFolder(r, Ours) || GameRegistration.SameFolder(r, Old), r => true, Ours));
+            // picked even when its version is not known to fit: the player said so
+            Assert.AreEqual(Third, GameRegistration.Choose(Old, new[] { Ours }, r => true, r => !GameRegistration.SameFolder(r, Third), Third));
+            // a picked folder that holds no game is passed over, and the usual choice stands
+            Assert.AreEqual(Old, GameRegistration.Choose(Old, new[] { Ours },
+                r => !GameRegistration.SameFolder(r, Third), r => true, Third));
+        }
+
+        [TestMethod]
         public void When_nothing_fits_or_the_version_is_unknown_the_registered_copy_is_started_and_nothing_is_refused()
         {
             Assert.AreEqual(Old, Chosen(Old, new[] { Ours, Third }, new[] { Ours, Old, Third }, new string[0]));
