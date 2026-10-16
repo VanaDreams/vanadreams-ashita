@@ -295,6 +295,34 @@ namespace Vanadreams.Tests
         }
 
         [TestMethod]
+        public void Retired_overlay_stays_until_the_game_folder_carries_its_replacement()
+        {
+            var root = Path.Combine(_dir, "ashita");
+            var game = Path.Combine(_dir, "FINAL FANTASY XI");
+            var overlay = Path.Combine(PivotConfig.OverlaysRoot(root), "old-music", "sound");
+            Directory.CreateDirectory(overlay);
+            File.WriteAllText(Path.Combine(overlay, "music034.bgw"), "old");
+            PivotConfig.AddOverlay(root, "HD-Remake");
+            PivotConfig.AddOverlay(root, "old-music");
+            var gameFile = Path.Combine(game, "sound", "music034.bgw");
+            Directory.CreateDirectory(Path.GetDirectoryName(gameFile));
+            File.WriteAllText(gameFile, "new");
+            string sha;
+            using (var h = System.Security.Cryptography.SHA256.Create()) sha = BitConverter.ToString(h.ComputeHash(System.Text.Encoding.ASCII.GetBytes("new"))).Replace("-", "");
+            var retired = new[] { new RetiredOverlays.Retired { Id = "old-music", GameFile = @"sound\music034.bgw", Sha256 = sha } };
+
+            File.WriteAllText(gameFile, "not yet updated");
+            Assert.AreEqual(0, RetiredOverlays.Sweep(root, game, retired).Count, "a game folder without the new file keeps the overlay");
+            Assert.IsTrue(PivotConfig.ReadOverlays(root).Contains("old-music"));
+
+            File.WriteAllText(gameFile, "new");
+            CollectionAssert.AreEqual(new[] { "old-music" }, RetiredOverlays.Sweep(root, game, retired));
+            CollectionAssert.AreEqual(new[] { "HD-Remake" }, PivotConfig.ReadOverlays(root).ToArray());
+            Assert.IsFalse(Directory.Exists(Path.Combine(PivotConfig.OverlaysRoot(root), "old-music")));
+            Assert.AreEqual(0, RetiredOverlays.Present(root, retired).Count);
+        }
+
+        [TestMethod]
         public void Updater_compares_release_tags_with_the_build_version()
         {
             Assert.AreEqual(new Version(0, 2, 8), Updater.ParseTag("v0.2.8"));
