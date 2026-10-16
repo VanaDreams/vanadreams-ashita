@@ -55,14 +55,16 @@ namespace Vanadreams.Services
             var asset = await downloader.LatestReleaseAssetAsync(item.Repo, item.Asset);
             if (asset == null) throw new InvalidOperationException("No release asset matching " + item.Asset + " on " + item.Repo + ".");
             var zip = Path.Combine(settings.DownloadsFolder, item.Id + "-" + asset.Tag + "-" + asset.Name);
-            if (!File.Exists(zip) || new FileInfo(zip).Length != asset.Size)
+            // a source zip has no size listed; one already here for the same tag is the same code
+            if (!File.Exists(zip) || (asset.Size > 0 && new FileInfo(zip).Length != asset.Size))
                 await downloader.DownloadFileAsync(asset.Url, zip, progress, asset.Name, asset.Size);
             say?.Invoke("Unpacking…");
             var unzipTo = item.Install == InstallAction.CopyToAddons ? Path.Combine(ashitaRoot, "addons", item.LoadName ?? item.Id)
                         : item.Install == InstallAction.UnzipToAddons ? Path.Combine(ashitaRoot, "addons")
                         : item.Install == InstallAction.PivotOverlay ? Path.Combine(PivotConfig.OverlaysRoot(ashitaRoot), item.Id)
                         : ashitaRoot;
-            await Task.Run(() => Downloader.ExtractZipOverwrite(zip, unzipTo));
+            var source = string.Equals(item.Asset, Downloader.SourceZip, StringComparison.OrdinalIgnoreCase);
+            await Task.Run(() => Downloader.ExtractZipOverwrite(zip, unzipTo, stripTopFolder: source));
             if (item.Install == InstallAction.PivotOverlay) PivotConfig.AddOverlay(ashitaRoot, item.Id);
             settings.InstalledVersions[item.Id] = item.Version ?? asset.Tag;
             return asset.Tag;

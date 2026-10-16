@@ -42,6 +42,9 @@ namespace Vanadreams.Services
             sb.AppendLine("# The wait is required: without it, addons do not see the commands below.");
             sb.AppendLine("/wait 3");
             sb.AppendLine();
+            sb.AppendLine("# The Graphics page's frame rate, written at every Play for the profile being played.");
+            sb.AppendLine("/exec " + Graphics.ScriptName);
+            sb.AppendLine();
             foreach (var e in list)
                 foreach (var line in e.ConfigLines.Where(l => !string.IsNullOrWhiteSpace(l)))
                     sb.AppendLine(line.Trim());

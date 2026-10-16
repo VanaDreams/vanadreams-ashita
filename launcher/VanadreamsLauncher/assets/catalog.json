@@ -106,10 +106,14 @@
       "id": "timestamp",
       "name": "timestamp",
       "kind": "addon",
+      "onByDefault": true,
       "source": {
         "type": "bundled"
       },
       "load": "/addon load timestamp",
+      "conflicts": [
+        "fancychat"
+      ],
       "description": "Timestamps in the chat log.",
       "v3": {
         "name": "timestamp"
@@ -1820,6 +1824,23 @@
       "config": "config\\addons\\Zonename\\"
     },
     {
+      "id": "fancychat",
+      "name": "Fancychat",
+      "kind": "addon",
+      "maintainer": "ariel-logos",
+      "source": {
+        "type": "github-release",
+        "repo": "ariel-logos/Fancychat",
+        "asset": "source"
+      },
+      "version": "1.0.260921",
+      "install": "copy-to-addons",
+      "load": "/addon load fancychat",
+      "config": "config\\addons\\fancychat\\",
+      "docs": "https://github.com/ariel-logos/Fancychat",
+      "description": "Replaces the chat box with a themed, resizable window: tabs for combat, linkshell, party, tells and shouts, a compact icon combat log, timestamps, item and spell tooltips, clickable links, tell sounds and zone maps on Ctrl+click. /fchat settings to set it up, /fchat manual for the guide. SimpleLog and timestamp step aside while it is ticked."
+    },
+    {
       "id": "simplelog",
       "name": "SimpleLog",
       "kind": "addon",
@@ -1832,6 +1853,9 @@
       },
       "install": "copy-to-addons",
       "load": "/addon load simplelog",
+      "conflicts": [
+        "fancychat"
+      ],
       "docs": "https://github.com/ThornyFFXI/SimpleLog",
       "description": "Combat and message log parser: a cleaner, filtered log window.",
       "config": "config\\addons\\simplelog\\"

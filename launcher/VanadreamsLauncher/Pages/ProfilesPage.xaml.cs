@@ -20,18 +20,12 @@ namespace Vanadreams.Pages
     {
         private readonly MainWindow _win;
         private readonly List<ProfileRow> _rows = new List<ProfileRow>();
-        private readonly (string label, WindowMode mode)[] _modes =
-        {
-            ("Fullscreen", WindowMode.Fullscreen), ("Windowed", WindowMode.Windowed), ("Borderless windowed", WindowMode.Borderless),
-            ("Fullscreen windowed", WindowMode.FullscreenWindowed), ("As the game remembers", WindowMode.Registry)
-        };
         private Profile Current => (List.SelectedItem as ProfileRow)?.Profile;
 
         public ProfilesPage(MainWindow win, string selectId = null)
         {
             InitializeComponent();
             _win = win;
-            foreach (var m in _modes) ModeBox.Items.Add(m.label);
             Reload(selectId);
         }
 
@@ -64,8 +58,6 @@ namespace Vanadreams.Pages
             BootBox.Text = p.BootFile;
             ShowGameFolder(p);
             ExtraBox.Text = p.Command.Extra + (p.Command.Hairpin ? (p.Command.Extra.Length > 0 ? " " : "") + "--hairpin" : "");
-            ModeBox.SelectedIndex = Array.FindIndex(_modes, m => m.mode == p.Mode);
-            WidthBox.Text = p.Width > 0 ? p.Width.ToString() : ""; HeightBox.Text = p.Height > 0 ? p.Height.ToString() : "";
             MenuWBox.Text = p.MenuWidth > 0 ? p.MenuWidth.ToString() : ""; MenuHBox.Text = p.MenuHeight > 0 ? p.MenuHeight.ToString() : "";
             BgWBox.Text = p.BackgroundWidth > 0 ? p.BackgroundWidth.ToString() : ""; BgHBox.Text = p.BackgroundHeight > 0 ? p.BackgroundHeight.ToString() : "";
             AutoCloseBox.IsChecked = p.AutoClose;
@@ -139,9 +131,8 @@ namespace Vanadreams.Pages
             p.BootFile = BootBox.Text.Trim();
             if (p.IsVanadreams) App.State.Settings.FfxiFolderOverride = GameBox.Text.Trim();
             else p.GameFolder = GameBox.Text.Trim();
-            p.Mode = _modes[Math.Max(0, ModeBox.SelectedIndex)].mode;
-            int w, h, mw, mh;
-            p.Width = int.TryParse(WidthBox.Text, out w) ? w : -1; p.Height = int.TryParse(HeightBox.Text, out h) ? h : -1;
+            // the window's mode and size belong to the Graphics page, which saves them as they are picked
+            int mw, mh;
             p.MenuWidth = int.TryParse(MenuWBox.Text, out mw) ? mw : (p.Width > 0 ? p.Width : -1);
             p.MenuHeight = int.TryParse(MenuHBox.Text, out mh) ? mh : (p.Height > 0 ? p.Height : -1);
             // blank or not a number: the game's own default
@@ -238,7 +229,5 @@ namespace Vanadreams.Pages
             var d = new OpenFileDialog { Filter = "Executables (*.exe)|*.exe|All files (*.*)|*.*", InitialDirectory = Path.Combine(App.State.AshitaRoot, "bootloader") };
             if (d.ShowDialog() == true) BootBox.Text = d.FileName;
         }
-
-        private void Back_Click(object sender, RoutedEventArgs e) => _win.Navigate(new MenuPage(_win));
     }
 }

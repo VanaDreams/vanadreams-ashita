@@ -1,0 +1,39 @@
+<UserControl x:Class="Vanadreams.Pages.ModPacksPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- The installed packs, on or off and in load order (Services\ModPacks.cs). Self-contained: drop it in any box. -->
+    <StackPanel>
+        <TextBlock Style="{StaticResource Eyebrow}" Text="✦ Mod packs"/>
+        <TextBlock Style="{StaticResource Display40}" FontSize="25" Text="Packs and load order" TextWrapping="Wrap" Margin="0,0,0,8"/>
+        <ItemsControl x:Name="List">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border BorderBrush="{StaticResource Line}" BorderThickness="1" Background="#40000000" Padding="8,4" Margin="0,0,0,5">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="22"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding Number}" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}" Style="{StaticResource NavText}" FontSize="16" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding Detail}" Style="{StaticResource Muted}" FontSize="13" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,6,0" Visibility="{Binding ArrowsVisibility}">
+                                <Button Style="{StaticResource GhostButton}" Content="▲" Padding="7,1" FontSize="12" Margin="0,0,3,0" Tag="{Binding}" IsEnabled="{Binding CanUp}" Click="Up_Click" ToolTip="Load earlier: packs below it win"/>
+                                <Button Style="{StaticResource GhostButton}" Content="▼" Padding="7,1" FontSize="12" Tag="{Binding}" IsEnabled="{Binding CanDown}" Click="Down_Click" ToolTip="Load later: it wins over packs above it"/>
+                            </StackPanel>
+                            <CheckBox Grid.Column="3" VerticalAlignment="Center" IsChecked="{Binding On, Mode=OneWay}" IsEnabled="{Binding CanSwitch}" Tag="{Binding}" Click="Switch_Click"
+                                      ToolTip="{Binding SwitchTip}"/>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock x:Name="None" Style="{StaticResource Muted}" TextWrapping="Wrap" Visibility="Collapsed" Text="No packs installed yet. Install game brings the modern look and the title pack."/>
+        <TextBlock Style="{StaticResource Muted}" FontSize="13" TextWrapping="Wrap" Margin="0,2,0,0" Text="Lower packs load on top of higher ones."/>
+        <TextBlock x:Name="Note" Style="{StaticResource Muted}" FontSize="13" TextWrapping="Wrap" Margin="0,4,0,0"/>
+    </StackPanel>
+</UserControl>

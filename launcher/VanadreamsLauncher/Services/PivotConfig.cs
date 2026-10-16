@@ -60,6 +60,9 @@ namespace Vanadreams.Services
             if (list.RemoveAll(n => n.Equals(name, StringComparison.OrdinalIgnoreCase)) > 0) Write(ashitaRoot, list);
         }
 
+        /// <summary>The whole [overlays] list, in priority order (the first wins): the Install page's mod packs.</summary>
+        public static void SetOverlays(string ashitaRoot, IEnumerable<string> overlays) => Write(ashitaRoot, overlays.ToList());
+
         private static void Write(string ashitaRoot, List<string> overlays)
         {
             var ini = IniPath(ashitaRoot);
