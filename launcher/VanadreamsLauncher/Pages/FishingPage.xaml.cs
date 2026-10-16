@@ -72,7 +72,5 @@ namespace Vanadreams.Pages
         {
             try { var d = Path.GetDirectoryName(LogPath); Directory.CreateDirectory(d); Process.Start(new ProcessStartInfo("explorer.exe", "\"" + d + "\"") { UseShellExecute = true }); } catch (Exception ex) { Services.Log.Warn(ex.Message); }
         }
-
-        private void Back_Click(object sender, RoutedEventArgs e) => _win.Navigate(new MenuPage(_win));
     }
 }

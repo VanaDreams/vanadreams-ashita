@@ -13,52 +13,49 @@ using Vanadreams.Services;
 
 namespace Vanadreams.Pages
 {
-    public sealed class MenuCommand : INotifyPropertyChanged
-    {
-        private bool _selected;
-        public string Label { get; set; }
-        public string Key { get; set; }
-        public bool Dim { get; set; }
-        public bool Selected { get { return _selected; } set { _selected = value; Raise("Selected"); Raise("HandVisibility"); Raise("Opacity"); } }
-        public Visibility HandVisibility => Selected ? Visibility.Visible : Visibility.Hidden;
-        public double Opacity => Dim ? 0.45 : Selected ? 1.0 : 0.9;
-        public event PropertyChangedEventHandler PropertyChanged;
-        private void Raise(string n) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
-    }
-
-    public partial class MenuPage : UserControl
+    /// <summary>
+    /// The Play page: the current profile's login and the Play button on the left, Vana'News on the right. When a game
+    /// update is waiting the button reads Patch, and the update runs here, under the news, before Play is possible.
+    /// </summary>
+    public partial class MenuPage : UserControl, IBusyPage
     {
         private readonly MainWindow _win;
-        private readonly List<MenuCommand> _commands = new List<MenuCommand>
-        {
-            new MenuCommand { Label = "Play", Key = "play", Selected = true },
-            new MenuCommand { Label = "Profiles", Key = "profiles" },
-            new MenuCommand { Label = "Addons", Key = "addons" },
-            new MenuCommand { Label = "Fishing", Key = "fishing" },
-            new MenuCommand { Label = "Vanatunes", Key = "vanatunes" },
-            new MenuCommand { Label = "Capture", Key = "capture" },
-            new MenuCommand { Label = "Setup", Key = "setup" },
-            new MenuCommand { Label = "Install game", Key = "install" },
-            new MenuCommand { Label = "Settings", Key = "settings" },
-            new MenuCommand { Label = "Discord", Key = "discord" },
-            new MenuCommand { Label = "Exit", Key = "exit", Dim = true },
-        };
         private Profile _profile;
+        private string _loginFor;   // the profile whose login the boxes hold, so a refresh never wipes what is being typed
+        private System.Threading.CancellationTokenSource _patching;
+        private bool _patchedNow;
 
         public MenuPage(MainWindow win)
         {
             InitializeComponent();
             _win = win;
             _onChanged = OnStateChanged;
-            Commands.ItemsSource = _commands;
-            KeyDown += OnKeyDown;
+            foreach (var who in new[] { "mandragora", "moogle", "chocobo", "goblin", "orc" })
+            {
+                var img = new Image { Source = CrewGuide.Picture(who), Height = 72, Margin = new Thickness(1, 0, 1, 0), Stretch = Stretch.Uniform };
+                if (who == "chocobo") { img.RenderTransformOrigin = new Point(0.5, 0.5); img.RenderTransform = new ScaleTransform(-1, 1); }
+                img.Effect = new System.Windows.Media.Effects.DropShadowEffect { ShadowDepth = 4, Direction = 270, BlurRadius = 4, Opacity = 0.6, Color = Colors.Black };
+                Crew.Children.Add(img);
+            }
+            ShowNews(News.ReadCache(App.State.Settings.NewsCachePath));
             // listen only while on screen; a page that has been left must not keep reloading profiles
-            Loaded += (s, e) => { LoadProfile(); Keyboard.Focus(this); App.State.Changed += _onChanged; };
+            Loaded += async (s, e) =>
+            {
+                LoadProfile(); Keyboard.Focus(this); App.State.Changed += _onChanged;
+                if (string.IsNullOrEmpty(App.SnapshotPath))
+                    ShowNews(await News.FetchAsync(App.State.Downloader, App.State.Settings.NewsUrl, App.State.Settings.NewsCachePath));
+            };
             Unloaded += (s, e) => App.State.Changed -= _onChanged;
         }
 
         private readonly Action _onChanged;
         private void OnStateChanged() => Dispatcher.BeginInvoke(new Action(LoadProfile));
+
+        private void ShowNews(List<NewsItem> items)
+        {
+            NewsList.ItemsSource = items;
+            NoNews.Visibility = items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
 
         private void LoadProfile()
         {
@@ -66,52 +63,126 @@ namespace Vanadreams.Pages
             var all = state.Profiles.LoadAll();
             _profile = all.FirstOrDefault(p => string.Equals(p.Id, state.Settings.LastProfile, StringComparison.OrdinalIgnoreCase))
                        ?? all.FirstOrDefault(p => !p.IsExample) ?? all.FirstOrDefault();
-            Facts.Children.Clear();
-            Facts.RowDefinitions.Clear();
             if (_profile == null)
             {
-                ProfileName.Text = "No profile yet";
-                ProfileServer.Text = "Run Setup to write the Vanadreams profile.";
+                ProfileLine.Text = "No profile yet · run Setup";
                 PlayButton.IsEnabled = false;
+                UserBox.IsEnabled = PassBox.IsEnabled = RememberBox.IsEnabled = false;
+                ShowPatch();
                 return;
             }
             PlayButton.IsEnabled = true;
-            ProfileName.Text = _profile.Name;
-            ProfileServer.Text = _profile.IsRetail ? "Retail · Square Enix, through PlayOnline"
-                : (_profile.Command.Server.IndexOf("vanadreams", StringComparison.OrdinalIgnoreCase) >= 0 ? "Vanadreams · " : "") + _profile.Command.Server;
-            var v = state.Version;
-            var mode = _profile.Mode == WindowMode.Registry ? "As the game remembers" : _profile.Mode.ToString();
-            var size = _profile.Width > 0 && _profile.Height > 0 ? $" · {_profile.Width} × {_profile.Height}" : "";
-            string lastPlayed;
-            state.Settings.LastPlayed.TryGetValue(_profile.Id, out lastPlayed);
-            DateTime when;
-            var last = !string.IsNullOrEmpty(lastPlayed) && DateTime.TryParse(lastPlayed, null, DateTimeStyles.RoundtripKind, out when)
-                ? (when.Date == DateTime.Today ? "Today, " + when.ToString("HH:mm") : when.ToString("d MMM, HH:mm")) : "Not yet";
-            var cred = state.Credentials.Get(_profile.Id);
-            AddFact("Server", state.Status.StateWord + (string.IsNullOrEmpty(state.Status.CheckedWord) ? "" : " · " + state.Status.CheckedWord), null);
-            var update = state.PendingClientUpdate;
-            // the update goes on the Client row, not a row of its own: the panel has no room for another row
-            // (0.2.37 added one and pushed the last rows out of sight)
-            if (update != null && v.ExpectedIsPublished && v.Verdict == VersionVerdict.Ready)
-                AddFact("Client", v.Installed + " · update ready, " + update.Megabytes + " · Install game", "Warn");
-            else
-                AddFact("Client",
-                    !v.ExpectedIsPublished ? (string.IsNullOrEmpty(v.Installed) ? "Version unknown" : v.Installed + " · server hasn't published its version")
-                    : v.Verdict == VersionVerdict.Ready ? "✓ " + v.Installed + " · matches the server"
-                    : v.Verdict == VersionVerdict.Unknown ? "Version unknown"
-                    : "✗ " + v.Installed + " · server expects " + v.Expected,
-                    !v.ExpectedIsPublished ? "Mist" : v.Verdict == VersionVerdict.Ready ? "Ok" : v.Verdict == VersionVerdict.Unknown ? "Warn" : "Bad");
-            AddFact("Ashita", "v4 beta, updated " + state.AshitaUpdated() + " · " + ShortPath(state.AshitaRoot, 28), null);
-            if (_profile.IsRetail)
-                AddFact("Loader", File.Exists(_profile.BootFile) ? "PlayOnline Viewer" : "PlayOnline Viewer missing · install the retail client", File.Exists(_profile.BootFile) ? null : "Bad");
-            else
-                AddFact("Loader", "xiloader " + state.LoaderVersion(), null);
-            var savedLogin = cred != null && !string.IsNullOrEmpty(cred.User);
-            AddFact("Login", savedLogin ? cred.User + " · remembered" : "Not saved · Edit profile, fill Username and Password, Save", savedLogin ? null : "Warn");
-            AddFact("Addons", state.EnabledCount + " enabled" + (state.UpdateCount > 0 ? " · " + state.UpdateCount + " update" + (state.UpdateCount > 1 ? "s" : "") : ""), null);
-            AddFact("Window", mode + size, null);
-            AddFact("Last played", last, null);
+            UserBox.IsEnabled = PassBox.IsEnabled = RememberBox.IsEnabled = true;
+            ProfileLine.Text = "Profile: " + _profile.Name;
+            if (!string.Equals(_loginFor, _profile.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                _loginFor = _profile.Id;
+                var cred = state.Credentials.Get(_profile.Id);
+                UserBox.Text = cred?.User ?? "";
+                PassBox.Password = cred?.Password ?? "";
+                RememberBox.IsChecked = true;
+            }
+            ShowPatch();
         }
+
+        /// <summary>The update waits for this profile when it plays Vanadreams; another server's profile plays as it is.</summary>
+        private bool PatchFirst => _profile != null && _profile.IsVanadreams && App.State.PatchNeeded && !_patchedNow;
+
+        /// <summary>Play or Patch on the button, and the line and bar under the news.</summary>
+        private void ShowPatch()
+        {
+            if (_patching != null) return;   // the patch keeps its own words until it ends
+            var pending = App.State.PendingClientUpdate;
+            if (PatchFirst)
+            {
+                PlayButton.Content = "⟳  Patch";
+                PatchPanel.Visibility = Visibility.Visible;
+                PatchBar.Visibility = Visibility.Visible;
+                PatchBar.Value = 0;
+                PatchText.Foreground = (Brush)FindResource("GoldSoft");
+                PatchText.Text = pending != null
+                    ? "A game update is ready: " + pending.Words + ". Press Patch to install it."
+                    : "The server runs " + App.State.Version.Expected + " and this game is " + (App.State.Version.Installed ?? "older") + ". Press Patch to bring it up to date.";
+                return;
+            }
+            PlayButton.Content = "▶  Play";
+            if (!_patchedNow) PatchPanel.Visibility = Visibility.Collapsed;
+        }
+
+        /// <summary>Snapshot hook (menu-patching): the page part way through a patch, nothing downloaded.</summary>
+        public void ShowSamplePatch(double fraction)
+        {
+            PlayButton.Content = "Patching…";
+            PlayButton.IsEnabled = false;
+            PatchPanel.Visibility = Visibility.Visible;
+            PatchBar.Visibility = Visibility.Visible;
+            PatchBar.Value = fraction * 100;
+            PatchText.Text = "Patch in progress, please wait.";
+        }
+
+        public bool CanLeave()
+        {
+            if (_patching == null) return true;
+            PatchText.Text = "Patch in progress, please wait.";
+            return false;
+        }
+
+        private async void Patch()
+        {
+            var state = App.State;
+            _patching = new System.Threading.CancellationTokenSource();
+            PlayButton.Content = "Patching…";
+            PlayButton.IsEnabled = false;
+            PatchPanel.Visibility = Visibility.Visible;
+            PatchBar.Visibility = Visibility.Visible;
+            PatchBar.Value = 0;
+            PatchText.Foreground = (Brush)FindResource("GoldSoft");
+            PatchText.Text = "Patch in progress, please wait.";
+            var progress = new Progress<InstallProgress>(p =>
+            {
+                PatchBar.Value = 100.0 * p.Done / Math.Max(1, p.Total);
+                PatchBar.ToolTip = $"{p.Stage} part {p.Part} of {p.Parts} · {p.Done / 1073741824.0:0.0} of {p.Total / 1073741824.0:0.0} GB";
+            });
+            try
+            {
+                var said = await state.PatchClientAsync(progress, _patching.Token);
+                _patching = null;
+                if (said != null) { PatchText.Text = said; PatchText.Foreground = (Brush)FindResource("Warn"); return; }
+                _patchedNow = !state.PatchNeeded;
+                if (!_patchedNow) { PatchText.Text = "Part of the patch is still to come. Press Patch again."; return; }
+                PatchBar.Value = 100;
+                PatchBar.Visibility = Visibility.Collapsed;
+                PatchText.Text = "Patch finished. You're up to date.";
+                Log.Info("patch finished from the Play page");
+                Music.Jingle();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("patch", ex);
+                PatchText.Text = ex.Message;
+                PatchText.Foreground = (Brush)FindResource("Bad");
+            }
+            finally
+            {
+                _patching = null;
+                PlayButton.IsEnabled = _profile != null;
+                PlayButton.Content = PatchFirst ? "⟳  Patch" : "▶  Play";   // the line under the news keeps what happened
+                _win.RefreshStrip();
+            }
+        }
+
+        /// <summary>The login in the boxes: kept for this profile when Remember me is ticked, forgotten when it is not.</summary>
+        private Credential TakeLogin()
+        {
+            var user = UserBox.Text.Trim();
+            var pass = PassBox.Password;
+            var state = App.State;
+            if (RememberBox.IsChecked == true) state.Credentials.Set(_profile.Id, user, pass);
+            else state.Credentials.Remove(_profile.Id);
+            return user.Length == 0 && pass.Length == 0 ? null : new Credential { User = user, Password = pass };
+        }
+
+        private void Change_Click(object sender, RoutedEventArgs e) => _win.Navigate(new ProfilesPage(_win, _profile?.Id));
 
         /// <summary>A long folder as drive, "…" and its last folders, so it fits the facts column.</summary>
         public static string ShortPath(string path, int max)
@@ -123,64 +194,12 @@ namespace Vanadreams.Pages
             return parts[0] + "\\…\\" + tail;
         }
 
-        private void AddFact(string label, string value, string brushKey)
+        /// <summary>Patch while an update waits; Play once there is none.</summary>
+        private void Play_Click(object sender, RoutedEventArgs e)
         {
-            var row = Facts.RowDefinitions.Count;
-            Facts.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            var l = new TextBlock { Text = label, Style = (Style)FindResource("Muted"), Margin = new Thickness(0, 0, 0, 5) };
-            var v = new TextBlock { Text = value, Style = (Style)FindResource("Mono"), Margin = new Thickness(0, 0, 0, 5), TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = value };
-            if (brushKey != null) v.Foreground = (Brush)FindResource(brushKey);
-            Grid.SetRow(l, row); Grid.SetRow(v, row); Grid.SetColumn(v, 1);
-            Facts.Children.Add(l); Facts.Children.Add(v);
-        }
-
-        private int SelectedIndex => _commands.FindIndex(c => c.Selected);
-
-        private void Select(int index)
-        {
-            index = (index + _commands.Count) % _commands.Count;
-            foreach (var c in _commands) c.Selected = false;
-            _commands[index].Selected = true;
-        }
-
-        private void OnKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Down) { Select(SelectedIndex + 1); e.Handled = true; }
-            else if (e.Key == Key.Up) { Select(SelectedIndex - 1); e.Handled = true; }
-            else if (e.Key == Key.Enter || e.Key == Key.Space) { Run(_commands[SelectedIndex].Key); e.Handled = true; }
-        }
-
-        private void Command_Hover(object sender, MouseEventArgs e)
-        {
-            var cmd = ((FrameworkElement)sender).Tag as MenuCommand;
-            if (cmd != null) Select(_commands.IndexOf(cmd));
-        }
-
-        private void Command_Click(object sender, MouseButtonEventArgs e)
-        {
-            var cmd = ((FrameworkElement)sender).Tag as MenuCommand;
-            if (cmd != null) Run(cmd.Key);
-        }
-
-        private void Play_Click(object sender, RoutedEventArgs e) => Run("play");
-        private void Edit_Click(object sender, RoutedEventArgs e) => _win.Navigate(new ProfilesPage(_win, _profile?.Id));
-
-        private void Run(string key)
-        {
-            switch (key)
-            {
-                case "play": Play(); break;
-                case "profiles": _win.Navigate(new ProfilesPage(_win, _profile?.Id)); break;
-                case "addons": _win.Navigate(new AddonsPage(_win)); break;
-                case "fishing": _win.Navigate(new FishingPage(_win)); break;
-                case "vanatunes": _win.Navigate(new VanatunesPage(_win)); break;
-                case "capture": _win.Navigate(new CapturePage(_win)); break;
-                case "setup": _win.Navigate(new SetupPage(_win)); break;
-                case "install": _win.Navigate(new InstallPage(_win)); break;
-                case "settings": _win.Navigate(new SettingsPage(_win)); break;
-                case "discord": OpenUrl(DiscordInvite); break;
-                case "exit": Application.Current.Shutdown(); break;
-            }
+            if (_profile == null || _patching != null) return;
+            if (PatchFirst) { Patch(); return; }
+            Play();
         }
 
         /// <summary>The Vanadreams Discord's permanent invite, the same one fairywitch.ca carries.</summary>
@@ -286,6 +305,18 @@ namespace Vanadreams.Pages
         {
             if (_profile == null) return;
             var state = App.State;
+            var login = TakeLogin();
+            // what the facts panel used to show beside Play is said when Play is pressed
+            PlayNote.Visibility = login == null ? Visibility.Visible : Visibility.Collapsed;
+            PlayNote.Text = login == null ? "No login typed: the loader's window will ask for your username and password." : "";
+            if (_profile.IsRetail && !File.Exists(_profile.BootFile))
+            {
+                MessageBox.Show("This profile plays retail through PlayOnline Viewer, and PlayOnline Viewer is not on this PC" +
+                                (string.IsNullOrWhiteSpace(_profile.BootFile) ? "." : " (" + _profile.BootFile + ").") +
+                                "\n\nInstall the retail client, then browse to its pol.exe on the Profiles page.",
+                    "Vanadreams Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
             // The loader has to be one the Vanadreams server accepts, and the newest one is not (Services\Loader.cs).
             // A player whose Setup ran on or after 27 Sep 2026 had v2.2.0 in bootloader\ and was told
             // "Your xiloader is too old" by a server that wanted the older one. Put it right here, once,
@@ -372,7 +403,7 @@ namespace Vanadreams.Pages
             var launchedAt = DateTime.UtcNow;
             try
             {
-                GameLauncher.Launch(state.AshitaRoot, _profile, state.Credentials.Get(_profile.Id), NeedsAdmin(_profile, root ?? GameRegistration.CurrentRoot(reg)));
+                GameLauncher.Launch(state.AshitaRoot, _profile, login, NeedsAdmin(_profile, root ?? GameRegistration.CurrentRoot(reg)));
                 Music.FadeOut(3);
                 state.Settings.LastProfile = _profile.Id;
                 state.Settings.LastPlayed[_profile.Id] = DateTime.Now.ToString("o");

@@ -25,6 +25,25 @@ namespace Vanadreams.Pages
             LowSpecBox.IsChecked = s.LowSpec;
             MusicCredit.Text = "made for Vanadreams with SoundBreak";
             About.Text = "Vanadreams Launcher " + typeof(App).Assembly.GetName().Version + " · github.com/VanaDreams/vanadreams-ashita · no telemetry";
+            ShowLayout();
+        }
+
+        /// <summary>The layout in use is the gold button.</summary>
+        private void ShowLayout()
+        {
+            var h = _win.Horizontal;
+            VerticalButton.Style = (Style)FindResource(h ? "GhostButton" : "GoldButton");
+            HorizontalButton.Style = (Style)FindResource(h ? "GoldButton" : "GhostButton");
+        }
+
+        /// <summary>The menu moves the moment the player picks; it is kept at once, without Save.</summary>
+        private void Layout_Click(object sender, RoutedEventArgs e)
+        {
+            var s = App.State.Settings;
+            s.MenuLayout = (string)((FrameworkElement)sender).Tag;
+            s.Save();
+            _win.ApplyLayout();
+            ShowLayout();
         }
 
         /// <summary>The copy Play starts for Vanadreams, which is not always the one Windows starts now: show the first, tip the second.</summary>
@@ -83,6 +102,5 @@ namespace Vanadreams.Pages
             try { if (!File.Exists(path) && !Directory.Exists(path)) Directory.CreateDirectory(LauncherSettings.DataFolder); Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); }
             catch (Exception ex) { Note.Text = ex.Message; }
         }
-        private void Back_Click(object sender, RoutedEventArgs e) => _win.Navigate(new MenuPage(_win));
     }
 }

@@ -238,7 +238,5 @@ namespace Vanadreams.Pages
             var d = new OpenFileDialog { Filter = "Executables (*.exe)|*.exe|All files (*.*)|*.*", InitialDirectory = Path.Combine(App.State.AshitaRoot, "bootloader") };
             if (d.ShowDialog() == true) BootBox.Text = d.FileName;
         }
-
-        private void Back_Click(object sender, RoutedEventArgs e) => _win.Navigate(new MenuPage(_win));
     }
 }

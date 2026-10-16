@@ -54,6 +54,35 @@ namespace Vanadreams.Pages
         private readonly Action _onChanged;
         private void OnStateChanged() => Dispatcher.BeginInvoke(new Action(Build));
 
+        /// <summary>Two columns of addons when each still fits a name, its version and its tag; one full-width column when not.</summary>
+        private void List_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            var panel = FindChild<WrapPanel>(List);
+            if (panel == null) return;
+            var w = Math.Floor(List.ActualWidth);
+            panel.ItemWidth = w >= 500 ? Math.Floor(w / 2) : w;
+        }
+
+        private static T FindChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var c = VisualTreeHelper.GetChild(parent, i);
+                var hit = c as T ?? FindChild<T>(c);
+                if (hit != null) return hit;
+            }
+            return null;
+        }
+
+        /// <summary>Snapshot hook (addons#id): that addon selected and scrolled into view.</summary>
+        public void ShowItem(string id)
+        {
+            var row = _rows.FirstOrDefault(r => string.Equals(r.Item.Id, id, StringComparison.OrdinalIgnoreCase));
+            if (row == null) return;
+            Select(row);
+            (List.ItemContainerGenerator.ContainerFromItem(row) as FrameworkElement)?.BringIntoView();
+        }
+
         private void Build()
         {
             var state = App.State;
@@ -256,6 +285,5 @@ namespace Vanadreams.Pages
 
         private void Windower_Click(object sender, RoutedEventArgs e) => _win.Navigate(new WindowerPage(_win));
 
-        private void Back_Click(object sender, RoutedEventArgs e) => _win.Navigate(new MenuPage(_win));
     }
 }
