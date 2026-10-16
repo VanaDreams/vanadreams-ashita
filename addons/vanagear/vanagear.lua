@@ -41,39 +41,71 @@ gVanaMine            = require('vg.mine');
 gVanaCommands        = require('vg.commands');
 gVanaWindow          = require('vg.window');
 
+-- Ashita unloads an addon when one of its event callbacks throws. vanagear catches its own
+-- errors instead: each part runs guarded, the error is printed once (with where it came from)
+-- and vanagear keeps running. A repeat of the same error stays quiet so chat isn't flooded.
+local reported = {};
+local function guard(part, fn, ...)
+    local ok, err = xpcall(fn, debug.traceback, ...);
+    if (ok) then
+        return true;
+    end
+    err = tostring(err);
+    local first = err:match('^[^\n]*') or err;
+    if (reported[first] == nil) then
+        reported[first] = true;
+        print(chat.header('vanagear') .. chat.error(part .. ': ' .. first));
+        -- where it was called from, on one short line: the first frames past the error itself
+        local frames = {};
+        for line in err:gmatch('\n%s*([^\n]+)') do
+            if (#frames < 3) and (line:find('^%[C%]') == nil) and (line ~= 'stack traceback:') and (line:find("'guard'") == nil) then
+                frames[#frames + 1] = line;
+            end
+        end
+        if (#frames > 1) then
+            print(chat.header('vanagear') .. chat.message('from ' .. table.concat(frames, ' < ', 2)));
+        end
+    end
+    return false;
+end
+gVanaGuard = guard;
+
 ashita.events.register('load', 'vanagear_load_cb', function ()
     --Create a list of all globals the ashita environment has created.
     --This will be used to clear all leftover globals when loading a new profile.
     for key,_ in pairs(_G) do
         gPreservedGlobalKeys[key] = true;
     end
-    gVanaCore.LoadPrefs();
-    gState.Init();
+    guard('load prefs', gVanaCore.LoadPrefs);
+    guard('load', gState.Init);
 end);
 
 ashita.events.register('unload', 'vanagear_unload_cb', function ()
-    gState.UnloadProfile();
+    guard('unload', gState.UnloadProfile);
 end);
 
+-- each part on its own, so one failing window doesn't stop the swaps or the other windows
 ashita.events.register('d3d_present', 'vanagear_render', function()
-    gVanaCore.Tick();
-    gVanaMine.Tick();
-    gConfigGUI:Render();
-    gSetDisplay:Render();
-    gVanaWindow.Render();
+    guard('tick', gVanaCore.Tick);
+    guard('bag watch', gVanaMine.Tick);
+    guard('config window', gConfigGUI.Render, gConfigGUI);
+    guard('set display', gSetDisplay.Render, gSetDisplay);
+    guard('vanagear window', gVanaWindow.Render);
 end);
 
 ashita.events.register('packet_in', 'vanagear_packet_in_cb', function (e)
-    gPacketHandlers.HandleIncomingPacket(e);
+    guard('incoming packet', gPacketHandlers.HandleIncomingPacket, e);
 end);
 
 ashita.events.register('packet_out', 'vanagear_packet_out_cb', function (e)
-    gPacketHandlers.HandleOutgoingPacket(e);
+    guard('outgoing packet', gPacketHandlers.HandleOutgoingPacket, e);
 end);
 
 ashita.events.register('command', 'vanagear_command_cb', function (e)
-    if (gVanaCommands.Handle(e)) then
-        return;
-    end
-    gCommandHandlers.HandleCommand(e);
+    guard('command', function ()
+        if (gVanaCommands.Handle(e)) then
+            return;
+        end
+        gCommandHandlers.HandleCommand(e);
+    end);
 end);
