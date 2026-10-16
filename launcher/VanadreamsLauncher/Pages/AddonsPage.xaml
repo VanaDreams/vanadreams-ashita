@@ -70,6 +70,7 @@
                     <Button x:Name="InstallButton" Style="{StaticResource GoldButton}" Content="Install" Click="Install_Click" Margin="0,0,0,8"/>
                     <Button x:Name="DocsButton" Style="{StaticResource GhostButton}" Content="Read the docs" Click="Docs_Click" Margin="0,0,0,8"/>
                     <Button x:Name="ConfigButton" Style="{StaticResource GhostButton}" Content="Open config folder" Click="Config_Click" Margin="0,0,0,12"/>
+                    <Button x:Name="SwitcherButton" Style="{StaticResource GhostButton}" Content="Switcher settings" Click="Switcher_Click" Margin="0,0,0,12" Visibility="Collapsed"/>
                     <Grid>
                         <Button Style="{StaticResource GhostButton}" Content="Back" HorizontalAlignment="Left" Click="Back_Click"/>
                         <Button Style="{StaticResource GoldButton}" Content="Save" HorizontalAlignment="Right" Click="Save_Click"/>

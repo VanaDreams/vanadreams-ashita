@@ -255,6 +255,7 @@ namespace Vanadreams.Pages
             LayoutNote.Text = S.AutoLayout ? (string.IsNullOrEmpty(S.ActiveLayout) ? "Save a layout first; its places are used as characters log in." : "Characters go to their places in " + S.ActiveLayout + " as they log in.") : "";
         }
 
-        private void Back_Click(object sender, RoutedEventArgs e) => _win.Navigate(new MenuPage(_win));
+        // opened from its row on the Addons page, so Back goes there
+        private void Back_Click(object sender, RoutedEventArgs e) => _win.Navigate(new AddonsPage(_win));
     }
 }

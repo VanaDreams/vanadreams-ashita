@@ -17,6 +17,8 @@ namespace Vanadreams.Pages
     {
         private bool _selected, _enabled;
         public CatalogItem Item { get; set; }
+        /// <summary>The launcher's own window switcher, listed with the addons; its tick is LauncherSettings.SwitcherOn.</summary>
+        public bool IsSwitcher { get; set; }
         public bool Installed { get; set; }
         public string InstalledVersion { get; set; }
         public bool HasV4 => Item.HasV4;
@@ -25,8 +27,8 @@ namespace Vanadreams.Pages
         public Visibility HandVisibility => Selected ? Visibility.Visible : Visibility.Hidden;
         public string Label => Item.Name + (string.IsNullOrEmpty(Item.Version) ? "" : " " + Item.Version) + (!Item.HasV4 && !string.IsNullOrEmpty(Item.Replacement) ? " → " + Item.Replacement : "");
         public double Opacity => Item.HasV4 ? 1.0 : 0.5;
-        public string Tag => Item.SourceTag;
-        public Brush TagBrush => Item.Source == SourceType.None ? (Brush)Application.Current.FindResource("Bad") : Item.Source == SourceType.Bundled ? (Brush)Application.Current.FindResource("Mist") : (Brush)Application.Current.FindResource("GoldSoft");
+        public string Tag => IsSwitcher ? "launcher" : Item.SourceTag;
+        public Brush TagBrush => IsSwitcher ? (Brush)Application.Current.FindResource("GoldSoft") : Item.Source == SourceType.None ? (Brush)Application.Current.FindResource("Bad") : Item.Source == SourceType.Bundled ? (Brush)Application.Current.FindResource("Mist") : (Brush)Application.Current.FindResource("GoldSoft");
         public event PropertyChangedEventHandler PropertyChanged;
         private void Raise(string n) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
     }
@@ -57,6 +59,7 @@ namespace Vanadreams.Pages
             var state = App.State;
             var selectedId = _current?.Item.Id;
             _rows.Clear();
+            _rows.Add(new AddonRow { Item = SwitcherItem, IsSwitcher = true, Installed = true, Enabled = state.Settings.SwitcherOn });
             var order = new[] { SourceType.Bundled, SourceType.RepoFolder, SourceType.GithubRelease, SourceType.None };
             foreach (var item in state.Catalog.Items.OrderBy(i => Array.IndexOf(order, i.Source)).ThenBy(i => i.Kind).ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase))
             {
@@ -70,9 +73,9 @@ namespace Vanadreams.Pages
                 });
             }
             List.ItemsSource = null; List.ItemsSource = _rows;
-            var enabledCount = _rows.Count(r => r.Enabled && r.HasV4);
-            Heading.Text = $"✦ Your addons · {enabledCount} of {_rows.Count(r => r.HasV4)} enabled" + (state.CatalogFromCache ? " · catalogue from cache" : "");
-            var sel = _rows.FirstOrDefault(r => r.Item.Id == selectedId) ?? _rows.FirstOrDefault();
+            var enabledCount = _rows.Count(r => r.Enabled && r.HasV4 && !r.IsSwitcher);
+            Heading.Text = $"✦ Your addons · {enabledCount} of {_rows.Count(r => r.HasV4 && !r.IsSwitcher)} enabled" + (state.CatalogFromCache ? " · catalogue from cache" : "");
+            var sel = _rows.FirstOrDefault(r => r.Item.Id == selectedId) ?? _rows.FirstOrDefault(r => !r.IsSwitcher) ?? _rows.FirstOrDefault();
             Select(sel);
         }
 
@@ -83,6 +86,18 @@ namespace Vanadreams.Pages
             if (row == null) { ItemName.Text = "No catalogue yet"; ItemMeta.Text = "The catalogue could not be loaded. Check Settings for the catalogue address."; return; }
             row.Selected = true;
             var i = row.Item;
+            SwitcherButton.Visibility = row.IsSwitcher ? Visibility.Visible : Visibility.Collapsed;
+            if (row.IsSwitcher)
+            {
+                ItemName.Text = i.Name;
+                ItemMeta.Text = "Built into the launcher";
+                ItemDesc.Text = i.Description;
+                ItemState.Text = row.Enabled ? "✓ On" : "Off · tick it and Save to turn it on";
+                ItemState.Foreground = (Brush)FindResource(row.Enabled ? "Ok" : "Mist");
+                ItemV3.Text = "";
+                InstallButton.Visibility = DocsButton.Visibility = ConfigButton.Visibility = Visibility.Collapsed;
+                return;
+            }
             ItemName.Text = i.Name;
             var kind = i.Kind == "polplugin" ? "POL plugin" : i.Kind == "plugin" ? "Plugin" : "Addon";
             ItemMeta.Text = kind + (string.IsNullOrEmpty(i.Maintainer) && string.IsNullOrEmpty(i.Repo) ? "" : " by " + (i.Maintainer ?? i.Repo.Split('/')[0])) + (string.IsNullOrEmpty(i.Version) ? "" : " · " + i.Version) + (i.Source == SourceType.GithubRelease ? " · built for interface " + App.State.Catalog.Interface : "");
@@ -199,13 +214,28 @@ namespace Vanadreams.Pages
             try { Directory.CreateDirectory(dir); Process.Start(new ProcessStartInfo("explorer.exe", "\"" + dir + "\"") { UseShellExecute = true }); } catch (Exception ex) { Log.Warn(ex.Message); }
         }
 
-        private List<string> TickedIds() => _rows.Where(r => r.Enabled && r.HasV4).Select(r => r.Item.Id).ToList();
+        private List<string> TickedIds() => _rows.Where(r => r.Enabled && r.HasV4 && !r.IsSwitcher).Select(r => r.Item.Id).ToList();
+
+        /// <summary>The window switcher's row: not in the catalogue and never in the startup script, it runs in the launcher.</summary>
+        private static readonly CatalogItem SwitcherItem = new CatalogItem
+        {
+            Id = "vanadreams-window-switcher",
+            Name = "Window switcher",
+            Kind = "launcher",
+            Source = SourceType.Bundled,
+            Description = "For playing more than one character: a key or a controller press brings the next, the previous or a numbered game window to the front, and saved layouts put the windows back where they go.",
+        };
+
+        private void Switcher_Click(object sender, RoutedEventArgs e) => _win.Navigate(new SwitcherPage(_win));
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
             var state = App.State;
             state.Settings.EnabledAddons = TickedIds();
+            var switcher = _rows.FirstOrDefault(r => r.IsSwitcher);
+            if (switcher != null) state.Settings.SwitcherOn = switcher.Enabled;
             state.Settings.Save();
+            App.Switcher?.Apply();
             try
             {
                 state.ApplyEnabledAddons();
