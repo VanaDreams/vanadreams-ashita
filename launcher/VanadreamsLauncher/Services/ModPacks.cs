@@ -33,11 +33,14 @@ namespace Vanadreams.Services
         {
             var list = new List<ModPack>();
             var done = string.IsNullOrWhiteSpace(gameRoot) || string.IsNullOrEmpty(version) ? new HashSet<string>() : ClientInstall.Done(gameRoot, version);
-            if (done.Any(d => d.StartsWith("looks-", StringComparison.OrdinalIgnoreCase)))
-                list.Add(new ModPack { Id = "looks", Name = "Modern look pack", Detail = "Part of the game files", On = true });
-            if (done.Any(d => d.StartsWith("vanadreams-title", StringComparison.OrdinalIgnoreCase)))
-                list.Add(new ModPack { Id = "title", Name = "Title pack", Detail = "Part of the game files", On = true });
-            list.AddRange(Overlays(ashitaRoot));
+            var overlays = Overlays(ashitaRoot);
+            var moved = !string.IsNullOrWhiteSpace(ashitaRoot) && LookOverlays.Migrated(ashitaRoot, version);
+            // still in the game files: shown, locked, until the next Patch moves them into their overlays
+            if (!moved && !overlays.Any(o => o.Id == LookOverlays.Looks) && done.Any(d => LookOverlays.OverlayFor(d.Split(' ')[0]) == LookOverlays.Looks))
+                list.Add(new ModPack { Id = "looks", Name = NameOf(LookOverlays.Looks), Detail = "Part of the game files", On = true });
+            if (!moved && !overlays.Any(o => o.Id == LookOverlays.Title) && done.Any(d => LookOverlays.OverlayFor(d.Split(' ')[0]) == LookOverlays.Title))
+                list.Add(new ModPack { Id = "title", Name = NameOf(LookOverlays.Title), Detail = "Part of the game files", On = true });
+            list.AddRange(overlays);
             return list;
         }
 
@@ -50,11 +53,16 @@ namespace Vanadreams.Services
             var folders = Directory.Exists(root) ? Directory.GetDirectories(root).Select(Path.GetFileName).ToList() : new List<string>();
             var listed = PivotConfig.ReadOverlays(ashitaRoot).Where(n => folders.Contains(n, StringComparer.OrdinalIgnoreCase)).ToList();
             foreach (var f in folders.Where(f => !listed.Contains(f, StringComparer.OrdinalIgnoreCase)).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
-                result.Add(new ModPack { Id = f, Name = f, Detail = "Overlay, off", On = false, CanSwitch = true });
+                result.Add(new ModPack { Id = f, Name = NameOf(f), Detail = "Off", On = false, CanSwitch = true });
             for (var i = listed.Count - 1; i >= 0; i--)
-                result.Add(new ModPack { Id = listed[i], Name = listed[i], Detail = "Overlay", On = true, CanSwitch = true });
+                result.Add(new ModPack { Id = listed[i], Name = NameOf(listed[i]), Detail = "On", On = true, CanSwitch = true });
             return result;
         }
+
+        /// <summary>The packs Vanadreams ships go by their names; any other overlay by its folder.</summary>
+        public static string NameOf(string id) =>
+            string.Equals(id, LookOverlays.Looks, StringComparison.OrdinalIgnoreCase) ? "Modern look pack"
+            : string.Equals(id, LookOverlays.Title, StringComparison.OrdinalIgnoreCase) ? "Title pack" : id;
 
         /// <summary>True when XIPivot itself is in Ashita's polplugins folder, without which no overlay loads.</summary>
         public static bool PivotInstalled(string ashitaRoot) =>

@@ -102,6 +102,8 @@ namespace Vanadreams.Pages
                 PatchText.Foreground = (Brush)FindResource("GoldSoft");
                 PatchText.Text = pending != null
                     ? "A game update is ready: " + pending.Words + ". Press Patch to install it."
+                    : App.State.OverlayMigrationDue
+                    ? "The look and title packs are moving into packs you can switch on and off (about 400 MB). Press Patch."
                     : "The server runs " + App.State.Version.Expected + " and this game is " + (App.State.Version.Installed ?? "older") + ". Press Patch to bring it up to date.";
                 return;
             }

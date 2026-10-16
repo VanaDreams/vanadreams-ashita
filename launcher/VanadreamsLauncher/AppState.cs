@@ -150,8 +150,11 @@ namespace Vanadreams
         /// The Play button reads Patch while this is true: an update found at start, or a game older than the version the
         /// server runs. Unknown (no game found) is not a patch; Play explains that one and Install game handles it.
         /// </summary>
-        public bool PatchNeeded => PendingClientUpdate != null ||
+        public bool PatchNeeded => PendingClientUpdate != null || OverlayMigrationDue ||
                                    (Version.ExpectedIsPublished && Version.Verdict == VersionVerdict.ClientTooOld);
+
+        /// <summary>The server ships the packs as XIPivot overlays and this copy still has them in the game folder (LookOverlays).</summary>
+        public bool OverlayMigrationDue { get; private set; }
 
         /// <summary>Where the launcher installs and patches the game: the folder it installed to, else the default.</summary>
         public string GameInstallTarget => string.IsNullOrWhiteSpace(Settings.GameInstallRoot) ? ClientInstall.DefaultRoot : Settings.GameInstallRoot;
@@ -172,6 +175,13 @@ namespace Vanadreams
                 m = ClientManifest.Parse(await Downloader.GetStringAsync(ClientInstall.ManifestUrl(version)));
             }
             var ashita = HasAshita ? AshitaRoot : null;
+            // the packs out of the game folder into their overlays first, so nothing below sees them as missing
+            if (LookOverlays.Due(m, root, ashita))
+            {
+                XIPivotBundle.Ensure(ashita);
+                await LookOverlays.MigrateAsync(Http.Shared, m, root, ashita, progress, ct);
+                ApplyEnabledAddons();
+            }
             var todo = ClientInstall.Remaining(m, ClientInstall.Done(root, m.Version, ashita));
             var updateOnly = todo.Count < m.Chunks.Count && ClientInstall.IsRegistered(root);
             var needed = todo.Sum(c => c.Size + c.Unpacked);
@@ -199,6 +209,8 @@ namespace Vanadreams
             try
             {
                 var m = ClientManifest.Parse(await Downloader.GetStringAsync(ClientInstall.ManifestUrl(version)));
+                OverlayMigrationDue = LookOverlays.Due(m, root, HasAshita ? AshitaRoot : null);
+                if (OverlayMigrationDue) Log.Info("the look and title packs are to move into their overlays");
                 var todo = ClientInstall.Updates(m, root, HasAshita ? AshitaRoot : null);
                 PendingClientUpdate = todo.Count == 0 ? null : new ClientUpdate { Root = root, Manifest = m, Parts = todo };
                 if (PendingClientUpdate != null) Log.Info("game update ready: " + string.Join(", ", todo.Select(c => c.Name)));
@@ -275,6 +287,18 @@ namespace Vanadreams
         {
             if (!HasAshita) return;
             var changed = false;
+            // XIPivot comes with the launcher: the look and title overlays need it (LookOverlays). Ticked once, then the player's.
+            try
+            {
+                if (XIPivotBundle.Ensure(AshitaRoot) && !Settings.InstalledVersions.ContainsKey("pivot")) { Settings.InstalledVersions["pivot"] = XIPivotBundle.Version; changed = true; }
+                if (!Settings.GivenDefaults.Contains("pivot", StringComparer.OrdinalIgnoreCase))
+                {
+                    if (!Settings.EnabledAddons.Contains("pivot", StringComparer.OrdinalIgnoreCase)) Settings.EnabledAddons.Add("pivot");
+                    Settings.GivenDefaults.Add("pivot");
+                    changed = true;
+                }
+            }
+            catch (Exception ex) { Log.Warn("XIPivot: " + ex.Message); }
             // once per player, and only with a real catalogue to tell Ashita's own addons from ours
             if (!Settings.TickAllTidied && Catalog.Items.Count > 0)
             {

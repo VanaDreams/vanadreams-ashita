@@ -14,6 +14,8 @@ The FFXI client guide shows Square Enix's own pictures of the download page and 
 
 **vanagear** carries [LuAshitacast](https://github.com/ThornyFFXI/LuAshitacast) 2.14 by ThornyFFXI, used under its MIT licence (Copyright (c) 2021 ThornyFFXI), which ships with it as `addons/vanagear/LICENSE-LuAshitacast`. Its set names and the order sets are laid on for casting follow GetAwayCoxn's [Luashitacast-Profiles](https://github.com/GetAwayCoxn/Luashitacast-Profiles) (MIT, Copyright (c) 2022 GetAwayCoxn), and its Blue Magic lists come from there. Motenten's F9-F12 keys are the ones [Mote-libs](https://github.com/Kinematics/Mote-libs) binds.
 
+The launcher carries [**XIPivot**](https://github.com/HealsCodes/XIPivot) 4.3.001 for Ashita v4 by Renee Koecher (HealsCodes), Copyright © 2019-2022, used under its BSD 3-Clause licence, which ships with it as `docs/pivot/LICENSE.txt`. It loads the modern look pack and the title pack as overlays, so they can be switched off and ordered without touching the game's files.
+
 The launcher's **window switcher** follows the approach of HaxPrime's [XI Focus](https://github.com/HaxPrime/XI-Focus) (MIT licence): finding the game by its window class, naming each slot from the window title, borrowing the foreground window's input to change focus, and saved window layouts. The launcher's code is its own.
 
 ## Art
