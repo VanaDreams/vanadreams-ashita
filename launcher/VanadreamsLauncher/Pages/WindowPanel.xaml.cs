@@ -38,7 +38,17 @@ namespace Vanadreams.Pages
             foreach (var m in ModeChoices) Modes.Children.Add(Chip(m.Item2, p != null && p.Mode == m.Item1, (s, e) => Set(x => x.Mode = m.Item1)));
 
             Sizes.Children.Clear();
+            // the chosen display's own size first: the right one for borderless and fullscreen
+            var monitors = Graphics.Monitors();
+            var screen = monitors.FirstOrDefault(m => p != null && string.Equals(m.Device, p.Monitor, StringComparison.OrdinalIgnoreCase)) ?? monitors.FirstOrDefault(m => m.Primary);
+            // then every other attached display's size, so the right one is there whichever screen the game goes on
             var sizes = SizeChoices.ToList();
+            // inserted at the front one by one, the chosen display last so it ends up first
+            foreach (var d in monitors.Where(m => m != screen).Concat(screen == null ? new MonitorInfo[0] : new[] { screen }))
+            {
+                sizes.RemoveAll(s => s[0] == d.Width && s[1] == d.Height);
+                sizes.Insert(0, new[] { d.Width, d.Height });
+            }
             // a size the player typed on an older launcher stays offered, so picking nothing never changes it
             if (p != null && p.Width > 0 && p.Height > 0 && !sizes.Any(s => s[0] == p.Width && s[1] == p.Height)) sizes.Add(new[] { p.Width, p.Height });
             foreach (var s in sizes)
@@ -86,7 +96,12 @@ namespace Vanadreams.Pages
             if (_filling || _profile == null) return;
             var m = MonitorBox.SelectedItem as MonitorInfo;
             // the main display is stored as nothing, so a profile moved to another PC opens on that PC's main one
-            Set(x => x.Monitor = m == null || m.Primary ? "" : m.Device);
+            Set(x =>
+            {
+                x.Monitor = m == null || m.Primary ? "" : m.Device;
+                // borderless and fullscreen fill the display they are moved to
+                if (m != null && (x.Mode == WindowMode.Borderless || x.Mode == WindowMode.Fullscreen)) Resize(x, m.Width, m.Height);
+            });
         }
     }
 }
