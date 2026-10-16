@@ -86,7 +86,10 @@ namespace Vanadreams.Pages
         }
 
         /// <summary>The update waits for this profile when it plays Vanadreams; another server's profile plays as it is.</summary>
-        private bool PatchFirst => _profile != null && _profile.IsVanadreams && App.State.PatchNeeded && !_patchedNow;
+        /// The look and title packs' move is about the game copy, not the server, so it is offered on any profile:
+        /// 16 Oct 2026, Ferrin's profile pointed at the server's LAN address and the Patch for the move never showed.
+        private bool PatchFirst => _profile != null && !_patchedNow &&
+                                   ((_profile.IsVanadreams && App.State.PatchNeeded) || App.State.OverlayMigrationDue);
 
         /// <summary>Play or Patch on the button, and the line and bar under the news.</summary>
         private void ShowPatch()
