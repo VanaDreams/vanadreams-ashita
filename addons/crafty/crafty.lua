@@ -27,12 +27,13 @@
 
 addon.name    = 'crafty';
 addon.author  = 'Vanadreams';
-addon.version = '0.1.1';
+addon.version = '0.1.2';
 addon.desc    = 'Repeat a synthesis on the Vanadreams server.';
 addon.link    = 'https://github.com/VanaDreams/vanadreams-ashita';
 
 require('common');
 local imgui    = require('imgui');
+local vd       = require('vdstyle');
 local settings = require('settings');
 
 local defaults = T{
@@ -372,24 +373,8 @@ ashita.events.register('d3d_present', 'crafty_present', function ()
     tick();
     if not cfg.window_open[1] then return; end
     imgui.SetNextWindowSize({ 360, 0 }, ImGuiCond_FirstUseEver);
-    -- see-through, in the Vanadreams colours, so it can sit beside the crafting menu
-    local see = cfg.see_through[1];
-    imgui.PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0);
-    imgui.PushStyleColor(ImGuiCol_WindowBg,      rgba(C.night, see and 0.55 or 0.97));
-    imgui.PushStyleColor(ImGuiCol_TitleBg,       rgba(C.plum, see and 0.70 or 1.0));
-    imgui.PushStyleColor(ImGuiCol_TitleBgActive, rgba(C.velvet, see and 0.85 or 1.0));
-    imgui.PushStyleColor(ImGuiCol_Border,        rgba(C.gold, 0.35));
-    imgui.PushStyleColor(ImGuiCol_FrameBg,       rgba(C.velvet, 0.60));
-    imgui.PushStyleColor(ImGuiCol_PopupBg,       rgba(C.night, 0.92));
-    imgui.PushStyleColor(ImGuiCol_Button,        rgba(C.velvet, 0.85));
-    imgui.PushStyleColor(ImGuiCol_ButtonHovered, rgba(C.gold, 0.60));
-    imgui.PushStyleColor(ImGuiCol_ButtonActive,  rgba(C.gold, 0.85));
-    imgui.PushStyleColor(ImGuiCol_Header,        rgba(C.velvet, 0.85));
-    imgui.PushStyleColor(ImGuiCol_HeaderHovered, rgba(C.gold, 0.45));
-    imgui.PushStyleColor(ImGuiCol_Separator,     rgba(C.gold, 0.35));
-    imgui.PushStyleColor(ImGuiCol_Text,          rgba(C.cream, 1.0));
-    imgui.PushStyleColor(ImGuiCol_TextDisabled,  rgba(C.soft, 0.75));
-    if imgui.Begin('Vanadreams crafting', cfg.window_open) then
+    -- see-through at first, so it can sit beside the crafting menu; the switch in its title bar changes it
+    if vd.Begin('Vanadreams crafting', cfg.window_open, nil, { seeThrough = cfg.see_through[1] }) then
         local c = bot.counters;
         -- the synth in progress: the server already told us how it ends
         if bot.next and now() - bot.next.at < 20 then
@@ -399,8 +384,6 @@ ashita.events.register('d3d_present', 'crafty_present', function ()
         else
             imgui.TextDisabled('This synth: shows here the moment it starts');
         end
-        imgui.SameLine(imgui.GetWindowWidth() - 92);
-        if imgui.SmallButton(see and 'solid' or 'see-through') then cfg.see_through[1] = not see; settings.save(); end
         imgui.Separator();
         -- the dropdown of every synth you have done by hand, newest first
         if #cfg.recipes == 0 then
@@ -422,19 +405,19 @@ ashita.events.register('d3d_present', 'crafty_present', function ()
         if bot.repeat_count[1] < 1 then bot.repeat_count[1] = 1; end
         imgui.SameLine();
         if bot.running then
-            if imgui.Button('Stop', { 100, 24 }) then stop('by button'); end
+            if vd.Button('Stop', { 100, 24 }, true) then stop('by button'); end
         else
-            if imgui.Button('Repeat', { 100, 24 }) then repeat_selected(bot.repeat_count[1]); end
+            if vd.Button('Repeat', { 100, 24 }, true) then repeat_selected(bot.repeat_count[1]); end
         end
         if #cfg.recipes > 0 and not bot.running then
             imgui.SameLine();
-            if imgui.Button('Forget', { 70, 24 }) then table.remove(cfg.recipes, bot.selected); bot.selected = 1; settings.save(); end
+            if vd.Button('Forget', { 70, 24 }) then table.remove(cfg.recipes, bot.selected); bot.selected = 1; settings.save(); end
         end
         imgui.Separator();
         -- what it is doing right now
         local r = current_recipe();
         if bot.running and r then
-            imgui.Text(('%s  %d/%d'):format(bot.state, r.done, r.count));
+            vd.Eyebrow(('%s  %d/%d'):format(bot.state, r.done, r.count));
             if bot.deadline > 0 then imgui.SameLine(); imgui.TextDisabled(('next in %ds'):format(math.max(0, bot.deadline - now()))); end
         elseif bot.stop_reason ~= '' then
             imgui.TextDisabled('Stopped: ' .. bot.stop_reason);
@@ -452,9 +435,7 @@ ashita.events.register('d3d_present', 'crafty_present', function ()
         end
         if not bot.allowed and bot.allowed_reason ~= '' then imgui.TextDisabled(bot.allowed_reason); end
     end
-    imgui.End();
-    imgui.PopStyleColor(14);
-    imgui.PopStyleVar(1);
+    vd.End();
 end);
 
 ashita.events.register('load', 'crafty_load', function ()

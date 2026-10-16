@@ -6,6 +6,7 @@
 ]]--
 
 local imgui = require('imgui');
+local vd = require('vdstyle');
 
 local window = { Open = false, Selected = nil };
 gVana.Window = window;
@@ -27,7 +28,7 @@ local function renderMine()
     local mine = require('vg.mine');
     mineOpen[1] = true;
     imgui.SetNextWindowSize({ 560, 380 }, ImGuiCond_FirstUseEver);
-    if (imgui.Begin('vanagear: your commands', mineOpen)) then
+    if (vd.Begin('vanagear: your commands', mineOpen)) then
         imgui.TextWrapped('/vg <word> runs the lines in order. A line is any game command; "wait 2" pauses two seconds. '
             .. 'Put several lines in one box by ending each with ;');
         imgui.Separator();
@@ -40,17 +41,17 @@ local function renderMine()
         end
         for _, word in ipairs(words) do
             local entry = list[word];
-            if (imgui.SmallButton('Run##run_' .. word)) then
+            if (vd.SmallButton('Run##run_' .. word)) then
                 mine.Run(word);
             end
             imgui.SameLine();
-            if (imgui.SmallButton('Edit##edit_' .. word)) then
+            if (vd.SmallButton('Edit##edit_' .. word)) then
                 newWord[1] = word;
                 newLines[1] = table.concat(entry.lines, '; ');
                 everyJob[1] = (entry.file == 'ALL');
             end
             imgui.SameLine();
-            if (imgui.SmallButton('Delete##del_' .. word)) then
+            if (vd.SmallButton('Delete##del_' .. word)) then
                 mine.Remove(word);
             end
             imgui.SameLine();
@@ -67,7 +68,7 @@ local function renderMine()
         imgui.PushItemWidth(-1);
         imgui.InputText('##vg_mine_lines', newLines, 512);
         imgui.PopItemWidth();
-        if (imgui.Button('Save')) then
+        if (vd.Button('Save', nil, true)) then
             local ok, word, file = mine.Add(newWord[1], mine.Split(newLines[1]), everyJob[1]);
             if (ok) then
                 sayNote(string.format('/vg %s saved in %s.lua.', word, file));
@@ -78,11 +79,11 @@ local function renderMine()
             end
         end
         imgui.SameLine();
-        if (imgui.Button('Open folder')) then
+        if (vd.Button('Open folder')) then
             mine.OpenFolder();
         end
         imgui.SameLine();
-        if (imgui.Button('Reload')) then
+        if (vd.Button('Reload')) then
             mine.Reload();
             sayNote('Read the files again.');
         end
@@ -91,7 +92,7 @@ local function renderMine()
             imgui.TextDisabled(mineNote);
         end
     end
-    imgui.End();
+    vd.End();
     if (not mineOpen[1]) then
         window.Mine = false;
     end
@@ -131,7 +132,7 @@ renderSlots = function(name)
     local own = gVana.Own[name] or {};
     local built = gVana.Built[name] or {};
     local yours = next(own) ~= nil;
-    imgui.Text(name .. ((ex and ex.weaponskill) and ('  (' .. ex.weaponskill .. ')') or ''));
+    vd.Eyebrow(name .. ((ex and ex.weaponskill) and ('  (' .. ex.weaponskill .. ')') or ''));
     imgui.SameLine();
     imgui.TextDisabled(yours and (gVana.Built[name] and '  built, with your changes' or '  your own set') or '  built');
     imgui.Separator();
@@ -164,7 +165,7 @@ renderSlots = function(name)
             imgui.PopItemWidth();
             if (not own[slotName]) and (ranks ~= nil) and (ranks[1] ~= nil) then
                 imgui.SameLine();
-                imgui.TextDisabled(string.format('+%.1f', ranks[1].gain));
+                vd.Status(string.format('+%.1f', ranks[1].gain), vd.Ok);
                 if (imgui.IsItemHovered()) and (ranks[2] ~= nil) then
                     local lines = {};
                     for i = 2, math.min(4, #ranks) do
@@ -176,18 +177,18 @@ renderSlots = function(name)
         end
     end
     imgui.Separator();
-    if (imgui.Button('Wear it')) then
+    if (vd.Button('Wear it', nil, true)) then
         require('vg.use').Wear(name, set);
         setNote = 'Wearing ' .. name .. ' until /vg wear off.';
     end
     imgui.SameLine();
-    if (imgui.Button('Take what I wear')) then
+    if (vd.Button('Take what I wear')) then
         mine.SaveSet(name);
         setNote = name .. ' now holds what you wear.';
     end
     if (yours) then
         imgui.SameLine();
-        if (imgui.Button(gVana.Built[name] and 'Undo my changes' or 'Delete this set')) then
+        if (vd.Button(gVana.Built[name] and 'Undo my changes' or 'Delete this set')) then
             mine.RemoveSet(name);
             setNote = gVana.Built[name] and (name .. ' is back to the built set.') or (name .. ' deleted.');
         end
@@ -204,12 +205,12 @@ window.Render = function()
     end
     isOpen[1] = true;
     imgui.SetNextWindowSize({ 720, 480 }, ImGuiCond_FirstUseEver);
-    if (imgui.Begin('vanagear', isOpen)) then
+    if (vd.Begin('vanagear', isOpen)) then
         local who = gVana.Who;
         if (who == nil) then
             imgui.Text('Waiting to build: sets are made once you have been in the zone for a few seconds.');
         else
-            imgui.Text(string.format('%s%d/%s%d', who.JobName, who.Level, who.SubName, who.SubLevel));
+            vd.Eyebrow(string.format('%s%d/%s%d', who.JobName, who.Level, who.SubName, who.SubLevel));
             imgui.SameLine();
             imgui.TextDisabled(string.format('  built from your inventory and wardrobes at %s', os.date('%H:%M', gVana.BuiltAt or os.time())));
             if (gProfile ~= nil) and (not gProfile.IsVanagearStock) then
@@ -225,7 +226,7 @@ window.Render = function()
 
             imgui.BeginChild('sets', { 180, -60 }, ImGuiChildFlags_Borders);
             for _, name in ipairs(names) do
-                if (imgui.Selectable(name, window.Selected == name)) then
+                if (vd.Selectable(name, window.Selected == name)) then
                     window.Selected = name;
                 end
             end
@@ -241,7 +242,7 @@ window.Render = function()
         imgui.InputText('##vg_new_set', newSet, 64);
         imgui.PopItemWidth();
         imgui.SameLine();
-        if (imgui.Button('New set')) then
+        if (vd.Button('New set', nil, true)) then
             local mine = require('vg.mine');
             local name = mine.SetName(newSet[1]);
             if (name == '') then
@@ -258,18 +259,18 @@ window.Render = function()
         end
         imgui.SameLine();
         local mine = require('vg.mine');
-        if (imgui.Button(mine.Dressing and 'Swap again' or 'Dress')) then
+        if (vd.Button(mine.Dressing and 'Swap again' or 'Dress')) then
             mine.Dress(not mine.Dressing);
             setNote = mine.Dressing and 'Swapping paused: put gear on, type a name and press New set (or /vg save <name>).' or nil;
         end
         imgui.SameLine();
-        if (imgui.Button('Your commands')) then
+        if (vd.Button('Your commands')) then
             window.Mine = not window.Mine;
         end
         imgui.SameLine();
         imgui.TextDisabled('/vg help lists the commands for this job.  vanagear is built on LuAshitacast by ThornyFFXI (MIT).');
     end
-    imgui.End();
+    vd.End();
     if (not isOpen[1]) then
         window.Open = false;
     end
