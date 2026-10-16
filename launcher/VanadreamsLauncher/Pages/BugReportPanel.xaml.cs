@@ -23,6 +23,8 @@ namespace Vanadreams.Pages
             InitializeComponent();
         }
 
+        private void Join_Click(object sender, RoutedEventArgs e) => MenuPage.OpenUrl(MenuPage.DiscordInvite);
+
         private async void Send_Click(object sender, RoutedEventArgs e)
         {
             var state = App.State;
@@ -41,6 +43,7 @@ namespace Vanadreams.Pages
                 Result.Text = "Saved " + Path.GetFileName(zip) + " on your Desktop. Drop it in #bugs-we-all-found with a line on what happened.";
                 try { Process.Start(new ProcessStartInfo("explorer.exe", "/select,\"" + zip + "\"") { UseShellExecute = true }); } catch (Exception ex) { Log.Warn("show zip: " + ex.Message); }
                 MenuPage.OpenUrl(BugsChannel);
+                JoinLine.Visibility = Visibility.Visible;
             }
             catch (Exception ex)
             {

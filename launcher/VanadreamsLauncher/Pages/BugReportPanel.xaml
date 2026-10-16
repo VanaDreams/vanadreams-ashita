@@ -8,5 +8,9 @@
                    Text="Zips your logs and settings (no passwords) to the Desktop for #bugs-we-all-found."/>
         <Button x:Name="SendButton" Style="{StaticResource GoldButton}" Content="⚑  Send bug report" HorizontalAlignment="Left" Click="Send_Click"/>
         <TextBlock x:Name="Result" Style="{StaticResource Muted}" FontSize="13.5" TextWrapping="Wrap" Margin="0,6,0,0"/>
+        <!-- shown once the zip is made: the channel link only works for players already in the server -->
+        <TextBlock x:Name="JoinLine" Style="{StaticResource Muted}" FontSize="13.5" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed">
+            <Run Text="Not in our Discord yet? "/><Hyperlink Foreground="{StaticResource GoldSoft}" Click="Join_Click">Join first</Hyperlink>
+        </TextBlock>
     </StackPanel>
 </UserControl>
