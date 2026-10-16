@@ -104,7 +104,27 @@ namespace Vanadreams.Services
             File.WriteAllLines(path, ScriptLines(0, false), new UTF8Encoding(false));
         }
 
-        /// <summary>The attached displays, the main one first.</summary>
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        private struct DEVMODE
+        {
+            [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.ByValTStr, SizeConst = 32)] public string dmDeviceName;
+            public short dmSpecVersion, dmDriverVersion, dmSize, dmDriverExtra;
+            public int dmFields, dmPositionX, dmPositionY, dmDisplayOrientation, dmDisplayFixedOutput;
+            public short dmColor, dmDuplex, dmYResolution, dmTTOption, dmCollate;
+            [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.ByValTStr, SizeConst = 32)] public string dmFormName;
+            public short dmLogPixels;
+            public int dmBitsPerPel, dmPelsWidth, dmPelsHeight, dmDisplayFlags, dmDisplayFrequency;
+            public int dmICMMethod, dmICMIntent, dmMediaType, dmDitherType, dmReserved1, dmReserved2, dmPanningWidth, dmPanningHeight;
+        }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        private static extern bool EnumDisplaySettings(string deviceName, int modeNum, ref DEVMODE mode);
+
+        /// <summary>
+        /// The attached displays, the main one first, in real pixels and desktop positions from the driver's current mode.
+        /// Windows' screen list scales every display by the main one's DPI, so with the main screen at 150% a 1920x1080
+        /// display read as 2880x1620 (16 Oct 2026, Ferrin's laptop and second screen).
+        /// </summary>
         public static List<MonitorInfo> Monitors()
         {
             var list = new List<MonitorInfo>();
@@ -112,11 +132,16 @@ namespace Vanadreams.Services
             for (var i = 0; i < screens.Count; i++)
             {
                 var s = screens[i];
+                int left = s.Bounds.Left, top = s.Bounds.Top, w = s.Bounds.Width, h = s.Bounds.Height;
+                var mode = new DEVMODE { dmSize = (short)System.Runtime.InteropServices.Marshal.SizeOf(typeof(DEVMODE)) };
+                if (EnumDisplaySettings(s.DeviceName, -1, ref mode) && mode.dmPelsWidth > 0)   // -1: the current settings
+                {
+                    left = mode.dmPositionX; top = mode.dmPositionY; w = mode.dmPelsWidth; h = mode.dmPelsHeight;
+                }
                 list.Add(new MonitorInfo
                 {
-                    Device = s.DeviceName, Primary = s.Primary,
-                    Left = s.Bounds.Left, Top = s.Bounds.Top, Width = s.Bounds.Width, Height = s.Bounds.Height,
-                    Label = (s.Primary ? "Main" : "Display " + (i + 1)) + " · " + s.Bounds.Width + "×" + s.Bounds.Height
+                    Device = s.DeviceName, Primary = s.Primary, Left = left, Top = top, Width = w, Height = h,
+                    Label = (s.Primary ? "Main" : "Display " + (i + 1)) + " · " + w + "×" + h
                 });
             }
             return list;
@@ -144,14 +169,15 @@ namespace Vanadreams.Services
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
                 var ticked = s.EnabledAddons.Contains("fps", StringComparer.OrdinalIgnoreCase);
                 File.WriteAllLines(path, ScriptLines(p.Fps, ticked), new UTF8Encoding(false));
-                // the display: placed from where it sits today, so a rearranged desk still lands on the right one
-                if (!string.IsNullOrEmpty(p.Monitor))
-                {
-                    var m = Monitors().FirstOrDefault(x => string.Equals(x.Device, p.Monitor, StringComparison.OrdinalIgnoreCase));
-                    var at = StartFor(m, p.Mode, p.Width, p.Height);
-                    if (at.Item1 != p.StartX || at.Item2 != p.StartY) { p.StartX = at.Item1; p.StartY = at.Item2; p.Save(); }
-                }
-                else if (p.StartX != -1 || p.StartY != -1) { p.StartX = -1; p.StartY = -1; p.Save(); }
+                // the display: placed from where it sits today, so a rearranged desk still lands on the right one. A borderless
+                // or fullscreen window always starts at its display's corner, the main one when none was picked: left to
+                // Windows, a borderless window smaller than the screen opened wherever it liked (16 Oct 2026, Ferrin's 2560x1440
+                // on a 2560x1600 screen).
+                var monitors = Monitors();
+                var m = monitors.FirstOrDefault(x => string.Equals(x.Device, p.Monitor, StringComparison.OrdinalIgnoreCase))
+                        ?? (p.Mode == WindowMode.Windowed || p.Mode == WindowMode.Registry ? null : monitors.FirstOrDefault(x => x.Primary));
+                var at = StartFor(m, p.Mode, p.Width, p.Height);
+                if (at.Item1 != p.StartX || at.Item2 != p.StartY) { p.StartX = at.Item1; p.StartY = at.Item2; p.Save(); }
             }
             catch (Exception ex) { Log.Warn("graphics on play: " + ex.Message); }
         }
