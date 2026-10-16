@@ -34,6 +34,10 @@ namespace Vanadreams
             RefreshMute();
             if (!string.IsNullOrEmpty(App.SnapshotPath)) { await SnapshotAndExit(); return; }
             if (State.HasAshita) Navigate(new MenuPage(this)); else Navigate(new SetupPage(this));
+            App.Switcher = new WindowSwitcher(State.Settings, Dispatcher);
+            // the game windows all closed while the launcher sat in the tray: nothing is left to switch, so it goes
+            App.Switcher.Changed += () => { if (_tray != null && _tray.Visible && App.Switcher.Windows.Count == 0) Quit(); };
+            App.Switcher.Apply();
             // music after the first frame, so the unpack on a first run never delays the window
             if (State.Settings.MusicOn) Dispatcher.BeginInvoke(new Action(Music.Start), System.Windows.Threading.DispatcherPriority.Background);
             // first, and alongside the rest: the update window has to be up before anyone reaches Play
@@ -99,6 +103,80 @@ namespace Vanadreams
         {
             if (_updatedExe == null) return;
             Updater.Restart(_updatedExe);
+        }
+
+        // ---- the tray, for the window switcher ----
+
+        private System.Windows.Forms.NotifyIcon _tray;
+        private bool _trayTold;
+
+        /// <summary>
+        /// The close button (and Alt+F4), while the switcher runs and a game is open, hides the launcher to the tray instead.
+        /// Caught as the window's Close command rather than in Closing, so Exit and an update restart still close for good.
+        /// </summary>
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            var source = System.Windows.Interop.HwndSource.FromHwnd(new System.Windows.Interop.WindowInteropHelper(this).Handle);
+            source?.AddHook((IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled) =>
+            {
+                const int WM_SYSCOMMAND = 0x0112, SC_CLOSE = 0xF060;
+                if (msg == WM_SYSCOMMAND && ((int)wParam & 0xFFF0) == SC_CLOSE && HideToTray()) handled = true;
+                return IntPtr.Zero;
+            });
+        }
+
+        /// <summary>Hide to the tray when the switcher has a game to look after. False when there is none, so the caller closes.</summary>
+        public bool HideToTray()
+        {
+            var sw = App.Switcher;
+            if (sw == null || !sw.Running) return false;
+            sw.Scan();
+            if (sw.Windows.Count == 0) return false;
+            if (_tray == null)
+            {
+                _tray = new System.Windows.Forms.NotifyIcon { Text = "Vanadreams Launcher · window switcher", Visible = false };
+                try
+                {
+                    using (var s = Application.GetResourceStream(new Uri("pack://application:,,,/assets/moon.ico")).Stream)
+                        _tray.Icon = new System.Drawing.Icon(s);
+                }
+                catch (Exception ex) { Log.Warn("tray icon: " + ex.Message); _tray.Icon = System.Drawing.SystemIcons.Application; }
+                var menu = new System.Windows.Forms.ContextMenuStrip();
+                menu.Items.Add("Open the launcher", null, (s, e) => Dispatcher.BeginInvoke(new Action(ShowFromTray)));
+                menu.Items.Add("Quit (the window switcher stops)", null, (s, e) => Dispatcher.BeginInvoke(new Action(Quit)));
+                _tray.ContextMenuStrip = menu;
+                _tray.DoubleClick += (s, e) => Dispatcher.BeginInvoke(new Action(ShowFromTray));
+            }
+            _tray.Visible = true;
+            Hide();
+            if (!_trayTold)
+            {
+                _trayTold = true;
+                _tray.ShowBalloonTip(4000, "Window switcher still on", "The launcher is in the tray so your switch keys keep working. Right-click the moon to quit.", System.Windows.Forms.ToolTipIcon.None);
+            }
+            Log.Info("hidden to the tray for the window switcher");
+            return true;
+        }
+
+        private void ShowFromTray()
+        {
+            if (_tray != null) _tray.Visible = false;
+            Show();
+            if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+            Activate();
+        }
+
+        private void Quit()
+        {
+            if (_tray != null) { _tray.Visible = false; _tray.Dispose(); _tray = null; }
+            Application.Current.Shutdown();
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            if (_tray != null) { _tray.Visible = false; _tray.Dispose(); _tray = null; }
+            base.OnClosed(e);
         }
 
         private void GameUpdate_Click(object sender, RoutedEventArgs e) => Navigate(new InstallPage(this));
@@ -194,6 +272,7 @@ namespace Vanadreams
                 case "install-new": page = new InstallPage(this, asNewPlayer: true); break;
                 case "capture": page = new CapturePage(this); break;
                 case "windower": page = new WindowerPage(this); break;
+                case "switcher": page = new SwitcherPage(this); break;
                 default: page = new MenuPage(this); break;
             }
             Navigate(page);

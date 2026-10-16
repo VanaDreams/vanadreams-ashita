@@ -381,7 +381,8 @@ namespace Vanadreams.Pages
                 // the launcher waits to close until the game is open, so it can still say why if it never opens
                 var autoClose = _profile.AutoClose;
                 var opened = await WatchLaunch(state, _profile, loaderName, before, launchedAt);
-                if (autoClose && opened) Application.Current.Shutdown();
+                // with the window switcher on, "close" means the tray: the switcher has to keep running for the game
+                if (autoClose && opened && !_win.HideToTray()) Application.Current.Shutdown();
             }
             catch (Exception ex)
             {
