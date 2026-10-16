@@ -191,6 +191,30 @@ namespace Vanadreams.Tests
         }
 
         [TestMethod]
+        public void Source_zip_release_comes_from_the_tag_and_unpacks_without_its_top_folder()
+        {
+            var json = "[{\"draft\":true,\"tag_name\":\"2.0\",\"zipball_url\":\"https://api.github.com/repos/a/b/zipball/2.0\",\"assets\":[]},"
+                     + "{\"draft\":false,\"tag_name\":\"1.0.260921\",\"zipball_url\":\"https://api.github.com/repos/a/b/zipball/1.0.260921\","
+                     + "\"assets\":[{\"name\":\"FancyChat_1.0.260921.zip\",\"size\":97,\"browser_download_url\":\"https://x/rar\"}]}]";
+            var src = Downloader.LatestReleaseAsset(json, Downloader.SourceZip);
+            Assert.AreEqual("1.0.260921", src.Tag);
+            Assert.AreEqual("https://api.github.com/repos/a/b/zipball/1.0.260921", src.Url);
+            Assert.AreEqual(0, src.Size);
+            Assert.AreEqual("https://x/rar", Downloader.LatestReleaseAsset(json, "FancyChat_*.zip").Url);
+
+            var tree = Path.Combine(_dir, "srczip"); Directory.CreateDirectory(Path.Combine(tree, "a-b-10d6254", "lib"));
+            File.WriteAllText(Path.Combine(tree, "a-b-10d6254", "fancychat.lua"), "main");
+            File.WriteAllText(Path.Combine(tree, "a-b-10d6254", "lib", "render.lua"), "r");
+            var zip = Path.Combine(_dir, "source.zip");
+            System.IO.Compression.ZipFile.CreateFromDirectory(tree, zip);
+            var dst = Path.Combine(_dir, "addons", "fancychat");
+            var written = Downloader.ExtractZipOverwrite(zip, dst, stripTopFolder: true);
+            Assert.AreEqual("main", File.ReadAllText(Path.Combine(dst, "fancychat.lua")));
+            Assert.IsTrue(File.Exists(Path.Combine(dst, "lib", "render.lua")));
+            Assert.AreEqual(2, written.Count);
+        }
+
+        [TestMethod]
         public void Firewall_parser_reads_netsh_verbose_output()
         {
             var text = "Rule Name: Vanadreams - xiloader.exe\r\n----------------------------------------------------------------------\r\nEnabled: Yes\r\nDirection: In\r\nProfiles: Private,Public\r\nAction: Allow\r\nProgram: C:\\Games\\Vanadreams\\bootloader\\xiloader.exe\r\n\r\nRule Name: Blocked thing\r\nEnabled: Yes\r\nDirection: In\r\nAction: Block\r\nProgram: C:\\bad.exe\r\n\r\nRule Name: Out only\r\nEnabled: Yes\r\nDirection: Out\r\nAction: Allow\r\nProgram: C:\\out.exe\r\n";

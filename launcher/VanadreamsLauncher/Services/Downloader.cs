@@ -87,15 +87,35 @@ namespace Vanadreams.Services
             File.Move(partial, destination);
         }
 
+        /// <summary>
+        /// The asset glob that means the release's own source zip, the one GitHub makes from the tagged code. For
+        /// authors whose attached archive the launcher cannot open (Fancychat's is a RAR with a .zip name).
+        /// </summary>
+        public const string SourceZip = "source";
+
         /// <summary>The newest release's asset whose name matches the glob, e.g. "Bellhop.*Interface.4.30.zip".</summary>
         public async Task<ReleaseAsset> LatestReleaseAssetAsync(string repo, string assetGlob, CancellationToken ct = default(CancellationToken))
         {
             var text = await GetStringAsync($"https://api.github.com/repos/{repo}/releases?per_page=10", ct).ConfigureAwait(false);
+            return LatestReleaseAsset(text, assetGlob);
+        }
+
+        /// <summary>The asset LatestReleaseAssetAsync picks from GitHub's release list. A source zip has no size listed.</summary>
+        public static ReleaseAsset LatestReleaseAsset(string releasesJson, string assetGlob)
+        {
+            var source = string.Equals(assetGlob, SourceZip, StringComparison.OrdinalIgnoreCase);
             var rx = GlobToRegex(assetGlob);
-            foreach (var r in Json.List(Json.Parse(text)))
+            foreach (var r in Json.List(Json.Parse(releasesJson)))
             {
                 var rel = Json.Obj(r);
                 if (rel == null || Json.Bool(rel, "draft")) continue;
+                if (source)
+                {
+                    var url = Json.Str(rel, "zipball_url");
+                    if (string.IsNullOrEmpty(url)) continue;
+                    var tag = Json.Str(rel, "tag_name");
+                    return new ReleaseAsset { Name = "source.zip", Url = url, Size = 0, Tag = tag };
+                }
                 foreach (var a in Json.List(rel.ContainsKey("assets") ? rel["assets"] : null))
                 {
                     var asset = Json.Obj(a);
@@ -172,8 +192,11 @@ namespace Vanadreams.Services
             return new Regex(pattern, RegexOptions.IgnoreCase);
         }
 
-        /// <summary>Unzip over an existing tree, replacing files that are already there.</summary>
-        public static List<string> ExtractZipOverwrite(string zipPath, string destinationRoot)
+        /// <summary>
+        /// Unzip over an existing tree, replacing files that are already there. stripTopFolder drops the one folder
+        /// a GitHub source zip wraps everything in (Owner-Repo-1a2b3c4/), so its contents land in destinationRoot.
+        /// </summary>
+        public static List<string> ExtractZipOverwrite(string zipPath, string destinationRoot, bool stripTopFolder = false)
         {
             var written = new List<string>();
             var root = Path.GetFullPath(destinationRoot).TrimEnd('\\') + "\\";
@@ -182,7 +205,14 @@ namespace Vanadreams.Services
                 foreach (var entry in zip.Entries)
                 {
                     if (string.IsNullOrEmpty(entry.Name)) continue; // a folder entry
-                    var target = Path.GetFullPath(Path.Combine(root, entry.FullName.Replace('/', '\\')));
+                    var name = entry.FullName;
+                    if (stripTopFolder)
+                    {
+                        var slash = name.IndexOfAny(new[] { '/', '\\' });
+                        if (slash < 0) continue; // a file beside the top folder: GitHub never makes one
+                        name = name.Substring(slash + 1);
+                    }
+                    var target = Path.GetFullPath(Path.Combine(root, name.Replace('/', '\\')));
                     if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase)) continue; // never write outside the folder
                     Directory.CreateDirectory(Path.GetDirectoryName(target));
                     entry.ExtractToFile(target, true);
