@@ -45,6 +45,14 @@ namespace Vanadreams
         }
 
         public ProfileStore Profiles => new ProfileStore(Settings.AshitaRoot);
+
+        /// <summary>The profile Play starts: the last one played or picked, else the first that is not an example.</summary>
+        public Profile CurrentProfile()
+        {
+            var all = Profiles.LoadAll();
+            return all.FirstOrDefault(p => string.Equals(p.Id, Settings.LastProfile, StringComparison.OrdinalIgnoreCase))
+                   ?? all.FirstOrDefault(p => !p.IsExample) ?? all.FirstOrDefault();
+        }
         public string AshitaRoot => Settings.AshitaRoot;
         public bool HasAshita => Settings.HasAshita;
         /// <summary>
@@ -349,6 +357,7 @@ namespace Vanadreams
             var scriptPath = Path.Combine(AshitaRoot, "scripts", "vanadreams.txt");
             Directory.CreateDirectory(Path.GetDirectoryName(scriptPath));
             ScriptWriter.Write(scriptPath, entries);
+            Graphics.EnsureScript(AshitaRoot);   // the startup script runs it
             // XIPivot overlays: listed in pivot.ini while enabled, dropped from it when not
             foreach (var overlay in Catalog.Items.Where(i => i.Install == InstallAction.PivotOverlay))
             {

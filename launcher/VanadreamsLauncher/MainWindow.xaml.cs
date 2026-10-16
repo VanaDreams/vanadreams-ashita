@@ -30,7 +30,7 @@ namespace Vanadreams
         public double Opacity => Dim ? 0.55 : Selected || Current ? 1.0 : 0.9;
         public Brush TabBrush => (Brush)Application.Current.FindResource(Current ? "GoldSoft" : "Cream");
         /// <summary>A tab makes room on its left for the hand while it has it.</summary>
-        public Thickness TabMargin => new Thickness(Selected ? 25 : 9, 0, 0, 0);
+        public Thickness TabMargin => new Thickness(Selected ? 21 : 8, 0, 0, 0);
         public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
         private void Raise()
         {
@@ -53,6 +53,7 @@ namespace Vanadreams
         private readonly List<NavItem> _nav = new List<NavItem>
         {
             new NavItem { Label = "Play", Key = "play" },
+            new NavItem { Label = "Graphics", Key = "graphics" },
             new NavItem { Label = "Profiles", Key = "profiles" },
             new NavItem { Label = "Addons", Key = "addons" },
             new NavItem { Label = "Fishing", Key = "fishing" },
@@ -64,7 +65,7 @@ namespace Vanadreams
             new NavItem { Label = "Discord", Key = "discord" },
             new NavItem { Label = "Exit", Key = "exit", Dim = true },
         };
-        private const int MainCount = 9;   // Discord and Exit sit apart, at the foot of the rail or past the divider
+        private const int MainCount = 10;   // Discord and Exit sit apart, at the foot of the rail or past the divider
 
         /// <summary>Snapshot hook: the layout a snapshot asked for, without touching the player's setting.</summary>
         private bool? _forcedHorizontal;
@@ -145,6 +146,7 @@ namespace Vanadreams
             switch (key)
             {
                 case "play": return new MenuPage(this);
+                case "graphics": return new GraphicsPage(this);
                 case "profiles": return new ProfilesPage(this, State.Settings.LastProfile);
                 case "addons": return new AddonsPage(this);
                 case "fishing": return new FishingPage(this);
@@ -163,6 +165,7 @@ namespace Vanadreams
         private static string KeyOf(object page)
         {
             if (page is MenuPage) return "play";
+            if (page is GraphicsPage) return "graphics";
             if (page is ProfilesPage) return "profiles";
             if (page is AddonsPage || page is SwitcherPage || page is WindowerPage) return "addons";
             if (page is FishingPage) return "fishing";

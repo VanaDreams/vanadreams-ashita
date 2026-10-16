@@ -135,6 +135,7 @@ namespace Vanadreams.Pages
             {
                 _cancel = null; FolderButton.IsEnabled = true; Progress.Visibility = Visibility.Collapsed;
                 Refresh();
+                Packs.Reload();   // an install brings the look and title packs
             }
         }
 

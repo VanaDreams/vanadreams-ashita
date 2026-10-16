@@ -1,0 +1,29 @@
+<UserControl x:Class="Vanadreams.Pages.GraphicsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Vanadreams"
+             xmlns:pages="clr-namespace:Vanadreams.Pages"
+             Focusable="True">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="16"/>
+            <ColumnDefinition Width="*" MinWidth="300"/>
+        </Grid.ColumnDefinitions>
+        <Border Grid.Column="0" Style="{StaticResource Box}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <pages:GraphicsPresetPanel x:Name="Presets" Margin="0,0,4,0"/>
+            </ScrollViewer>
+        </Border>
+        <Border Grid.Column="2" Style="{StaticResource Box}">
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <pages:WindowPanel x:Name="WindowSettings" Margin="0,0,4,0"/>
+                </ScrollViewer>
+                <local:CrewGuide Grid.Row="1" Who="goblin" BubbleWidth="140"
+                                 Tip="Potato is fine. Goblin play on potato for years."/>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

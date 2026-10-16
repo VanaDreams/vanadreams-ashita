@@ -296,6 +296,18 @@
         </Style.Triggers>
     </Style>
 
+    <!-- A choice among a few (window mode, size, frame rate): ghost, and gold while picked (Chip.Set) -->
+    <Style x:Key="Chip" TargetType="Button" BasedOn="{StaticResource GhostButton}">
+        <Setter Property="Padding" Value="12,3"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Margin" Value="0,0,6,6"/>
+    </Style>
+    <Style x:Key="ChipOn" TargetType="Button" BasedOn="{StaticResource GoldButton}">
+        <Setter Property="Padding" Value="12,3"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Margin" Value="0,0,6,6"/>
+    </Style>
+
     <!-- The moon, the launcher's logo -->
     <RadialGradientBrush x:Key="MoonFill" GradientOrigin="0.38,0.34" Center="0.45,0.4" RadiusX="0.7" RadiusY="0.7">
         <GradientStop Color="#FFFFF2C8" Offset="0"/>

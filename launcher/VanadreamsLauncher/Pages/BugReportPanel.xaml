@@ -1,0 +1,12 @@
+<UserControl x:Class="Vanadreams.Pages.BugReportPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Send bug report (Services\BugReport.cs). Self-contained: drop it in any box. -->
+    <StackPanel>
+        <TextBlock Style="{StaticResource Eyebrow}" Text="✦ Something wrong?"/>
+        <TextBlock Style="{StaticResource Muted}" FontSize="14" TextWrapping="Wrap" Margin="0,0,0,8"
+                   Text="Zips your logs and settings (no passwords) to the Desktop for #bugs-we-all-found."/>
+        <Button x:Name="SendButton" Style="{StaticResource GoldButton}" Content="⚑  Send bug report" HorizontalAlignment="Left" Click="Send_Click"/>
+        <TextBlock x:Name="Result" Style="{StaticResource Muted}" FontSize="13.5" TextWrapping="Wrap" Margin="0,6,0,0"/>
+    </StackPanel>
+</UserControl>
