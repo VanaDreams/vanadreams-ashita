@@ -4,6 +4,7 @@ local gui = {
     IsOpen = { false },
 };
 local imgui = require('imgui');
+local vd = require('vdstyle');
 
 function gui:Hide()
     self.IsOpen[1] = false;
@@ -157,7 +158,7 @@ function gui:Render()
         return;
     end
 
-    if (imgui.Begin(string.format('%s v%s Set Viewer', addon.name, addon.version), self.IsOpen, ImGuiWindowFlags_AlwaysAutoResize)) then
+    if (vd.Begin(string.format('%s v%s Set Viewer', addon.name, addon.version), self.IsOpen, ImGuiWindowFlags_AlwaysAutoResize)) then
         if (imgui.BeginCombo('##LuashitacastSetViewerSelectSet', self.SelectedSet.Name, ImGuiComboFlags_None)) then
             for index,set in ipairs(self.Sets) do
                 local isSelected = (index == self.SelectedIndex);
@@ -177,7 +178,7 @@ function gui:Render()
         imgui.Text(outString);
     end
 
-    imgui.End();
+    vd.End();
     if (self.IsOpen[1] == false) then
         self.SelectedSet = nil;
     end

@@ -31,7 +31,7 @@
         "path": "addons/vanafish",
         "branch": "main"
       },
-      "version": "0.1.1",
+      "version": "0.1.2",
       "install": "copy-to-addons",
       "load": "/addon load vanafish",
       "config": "config\\vanafish\\",
@@ -546,7 +546,7 @@
         "path": "addons/vanagear",
         "branch": "main"
       },
-      "version": "0.1.5",
+      "version": "0.1.6",
       "install": "copy-to-addons",
       "load": "/addon load vanagear",
       "config": "config\\addons\\luashitacast\\",
@@ -628,7 +628,7 @@
         "path": "vanatunes",
         "branch": "main"
       },
-      "version": "0.3.3",
+      "version": "0.3.4",
       "install": "copy-to-addons",
       "load": "/addon load vanatunes",
       "onByDefault": true,
@@ -647,7 +647,7 @@
         "path": "grampsshop",
         "branch": "main"
       },
-      "version": "0.1.12",
+      "version": "0.1.13",
       "install": "copy-to-addons",
       "load": "/addon load grampsshop",
       "docs": "https://github.com/VanaDreams/grampsshop/tree/main/grampsshop",
@@ -664,7 +664,7 @@
         "path": "addons/crafty",
         "branch": "main"
       },
-      "version": "0.1.1",
+      "version": "0.1.2",
       "install": "copy-to-addons",
       "load": "/addon load crafty",
       "config": "config\\crafty\\",
@@ -1938,7 +1938,7 @@
         "path": "addons/dreamyah",
         "branch": "main"
       },
-      "version": "0.1.2",
+      "version": "0.1.3",
       "install": "copy-to-addons",
       "load": "/addon load dreamyah",
       "onByDefault": true,

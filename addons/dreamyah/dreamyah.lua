@@ -1,6 +1,6 @@
 addon.name    = 'dreamyah'
 addon.author  = 'VanaDreams'
-addon.version = '1.2'
+addon.version = '1.3'
 addon.desc    = 'Searchable VanaDreams Auction House interface.'
 addon.link    = ''
 
