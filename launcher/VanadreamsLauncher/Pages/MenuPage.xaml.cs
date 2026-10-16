@@ -330,6 +330,7 @@ namespace Vanadreams.Pages
             // the first. He spent an hour on it and nothing anywhere said why.
             var reg = GameRegistration.Read();
             var root = GameRootFor(_profile, reg);
+            var previousRoot = GameRegistration.CurrentRoot(reg);
             if (root != null && !EnsureGameIsRegistered(root, reg)) return;
             // 12 Oct 2026: Mogsy's loader logged in and closed, because neither pol.exe nor FFXiMain.dll was where
             // Windows pointed. When no copy we know of is a whole game, the launch is all but sure to do the same.
@@ -344,6 +345,21 @@ namespace Vanadreams.Pages
                 _win.RefreshStrip();
                 return;
             }
+
+            // macros and config live only in the game's USER folder; a copy before every launch lets a lost set come back
+            try
+            {
+                var gameFolder = root != null ? ClientInstall.GameFolder(root) : reg.GameFolder;
+                var copy = UserFolderBackup.Take(gameFolder, UserFolderBackup.BackupFolder, DateTime.Now);
+                if (copy != null) Log.Info("USER folder copied to " + copy);
+                // switching between two copies of the game: bring the newer macros and config along
+                if (root != null && previousRoot != null && !GameRegistration.SameFolder(root, previousRoot))
+                {
+                    var carried = UserFolderBackup.CarryOver(ClientInstall.GameFolder(previousRoot), gameFolder);
+                    if (carried.Count > 0) Log.Info("macros and config carried from " + previousRoot + " for " + string.Join(", ", carried));
+                }
+            }
+            catch (Exception ex) { Log.Warn("USER backup on play: " + ex.Message); }
 
             // Antivirus takes Ashita or the loader away, and without them Ashita closes before anything shows (Services\PlayCheck.cs)
             if (state.HasAshita && !FilesAreThere(state)) return;
