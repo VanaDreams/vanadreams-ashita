@@ -11,7 +11,7 @@ using Vanadreams.Services;
 
 namespace Vanadreams.Pages
 {
-    public partial class SetupPage : UserControl
+    public partial class SetupPage : UserControl, IBusyPage
     {
         private const string AshitaZipUrl = "https://github.com/AshitaXI/Ashita-v4beta/archive/refs/heads/main.zip";
         private readonly MainWindow _win;
@@ -24,7 +24,6 @@ namespace Vanadreams.Pages
             _win = win;
             var state = App.State;
             FolderBox.Text = string.IsNullOrWhiteSpace(state.AshitaRoot) ? @"C:\Games\Vanadreams" : state.AshitaRoot;
-            BackButton.Visibility = state.HasAshita ? Visibility.Visible : Visibility.Collapsed;
             if (state.HasAshita) { Title.Text = "Repair or update Ashita"; GoButton.Content = "Check and update"; }
             // a snapshot for the website never shows the machine's own v3 folder, which carries a Windows user name
             _v3 = string.IsNullOrEmpty(App.SnapshotPath) ? V3Import.FindInstalls().FirstOrDefault() : null;
@@ -86,7 +85,6 @@ namespace Vanadreams.Pages
                 state.CheckVersion();
                 state.Notify();
                 _win.RefreshStrip();
-                BackButton.Visibility = Visibility.Visible;
                 Title.Text = "Repair or update Ashita"; GoButton.Content = "Check and update";
                 UpdateAdopt();
             }
@@ -192,7 +190,6 @@ namespace Vanadreams.Pages
                 Say("Done. Ashita is at " + root + ".", "Ok");
                 state.Notify();
                 _win.RefreshStrip();
-                BackButton.Visibility = Visibility.Visible;
                 Title.Text = "Repair or update Ashita"; GoButton.Content = "Check and update";
             }
             catch (Exception ex)
@@ -234,7 +231,13 @@ namespace Vanadreams.Pages
         private void Mark(TextBlock step) { step.Foreground = (Brush)FindResource("GoldSoft"); }
         private void Done(TextBlock step) { step.Foreground = (Brush)FindResource("Ok"); if (!step.Text.StartsWith("✓")) step.Text = "✓ " + step.Text; }
 
-        private void Back_Click(object sender, RoutedEventArgs e) => _win.Navigate(new MenuPage(_win));
+        public bool CanLeave()
+        {
+            if (!_busy) return true;
+            Say("Setup is still running. It finishes on its own; wait for it here.", "Warn");
+            return false;
+        }
+
         private void InstallGame_Click(object sender, RoutedEventArgs e) => _win.Navigate(new InstallPage(_win));
     }
 }

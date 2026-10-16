@@ -43,6 +43,15 @@ namespace Vanadreams.Services
         public string GameFolder { get; set; } = "";
         public Dictionary<string, bool> PolPlugins { get; } = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 
+        // The Graphics page, kept per profile in [ashita.launcher] (Graphics). Empty or 0: never picked.
+        public string GfxPreset { get; set; } = "";
+        public int Fps { get; set; }
+        /// <summary>The display the game opens on, by its Windows device name (\\.\DISPLAY2); empty for the main one.</summary>
+        public string Monitor { get; set; } = "";
+        /// <summary>Ashita's [ashita.window.startpos]: where the game window opens. -1 lets Windows choose.</summary>
+        public int StartX { get; set; } = -1;
+        public int StartY { get; set; } = -1;
+
         public IniFile Ini { get; private set; }
 
         public static Profile Load(string path)
@@ -63,6 +72,12 @@ namespace Vanadreams.Services
             var mode = ReadInt(ini, "0034");
             p.Mode = Enum.IsDefined(typeof(WindowMode), mode) ? (WindowMode)mode : WindowMode.Registry;
             foreach (var kv in ini.Section("ashita.polplugins")) p.PolPlugins[kv.Key] = kv.Value.Trim() == "1";
+            p.GfxPreset = ini.Get("ashita.launcher", "graphics", "");
+            int n;
+            p.Fps = int.TryParse(ini.Get("ashita.launcher", "fps", ""), out n) ? n : 0;
+            p.Monitor = ini.Get("ashita.launcher", "monitor", "");
+            p.StartX = int.TryParse(ini.Get("ashita.window.startpos", "x", "-1"), out n) ? n : -1;
+            p.StartY = int.TryParse(ini.Get("ashita.window.startpos", "y", "-1"), out n) ? n : -1;
             return p;
         }
 
@@ -86,6 +101,15 @@ namespace Vanadreams.Services
             Ini.Set("ffxi.registry", "0004", BackgroundHeight.ToString());
             Ini.Set("ffxi.registry", "0034", ((int)Mode).ToString());
             foreach (var kv in PolPlugins) Ini.Set("ashita.polplugins", kv.Key, kv.Value ? "1" : "0");
+            // the Graphics page's keys only once it has been used, so an untouched profile reads as it always has
+            if (!string.IsNullOrEmpty(GfxPreset) || Ini.Has("ashita.launcher", "graphics")) Ini.Set("ashita.launcher", "graphics", GfxPreset ?? "");
+            if (Fps > 0 || Ini.Has("ashita.launcher", "fps")) Ini.Set("ashita.launcher", "fps", Fps > 0 ? Fps.ToString() : "");
+            if (!string.IsNullOrEmpty(Monitor) || Ini.Has("ashita.launcher", "monitor")) Ini.Set("ashita.launcher", "monitor", Monitor ?? "");
+            if (StartX != -1 || StartY != -1 || Ini.Has("ashita.window.startpos", "x"))
+            {
+                Ini.Set("ashita.window.startpos", "x", StartX.ToString());
+                Ini.Set("ashita.window.startpos", "y", StartY.ToString());
+            }
             Ini.Save(path ?? Path);
             if (path != null) Path = path;
         }

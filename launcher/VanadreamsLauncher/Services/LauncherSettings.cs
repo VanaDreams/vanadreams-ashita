@@ -42,6 +42,10 @@ namespace Vanadreams.Services
         public int VerLock { get; set; } = 2;
         public bool SetupDone { get; set; }
         public bool MusicOn { get; set; } = true;
+        /// <summary>The menu down the left ("vertical", the default) or as tabs across the top ("horizontal"), the player's pick on Settings.</summary>
+        public string MenuLayout { get; set; } = "vertical";
+        public bool HorizontalMenu => string.Equals(MenuLayout, "horizontal", StringComparison.OrdinalIgnoreCase);
+        public string NewsUrl { get; set; } = "https://raw.githubusercontent.com/VanaDreams/vanadreams-ashita/main/news.json";
         /// <summary>Low spec: the modern look's effects (d3d8to9 and ReShade in bootloader\) are renamed to .off (Effects).</summary>
         public bool LowSpec { get; set; }
         public List<string> EnabledAddons { get; set; } = new List<string>();
@@ -89,6 +93,8 @@ namespace Vanadreams.Services
                 s.VerLock = Json.Int(d, "verLock", 2);
                 s.SetupDone = Json.Bool(d, "setupDone");
                 s.MusicOn = Json.Bool(d, "musicOn", true);
+                s.MenuLayout = Json.Str(d, "menuLayout", s.MenuLayout);
+                s.NewsUrl = Json.Str(d, "newsUrl", s.NewsUrl);
                 s.LowSpec = Json.Bool(d, "lowSpec");
                 s.EnabledAddons = Json.Strings(d, "enabledAddons");
                 s.GivenDefaults = Json.Strings(d, "givenDefaults");
@@ -136,6 +142,8 @@ namespace Vanadreams.Services
                 { "verLock", VerLock },
                 { "setupDone", SetupDone },
                 { "musicOn", MusicOn },
+                { "menuLayout", MenuLayout ?? "vertical" },
+                { "newsUrl", NewsUrl },
                 { "lowSpec", LowSpec },
                 { "enabledAddons", EnabledAddons.ToList() },
                 { "givenDefaults", GivenDefaults.ToList() },
@@ -162,7 +170,8 @@ namespace Vanadreams.Services
         public bool HasAshita => !string.IsNullOrWhiteSpace(AshitaRoot) && File.Exists(System.IO.Path.Combine(AshitaRoot, "Ashita-cli.exe"));
         public string CredentialsPath => System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path), "credentials.dat");
         public string CatalogCachePath => System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path), "catalog.cache.json");
-        public string StatusCachePath => System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path), "status.cache.json");
+        public string NewsCachePath => System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path), "news.cache.json");
+        public string StatusCachePath =>System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path), "status.cache.json");
         public string DownloadsFolder => System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path), "downloads");
         public string LogPath => System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path), "launcher.log");
     }

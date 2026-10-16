@@ -1,0 +1,12 @@
+<UserControl x:Class="Vanadreams.Pages.GraphicsPresetPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Potato, Balanced or Pretty for the current profile. Self-contained: drop it in any box. -->
+    <StackPanel>
+        <TextBlock x:Name="Heading" Style="{StaticResource Eyebrow}" Text="✦ Graphics" TextTrimming="CharacterEllipsis"/>
+        <TextBlock Style="{StaticResource Display40}" FontSize="27" Text="Pick a look" Margin="0,0,0,10"/>
+        <StackPanel x:Name="Choices"/>
+        <TextBlock x:Name="Note" Style="{StaticResource Muted}" FontSize="13.5" TextWrapping="Wrap" Margin="0,4,0,0"
+                   Text="Each profile keeps its own graphics. They are put in place when you press Play."/>
+    </StackPanel>
+</UserControl>

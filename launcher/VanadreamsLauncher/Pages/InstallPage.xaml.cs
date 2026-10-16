@@ -10,7 +10,7 @@ using Vanadreams.Services;
 
 namespace Vanadreams.Pages
 {
-    public partial class InstallPage : UserControl
+    public partial class InstallPage : UserControl, IBusyPage
     {
         private readonly MainWindow _win;
         // Where the game went last time, so the page opens on the real folder rather than the default.
@@ -135,6 +135,7 @@ namespace Vanadreams.Pages
             {
                 _cancel = null; FolderButton.IsEnabled = true; Progress.Visibility = Visibility.Collapsed;
                 Refresh();
+                Packs.Reload();   // an install brings the look and title packs
             }
         }
 
@@ -151,10 +152,11 @@ namespace Vanadreams.Pages
             Refresh();
         }
 
-        private void Back_Click(object sender, RoutedEventArgs e)
+        public bool CanLeave()
         {
-            if (_cancel != null) { ProgressText.Text = "Stop the install first."; return; }
-            _win.Navigate(new MenuPage(_win));
+            if (_cancel == null) return true;
+            ProgressText.Text = "Stop the install first.";
+            return false;
         }
     }
 }

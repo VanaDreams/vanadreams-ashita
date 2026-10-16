@@ -73,6 +73,21 @@ namespace Vanadreams.Services
             timer.Start();
         }
 
+        private static System.Media.SoundPlayer _jingle;
+
+        /// <summary>The patch-finished jingle. Played whether the music is on or not: it is the signal that the game is ready.</summary>
+        public static void Jingle()
+        {
+            try
+            {
+                var res = Application.GetResourceStream(new Uri("pack://application:,,,/assets/jingle.wav"));
+                if (res == null) return;
+                _jingle = new System.Media.SoundPlayer(res.Stream);
+                _jingle.Play();
+            }
+            catch (Exception ex) { Log.Warn("jingle: " + ex.Message); }
+        }
+
         /// <summary>Copy the track out of the exe into the data folder. Returns the file path, or null if the resource is missing.</summary>
         private static string Unpack()
         {

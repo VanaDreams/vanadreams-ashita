@@ -1,19 +1,21 @@
 <UserControl x:Class="Vanadreams.Pages.ProfilesPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Vanadreams"
              Focusable="True">
-    <Grid Margin="40,36,40,0">
+    <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="296"/>
-            <ColumnDefinition Width="24"/>
+            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="16"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <Border Grid.Column="0" Style="{StaticResource Box}" Height="404" VerticalAlignment="Top">
+        <Border Grid.Column="0" Style="{StaticResource Box}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <TextBlock Style="{StaticResource Eyebrow}" Text="✦ Profiles"/>
@@ -45,20 +47,23 @@
                     </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Name}" Style="{StaticResource MenuItemText}" FontSize="18" Opacity="{Binding Opacity}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding Name}" Style="{StaticResource MenuItemText}" FontSize="20" Opacity="{Binding Opacity}" TextTrimming="CharacterEllipsis"/>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
-                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
-                    <Button Style="{StaticResource GhostButton}" Content="New" Padding="12,6" Click="New_Click"/>
-                    <Button Style="{StaticResource GhostButton}" Content="Retail" Padding="12,6" Margin="6,0,0,0" Click="Retail_Click"/>
-                    <Button Style="{StaticResource GhostButton}" Content="Copy" Padding="12,6" Margin="6,0,0,0" Click="Duplicate_Click"/>
-                    <Button Style="{StaticResource GhostButton}" Content="Delete" Padding="12,6" Margin="6,0,0,0" Click="Delete_Click"/>
-                </StackPanel>
+                <WrapPanel Grid.Row="2" Margin="0,4,0,0">
+                    <Button Style="{StaticResource GhostButton}" Content="New" Padding="11,5" Margin="0,0,5,5" Click="New_Click"/>
+                    <Button Style="{StaticResource GhostButton}" Content="Retail" Padding="11,5" Margin="0,0,5,5" Click="Retail_Click"/>
+                    <Button Style="{StaticResource GhostButton}" Content="Copy" Padding="11,5" Margin="0,0,5,5" Click="Duplicate_Click"/>
+                    <Button Style="{StaticResource GhostButton}" Content="Delete" Padding="11,5" Margin="0,0,0,5" Click="Delete_Click"/>
+                </WrapPanel>
+                <!-- the last thing in the box: the moogle takes its own room, under the buttons -->
+                <local:CrewGuide Grid.Row="3" Who="moogle" ImageHeight="92" BubbleWidth="114"
+                                 Tip="Kupo! Each profile keeps its own login, window size and macros."/>
             </Grid>
         </Border>
 
-        <Border Grid.Column="2" Style="{StaticResource Box}" Height="404" VerticalAlignment="Top">
+        <Border Grid.Column="2" Style="{StaticResource Box}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -68,13 +73,12 @@
                 <TextBlock Style="{StaticResource Eyebrow}" Text="✦ Profile"/>
                 <Grid Grid.Row="1" x:Name="Form">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="126"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="28"/><RowDefinition Height="28"/><RowDefinition Height="28"/><RowDefinition Height="28"/><RowDefinition Height="28"/>
-                        <RowDefinition Height="28"/><RowDefinition Height="28"/><RowDefinition Height="28"/><RowDefinition Height="28"/><RowDefinition Height="28"/>
-                        <RowDefinition Height="28"/>
+                        <RowDefinition Height="30"/><RowDefinition Height="30"/><RowDefinition Height="30"/><RowDefinition Height="30"/><RowDefinition Height="30"/>
+                        <RowDefinition Height="30"/><RowDefinition Height="30"/><RowDefinition Height="30"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <TextBlock Text="Name" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
                     <TextBox Grid.Column="1" x:Name="NameBox" VerticalAlignment="Center"/>
@@ -94,47 +98,45 @@
                     <Grid Grid.Row="4" Grid.Column="1">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                         <TextBox x:Name="BootBox" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Style="{StaticResource GhostButton}" Content="…" Padding="10,4" Margin="6,0,0,0" Click="Browse_Click"/>
+                        <Button Grid.Column="1" Style="{StaticResource GhostButton}" Content="…" Padding="10,2" Margin="6,0,0,0" Click="Browse_Click"/>
                     </Grid>
                     <TextBlock Grid.Row="5" Text="Game folder" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
                     <Grid Grid.Row="5" Grid.Column="1">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                         <TextBox x:Name="GameBox" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" x:Name="GameBrowse" Style="{StaticResource GhostButton}" Content="…" Padding="10,4" Margin="6,0,0,0" Click="GameBrowse_Click"/>
+                        <Button Grid.Column="1" x:Name="GameBrowse" Style="{StaticResource GhostButton}" Content="…" Padding="10,2" Margin="6,0,0,0" Click="GameBrowse_Click"/>
                     </Grid>
                     <TextBlock Grid.Row="6" Text="Extra loader args" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
                     <TextBox Grid.Row="6" Grid.Column="1" x:Name="ExtraBox" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Row="7" Text="Window mode" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
-                    <ComboBox Grid.Row="7" Grid.Column="1" x:Name="ModeBox" VerticalAlignment="Center" Width="220" HorizontalAlignment="Left"/>
-                    <TextBlock Grid.Row="8" Text="Window size" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal">
-                        <TextBox x:Name="WidthBox" Width="70" VerticalAlignment="Center"/>
+                    <!-- window mode and size are on the Graphics page; the menu follows the window unless set here -->
+                    <TextBlock Grid.Row="7" Text="Menu size" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" ToolTip="The size the game draws its menus at. Blank follows the window size on the Graphics page.">
+                        <TextBox x:Name="MenuWBox" Width="64" VerticalAlignment="Center"/>
                         <TextBlock Text=" × " VerticalAlignment="Center"/>
-                        <TextBox x:Name="HeightBox" Width="70" VerticalAlignment="Center"/>
-                        <TextBlock Text="   menu " Style="{StaticResource Muted}" VerticalAlignment="Center"/>
-                        <TextBox x:Name="MenuWBox" Width="60" VerticalAlignment="Center"/>
-                        <TextBlock Text=" × " VerticalAlignment="Center"/>
-                        <TextBox x:Name="MenuHBox" Width="60" VerticalAlignment="Center"/>
+                        <TextBox x:Name="MenuHBox" Width="64" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <TextBlock Grid.Row="9" Text="Background" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Row="9" Grid.Column="1" Orientation="Horizontal"
+                    <TextBlock Grid.Row="8" Text="Background" Style="{StaticResource Muted}" VerticalAlignment="Top" Margin="0,6,0,0"/>
+                    <WrapPanel Grid.Row="8" Grid.Column="1"
                                 ToolTip="The resolution the game draws the world at. Higher is sharper and asks more of your graphics card: twice or four times the window size is usual, 4096 × 4096 is common. Leave blank for the game's own default.">
-                        <TextBox x:Name="BgWBox" Width="70" VerticalAlignment="Center"/>
-                        <TextBlock Text=" × " VerticalAlignment="Center"/>
-                        <TextBox x:Name="BgHBox" Width="70" VerticalAlignment="Center"/>
-                        <TextBlock Text="   sharper world, blank for default" Style="{StaticResource Muted}" FontSize="12" VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <StackPanel Grid.Row="10" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                        <CheckBox x:Name="AutoCloseBox" Content="Close the launcher after launching" VerticalAlignment="Center"/>
-                        <CheckBox x:Name="AdminBox" Content="Run as administrator" VerticalAlignment="Center" Margin="18,0,0,0"
+                        <StackPanel Orientation="Horizontal" Height="30" Margin="0,0,12,0">
+                            <TextBox x:Name="BgWBox" Width="64" VerticalAlignment="Center"/>
+                            <TextBlock Text=" × " VerticalAlignment="Center"/>
+                            <TextBox x:Name="BgHBox" Width="64" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="blank for default" Style="{StaticResource Muted}" FontSize="13.5" VerticalAlignment="Center" Height="30" Padding="0,6,0,0"/>
+                    </WrapPanel>
+                    <WrapPanel Grid.Row="9" Grid.Column="1" Margin="0,4,0,0">
+                        <CheckBox x:Name="AutoCloseBox" VerticalAlignment="Center" Margin="0,0,18,4">
+                            <TextBlock Text="Close the launcher after launching" TextWrapping="Wrap"/>
+                        </CheckBox>
+                        <CheckBox x:Name="AdminBox" Content="Run as administrator" VerticalAlignment="Center" Margin="0,0,0,4"
                                   ToolTip="Asks Windows' permission on every launch. Leave it off unless this game needs it: the prompt can close a game that is already running."/>
-                    </StackPanel>
+                    </WrapPanel>
                 </Grid>
-                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <TextBlock x:Name="Note" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="{StaticResource Warn}"/>
-                    <Button Style="{StaticResource GhostButton}" Content="Back" Click="Back_Click"/>
-                    <Button Style="{StaticResource GoldButton}" Content="Save" Margin="8,0,0,0" Click="Save_Click"/>
-                </StackPanel>
+                <DockPanel Grid.Row="2" Margin="0,6,0,0">
+                    <Button DockPanel.Dock="Left" Style="{StaticResource GoldButton}" Content="Save" Click="Save_Click" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="Note" Style="{StaticResource Muted}" FontSize="14" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="{StaticResource Warn}" TextWrapping="Wrap"/>
+                </DockPanel>
             </Grid>
         </Border>
     </Grid>

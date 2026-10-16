@@ -45,6 +45,14 @@ namespace Vanadreams
         }
 
         public ProfileStore Profiles => new ProfileStore(Settings.AshitaRoot);
+
+        /// <summary>The profile Play starts: the last one played or picked, else the first that is not an example.</summary>
+        public Profile CurrentProfile()
+        {
+            var all = Profiles.LoadAll();
+            return all.FirstOrDefault(p => string.Equals(p.Id, Settings.LastProfile, StringComparison.OrdinalIgnoreCase))
+                   ?? all.FirstOrDefault(p => !p.IsExample) ?? all.FirstOrDefault();
+        }
         public string AshitaRoot => Settings.AshitaRoot;
         public bool HasAshita => Settings.HasAshita;
         /// <summary>
@@ -138,6 +146,61 @@ namespace Vanadreams
             PendingClientUpdate = new ClientUpdate { Root = Settings.GameInstallRoot, Parts = parts };
         }
 
+        /// <summary>
+        /// The Play button reads Patch while this is true: an update found at start, or a game older than the version the
+        /// server runs. Unknown (no game found) is not a patch; Play explains that one and Install game handles it.
+        /// </summary>
+        public bool PatchNeeded => PendingClientUpdate != null || OverlayMigrationDue ||
+                                   (Version.ExpectedIsPublished && Version.Verdict == VersionVerdict.ClientTooOld);
+
+        /// <summary>The server ships the packs as XIPivot overlays and this copy still has them in the game folder (LookOverlays).</summary>
+        public bool OverlayMigrationDue { get; private set; }
+
+        /// <summary>Where the launcher installs and patches the game: the folder it installed to, else the default.</summary>
+        public string GameInstallTarget => string.IsNullOrWhiteSpace(Settings.GameInstallRoot) ? ClientInstall.DefaultRoot : Settings.GameInstallRoot;
+
+        /// <summary>
+        /// The Patch button: the same update Install game runs. Fetches what is new or missing for the server's version,
+        /// unpacks it, and registers the copy with Windows when it is not registered yet. Null when it went through, or a
+        /// sentence for the player when the files are in but the registration prompt was refused.
+        /// </summary>
+        public async Task<string> PatchClientAsync(IProgress<InstallProgress> progress, System.Threading.CancellationToken ct)
+        {
+            var root = GameInstallTarget;
+            var version = Version.ExpectedIsPublished ? Version.Expected : Status.ClientVer;
+            var m = PendingClientUpdate?.Manifest;
+            if (m == null || (!string.IsNullOrEmpty(version) && m.Version != version))
+            {
+                if (string.IsNullOrEmpty(version)) throw new InvalidOperationException("The server hasn't published its version yet, so there is nothing to patch to.");
+                m = ClientManifest.Parse(await Downloader.GetStringAsync(ClientInstall.ManifestUrl(version)));
+            }
+            var ashita = HasAshita ? AshitaRoot : null;
+            // the packs out of the game folder into their overlays first, so nothing below sees them as missing
+            if (LookOverlays.Due(m, root, ashita))
+            {
+                XIPivotBundle.Ensure(ashita);
+                await LookOverlays.MigrateAsync(Http.Shared, m, root, ashita, progress, ct);
+                ApplyEnabledAddons();
+            }
+            var todo = ClientInstall.Remaining(m, ClientInstall.Done(root, m.Version, ashita));
+            var updateOnly = todo.Count < m.Chunks.Count && ClientInstall.IsRegistered(root);
+            var needed = todo.Sum(c => c.Size + c.Unpacked);
+            var drive = new DriveInfo(Path.GetPathRoot(root));
+            if (drive.AvailableFreeSpace < needed)
+                throw new IOException(drive.Name + " has " + (drive.AvailableFreeSpace / 1073741824.0).ToString("0.0") + " GB free and the patch needs " +
+                                      (needed / 1073741824.0).ToString("0.0") + " GB. Free some space, or pick another folder on Install game.");
+            await ClientInstall.InstallFilesAsync(Downloader, m, root, Settings.DownloadsFolder, progress, ct, ashita, Settings.LowSpec);
+            Settings.GameInstallRoot = root;
+            Settings.Save();
+            string said = null;
+            if (!updateOnly && !await Task.Run(() => ClientInstall.RunRegister(root, Settings.DownloadsFolder)))
+                said = "The files are in, but the permission prompt was refused, so Windows doesn't know where the game is yet. Press Patch again to finish; nothing downloads twice.";
+            await CheckClientUpdateAsync();
+            CheckVersion();
+            Notify();
+            return said;
+        }
+
         public async Task CheckClientUpdateAsync()
         {
             var root = Settings.GameInstallRoot;
@@ -146,6 +209,8 @@ namespace Vanadreams
             try
             {
                 var m = ClientManifest.Parse(await Downloader.GetStringAsync(ClientInstall.ManifestUrl(version)));
+                OverlayMigrationDue = LookOverlays.Due(m, root, HasAshita ? AshitaRoot : null);
+                if (OverlayMigrationDue) Log.Info("the look and title packs are to move into their overlays");
                 var todo = ClientInstall.Updates(m, root, HasAshita ? AshitaRoot : null);
                 PendingClientUpdate = todo.Count == 0 ? null : new ClientUpdate { Root = root, Manifest = m, Parts = todo };
                 if (PendingClientUpdate != null) Log.Info("game update ready: " + string.Join(", ", todo.Select(c => c.Name)));
@@ -222,6 +287,18 @@ namespace Vanadreams
         {
             if (!HasAshita) return;
             var changed = false;
+            // XIPivot comes with the launcher: the look and title overlays need it (LookOverlays). Ticked once, then the player's.
+            try
+            {
+                if (XIPivotBundle.Ensure(AshitaRoot) && !Settings.InstalledVersions.ContainsKey("pivot")) { Settings.InstalledVersions["pivot"] = XIPivotBundle.Version; changed = true; }
+                if (!Settings.GivenDefaults.Contains("pivot", StringComparer.OrdinalIgnoreCase))
+                {
+                    if (!Settings.EnabledAddons.Contains("pivot", StringComparer.OrdinalIgnoreCase)) Settings.EnabledAddons.Add("pivot");
+                    Settings.GivenDefaults.Add("pivot");
+                    changed = true;
+                }
+            }
+            catch (Exception ex) { Log.Warn("XIPivot: " + ex.Message); }
             // once per player, and only with a real catalogue to tell Ashita's own addons from ours
             if (!Settings.TickAllTidied && Catalog.Items.Count > 0)
             {
@@ -304,6 +381,7 @@ namespace Vanadreams
             var scriptPath = Path.Combine(AshitaRoot, "scripts", "vanadreams.txt");
             Directory.CreateDirectory(Path.GetDirectoryName(scriptPath));
             ScriptWriter.Write(scriptPath, entries);
+            Graphics.EnsureScript(AshitaRoot);   // the startup script runs it
             // XIPivot overlays: listed in pivot.ini while enabled, dropped from it when not
             foreach (var overlay in Catalog.Items.Where(i => i.Install == InstallAction.PivotOverlay))
             {
