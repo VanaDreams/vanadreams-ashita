@@ -143,6 +143,34 @@ namespace Vanadreams.Tests
         }
 
         [TestMethod]
+        public void OldEveryAddonList_IsTidiedButAHandPickedOneIsLeftAlone()
+        {
+            // a catalogue like the real one: Ashita's own addons plus some of ours
+            var items = new List<string>
+            {
+                @"{ ""id"": ""vanatunes"", ""kind"": ""addon"", ""onByDefault"": true, ""source"": { ""type"": ""repo-folder"", ""repo"": ""VanaDreams/vanatunes"", ""path"": ""vanatunes"" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load vanatunes"" }",
+                @"{ ""id"": ""vanagear"", ""kind"": ""addon"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""VanaDreams/vanadreams-ashita"", ""path"": ""addons/vanagear"" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load vanagear"" }",
+                @"{ ""id"": ""chatfix"", ""kind"": ""addon"", ""onByDefault"": true, ""heldBack"": ""wrong here"", ""source"": { ""type"": ""bundled"" }, ""load"": ""/addon load chatfix"" }",
+            };
+            var ashita = new List<string> { "crosshair", "chamcham", "ime", "activemon", "aspect", "distance" };
+            for (var n = 0; ashita.Count < 86; n++) ashita.Add("bundled" + n);
+            items.AddRange(ashita.Select(id => @"{ ""id"": """ + id + @""", ""kind"": ""addon"", ""source"": { ""type"": ""bundled"" }, ""load"": ""/addon load " + id + @""" }"));
+            var cat = Catalog.Parse(@"{ ""schema"": 1, ""items"": [" + string.Join(",", items) + "] }");
+
+            // what setup used to write: every Ashita addon, chatfix included, then the player added ours
+            var old = new List<string>(ashita) { "chatfix", "vanatunes", "VanaGear", "gone-from-catalogue" };
+            var tidied = AddonInstaller.TidyTickAll(cat, old);
+            CollectionAssert.AreEqual(new[] { "vanatunes", "VanaGear", "gone-from-catalogue" }, tidied);
+
+            // a list the player picked: a few of Ashita's own, kept as they are
+            Assert.IsNull(AddonInstaller.TidyTickAll(cat, new List<string> { "distance", "chamcham", "vanagear" }));
+            var justUnder = ashita.Take(AddonInstaller.TickAllThreshold - 1).ToList();
+            Assert.IsNull(AddonInstaller.TidyTickAll(cat, justUnder));
+            Assert.IsNotNull(AddonInstaller.TidyTickAll(cat, ashita.Take(AddonInstaller.TickAllThreshold).ToList()));
+            Assert.IsNull(AddonInstaller.TidyTickAll(cat, null));
+        }
+
+        [TestMethod]
         public void InstalledRepoFolderAddons_AreUpdatedAtStartWhenTheCatalogueMovesOn()
         {
             var cat = Catalog.Parse(@"{ ""schema"": 1, ""items"": [

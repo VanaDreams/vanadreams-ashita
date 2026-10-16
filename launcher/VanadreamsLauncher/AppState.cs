@@ -66,7 +66,8 @@ namespace Vanadreams
         /// The copy of the game a Vanadreams profile starts, looked for across every copy this PC is known to hold:
         /// the one Windows starts now, the one this launcher installed, one beside Ashita or in the default folder,
         /// the folder set in Settings, and the copy the registration was once taken from. GameRegistration.Choose
-        /// picks the one that fits the server. Play passes the registered root read from the COM servers; the
+        /// picks the one that fits the server, unless the player picked a Vanadreams game folder (Profiles or
+        /// Settings): that one is always started while it holds a game. Play passes the registered root read from the COM servers; the
         /// pages that only show a version use the registered folder, which is quicker to read.
         /// 4 Oct 2026: 0.2.27 always took the launcher's copy when one was there, whatever state it was in, and
         /// a player whose game had been starting from another copy logged in and watched the console close.
@@ -79,7 +80,8 @@ namespace Vanadreams
             return GameRegistration.Choose(registeredRoot,
                 new[] { Settings.GameInstallRoot, Settings.AshitaRoot, ClientInstall.DefaultRoot, GameRegistration.RootOf(Settings.FfxiFolderOverride), Settings.OtherGameRoot },
                 GameRegistration.HasGame,
-                root => ClientVersion.Fits(InstalledVersion(root), expected, lockMode));
+                root => ClientVersion.Fits(InstalledVersion(root), expected, lockMode),
+                GameRegistration.RootOf(Settings.FfxiFolderOverride));
         }
 
         private string ExpectedClientVer => !string.IsNullOrEmpty(Status.ClientVer) ? Status.ClientVer : Settings.ExpectedClientVer;
@@ -220,6 +222,18 @@ namespace Vanadreams
         {
             if (!HasAshita) return;
             var changed = false;
+            // once per player, and only with a real catalogue to tell Ashita's own addons from ours
+            if (!Settings.TickAllTidied && Catalog.Items.Count > 0)
+            {
+                var tidied = AddonInstaller.TidyTickAll(Catalog, Settings.EnabledAddons);
+                if (tidied != null)
+                {
+                    Log.Info("old every-addon list switched off: " + (Settings.EnabledAddons.Count - tidied.Count) + " of Ashita's addons unticked, " + tidied.Count + " kept");
+                    Settings.EnabledAddons = tidied;
+                }
+                Settings.TickAllTidied = true;
+                changed = true;
+            }
             foreach (var item in AddonInstaller.DefaultsToGive(Catalog, Settings.GivenDefaults))
             {
                 try

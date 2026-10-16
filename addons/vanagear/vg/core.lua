@@ -85,14 +85,22 @@ local zone = { Holding = true, EnteredAt = os.clock(), InZoneAt = nil };
 -- Called on the incoming zone packet (0x0A).
 core.ZoneIn = function()
     zone.Holding = true;
+    zone.Leaving = false;
     zone.EnteredAt = os.clock();
     zone.InZoneAt = nil;
+end
+
+-- Called on the incoming zone-out packet (0x0B): from here to the next 0x0A the client has no
+-- equipment or bags loaded, so the wait starts now and positions sent on the way out don't count.
+core.ZoneOut = function()
+    core.ZoneIn();
+    zone.Leaving = true;
 end
 
 -- Called on every outgoing position packet (0x15): the client only sends these once it is
 -- standing in the zone.
 core.Moved = function()
-    if (zone.Holding) and (zone.InZoneAt == nil) then
+    if (zone.Holding) and (not zone.Leaving) and (zone.InZoneAt == nil) then
         zone.InZoneAt = os.clock();
     end
 end

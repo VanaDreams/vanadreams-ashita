@@ -124,7 +124,11 @@
                         <TextBox x:Name="BgHBox" Width="70" VerticalAlignment="Center"/>
                         <TextBlock Text="   sharper world, blank for default" Style="{StaticResource Muted}" FontSize="12" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <CheckBox Grid.Row="10" Grid.Column="1" x:Name="AutoCloseBox" Content="Close the launcher after launching" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Row="10" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <CheckBox x:Name="AutoCloseBox" Content="Close the launcher after launching" VerticalAlignment="Center"/>
+                        <CheckBox x:Name="AdminBox" Content="Run as administrator" VerticalAlignment="Center" Margin="18,0,0,0"
+                                  ToolTip="Asks Windows' permission on every launch. Leave it off unless this game needs it: the prompt can close a game that is already running."/>
+                    </StackPanel>
                 </Grid>
                 <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
                     <TextBlock x:Name="Note" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="{StaticResource Warn}"/>

@@ -20,11 +20,20 @@ namespace Vanadreams.Pages
             // read-only: it comes from the status route, never typed here
             var st = App.State.Status;
             ExpectedBox.Text = string.IsNullOrEmpty(st.ClientVer) ? "not published by the server yet" : st.ClientVer + " · lock " + (st.Lock.HasValue ? ((int)st.Lock.Value).ToString() : "2") + " · from fairywitch.ca";
-            DetectedBox.Text = ClientVersion.FindFfxiFolder() ?? "not registered by PlayOnline";
+            ShowPlays();
             MusicBox.IsChecked = s.MusicOn;
             LowSpecBox.IsChecked = s.LowSpec;
             MusicCredit.Text = "made for Vanadreams with SoundBreak";
             About.Text = "Vanadreams Launcher " + typeof(App).Assembly.GetName().Version + " · github.com/VanaDreams/vanadreams-ashita · no telemetry";
+        }
+
+        /// <summary>The copy Play starts for Vanadreams, which is not always the one Windows starts now: show the first, tip the second.</summary>
+        private void ShowPlays()
+        {
+            var plays = App.State.VanadreamsGameRoot();
+            DetectedBox.Text = plays != null ? ClientInstall.GameFolder(plays) : "no game found yet; Play starts what Windows has";
+            DetectedBox.ToolTip = "Windows starts now: " + (ClientVersion.FindFfxiFolder() ?? "nothing registered by PlayOnline") +
+                                  "\nTo always play one copy, put its FINAL FANTASY XI folder in Vanadreams game folder above.";
         }
 
         /// <summary>The corner mute changed the setting; show it.</summary>
@@ -42,7 +51,10 @@ namespace Vanadreams.Pages
             if (s.MusicOn) Music.Start(); else Music.Stop();
             _win.RefreshMute();
             App.State.CheckVersion();
-            Note.Text = "Saved.";
+            ShowPlays();
+            Note.Text = !string.IsNullOrWhiteSpace(s.FfxiFolderOverride) && !GameRegistration.HasGame(GameRegistration.RootOf(s.FfxiFolderOverride))
+                ? "Saved, but there is no game in that Vanadreams game folder: pick FINAL FANTASY XI, with PlayOnlineViewer beside it."
+                : "Saved.";
             App.State.Notify();
             await App.State.RefreshStatusAsync();
         }
