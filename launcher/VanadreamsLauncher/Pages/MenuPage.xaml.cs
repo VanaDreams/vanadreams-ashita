@@ -37,6 +37,7 @@ namespace Vanadreams.Pages
             new MenuCommand { Label = "Fishing", Key = "fishing" },
             new MenuCommand { Label = "Vanatunes", Key = "vanatunes" },
             new MenuCommand { Label = "Capture", Key = "capture" },
+            new MenuCommand { Label = "Window switcher", Key = "switcher" },
             new MenuCommand { Label = "Setup", Key = "setup" },
             new MenuCommand { Label = "Install game", Key = "install" },
             new MenuCommand { Label = "Settings", Key = "settings" },
@@ -175,6 +176,7 @@ namespace Vanadreams.Pages
                 case "fishing": _win.Navigate(new FishingPage(_win)); break;
                 case "vanatunes": _win.Navigate(new VanatunesPage(_win)); break;
                 case "capture": _win.Navigate(new CapturePage(_win)); break;
+                case "switcher": _win.Navigate(new SwitcherPage(_win)); break;
                 case "setup": _win.Navigate(new SetupPage(_win)); break;
                 case "install": _win.Navigate(new InstallPage(_win)); break;
                 case "settings": _win.Navigate(new SettingsPage(_win)); break;
@@ -381,7 +383,8 @@ namespace Vanadreams.Pages
                 // the launcher waits to close until the game is open, so it can still say why if it never opens
                 var autoClose = _profile.AutoClose;
                 var opened = await WatchLaunch(state, _profile, loaderName, before, launchedAt);
-                if (autoClose && opened) Application.Current.Shutdown();
+                // with the window switcher on, "close" means the tray: the switcher has to keep running for the game
+                if (autoClose && opened && !_win.HideToTray()) Application.Current.Shutdown();
             }
             catch (Exception ex)
             {

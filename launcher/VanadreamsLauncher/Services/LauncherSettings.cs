@@ -51,6 +51,24 @@ namespace Vanadreams.Services
         public Dictionary<string, string> LastPlayed { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         public List<string> GuideDone { get; set; } = new List<string>();
 
+        // The window switcher (WindowSwitcher), off until the player turns it on. Keys and pad presses are kept as text (KeyBinding, PadBinding).
+        public bool SwitcherOn { get; set; }
+        public string SwitchNext { get; set; } = "Pause";
+        public string SwitchPrev { get; set; } = "Scroll";
+        public List<string> SwitchSlots { get; set; } = NewSlots();
+        public bool SwitchKeysAnywhere { get; set; }
+        public string PadNext { get; set; } = "";
+        public string PadPrev { get; set; } = "";
+        /// <summary>Character names in the slot order the player arranged.</summary>
+        public List<string> SwitchOrder { get; set; } = new List<string>();
+        /// <summary>Saved window layouts by name; each entry is SwitchRules.LayoutEntry text.</summary>
+        public Dictionary<string, List<string>> Layouts { get; set; } = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        public string ActiveLayout { get; set; } = "";
+        /// <summary>A character who logs in goes to its place in the active layout.</summary>
+        public bool AutoLayout { get; set; }
+        public const int SlotKeyCount = 6;
+        private static List<string> NewSlots() => Enumerable.Repeat("", SlotKeyCount).ToList();
+
         public static LauncherSettings Load(string path = null)
         {
             var s = new LauncherSettings { Path = path ?? DefaultPath };
@@ -76,6 +94,23 @@ namespace Vanadreams.Services
                 s.GivenDefaults = Json.Strings(d, "givenDefaults");
                 s.TickAllTidied = Json.Bool(d, "tickAllTidied");
                 s.GuideDone = Json.Strings(d, "guideDone");
+                s.SwitcherOn = Json.Bool(d, "switcherOn");
+                s.SwitchNext = Json.Str(d, "switchNext", s.SwitchNext);
+                s.SwitchPrev = Json.Str(d, "switchPrev", s.SwitchPrev);
+                if (d.ContainsKey("switchSlots")) s.SwitchSlots = Json.Strings(d, "switchSlots");
+                while (s.SwitchSlots.Count < SlotKeyCount) s.SwitchSlots.Add("");
+                s.SwitchKeysAnywhere = Json.Bool(d, "switchKeysAnywhere");
+                s.PadNext = Json.Str(d, "padNext", "");
+                s.PadPrev = Json.Str(d, "padPrev", "");
+                s.SwitchOrder = Json.Strings(d, "switchOrder");
+                var layouts = Json.Obj(d.ContainsKey("layouts") ? d["layouts"] : null);
+                if (layouts != null)
+                    foreach (var kv in layouts)
+                    {
+                        s.Layouts[kv.Key] = Json.List(kv.Value).Select(x => Convert.ToString(x)).ToList();
+                    }
+                s.ActiveLayout = Json.Str(d, "activeLayout", "");
+                s.AutoLayout = Json.Bool(d, "autoLayout");
                 var inst = Json.Obj(d.ContainsKey("installedVersions") ? d["installedVersions"] : null);
                 if (inst != null) foreach (var kv in inst) s.InstalledVersions[kv.Key] = Convert.ToString(kv.Value);
                 var last = Json.Obj(d.ContainsKey("lastPlayed") ? d["lastPlayed"] : null);
@@ -106,6 +141,17 @@ namespace Vanadreams.Services
                 { "givenDefaults", GivenDefaults.ToList() },
                 { "tickAllTidied", TickAllTidied },
                 { "guideDone", GuideDone.ToList() },
+                { "switcherOn", SwitcherOn },
+                { "switchNext", SwitchNext ?? "" },
+                { "switchPrev", SwitchPrev ?? "" },
+                { "switchSlots", SwitchSlots.ToList() },
+                { "switchKeysAnywhere", SwitchKeysAnywhere },
+                { "padNext", PadNext ?? "" },
+                { "padPrev", PadPrev ?? "" },
+                { "switchOrder", SwitchOrder.ToList() },
+                { "layouts", Layouts.ToDictionary(k => k.Key, k => (object)k.Value.ToList()) },
+                { "activeLayout", ActiveLayout ?? "" },
+                { "autoLayout", AutoLayout },
                 { "installedVersions", InstalledVersions.ToDictionary(k => k.Key, k => (object)k.Value) },
                 { "lastPlayed", LastPlayed.ToDictionary(k => k.Key, k => (object)k.Value) },
             };
