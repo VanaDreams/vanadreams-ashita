@@ -73,8 +73,10 @@ namespace Vanadreams.Services
             m != null && !string.IsNullOrWhiteSpace(ashitaRoot) && ManifestUsesOverlays(m) && !Migrated(ashitaRoot, m.Version) && InPlace(m, gameRoot).Count > 0;
 
         /// <summary>
-        /// The shipped overlays an install or a migration put on disk are listed in pivot.ini once each, the title pack first
-        /// so it wins; after that the Install page's switch is the player's. Returns the ids listed now.
+        /// The shipped overlays an install or a migration put on disk are listed in pivot.ini once each; after that the Install
+        /// page's switch is the player's. Returns the ids listed now. XIPivot gives the first-listed overlay priority (its sample
+        /// pivot.ini: "the overlay with the lower number always wins"), which the Install page shows at the bottom. The title
+        /// pack goes first, so it is the bottom row; the two packs share no files, so their order changes nothing in game.
         /// 16 Oct 2026: a fresh install unpacked vanadreams-looks with nothing listing it, and the game showed the old look.
         /// </summary>
         public static List<string> GiveOnce(string ashitaRoot, ICollection<string> given)
@@ -176,7 +178,8 @@ namespace Vanadreams.Services
             }
 
             // 3. XIPivot loads them, and the marker says this version is done
-            foreach (var overlay in packs.Select(c => OverlayFor(c.Name)).Distinct()) PivotConfig.AddOverlay(ashitaRoot, overlay);
+            // the same order as GiveOnce: the title pack first
+            foreach (var overlay in new[] { Title, Looks }.Where(o => packs.Any(c => OverlayFor(c.Name) == o))) PivotConfig.AddOverlay(ashitaRoot, overlay);
             File.AppendAllText(Path.Combine(ashitaRoot, Marker), m.Version + Environment.NewLine, new UTF8Encoding(false));
             var said = $"{moved + fetched + already} pack files in their overlays ({moved} moved, {fetched} fetched, {already} already there); " +
                        $"{restored} originals put back, {kept} already original" + (noOriginal > 0 ? $", {noOriginal} added files cleared" : "") + ".";
