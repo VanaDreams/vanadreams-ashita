@@ -26,7 +26,7 @@ return {
         Tp_Default = { Stats = { PDT = -3, MDT = -2.5, ENMITY = 0.5, SHIELDBLOCKRATE = 1, STORETP = 1, HP = 0.02 } },
         Tp_Hybrid = { Stats = { PDT = -5, MDT = -4, ENMITY = 0.5 } },
         Cure = { Stats = { SPELLINTERRUPT = 1, PDT = -1, MDT = -1, HP = 0.03, ENMITY = 0.5 }, Caps = { SPELLINTERRUPT = 102 } },
-        Phalanx = { Stats = { PHALANX = 6, ENHANCE = 0.6, SPELLINTERRUPT = 0.5 }, Caps = { SPELLINTERRUPT = 102 } },
+        Phalanx = { Stats = { PHALANX_RECEIVED = 6, ENHANCE = 0.6, SPELLINTERRUPT = 0.5 }, Caps = { SPELLINTERRUPT = 102 } },
         Divine = { Stats = { ENMITY = 1, FASTCAST = 1 } },
     },
     Abilities = {
