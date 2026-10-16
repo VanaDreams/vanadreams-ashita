@@ -63,7 +63,7 @@
                         <Button Style="{StaticResource GhostButton}" Content="Open snapshot folder" Click="Folder_Click" Margin="0,0,0,7"/>
                     </WrapPanel>
                     <local:CrewGuide Who="moogle" BubbleWidth="140"
-                                     Tip="Kupo, only turn this on when someone asks for a capture."/>
+                                     Tip="Kupo! Type&#160;/&#x2060;capture in game, then send it here."/>
                 </StackPanel>
             </Grid>
         </Border>
