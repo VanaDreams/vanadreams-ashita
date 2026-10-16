@@ -138,6 +138,51 @@ namespace Vanadreams
             PendingClientUpdate = new ClientUpdate { Root = Settings.GameInstallRoot, Parts = parts };
         }
 
+        /// <summary>
+        /// The Play button reads Patch while this is true: an update found at start, or a game older than the version the
+        /// server runs. Unknown (no game found) is not a patch; Play explains that one and Install game handles it.
+        /// </summary>
+        public bool PatchNeeded => PendingClientUpdate != null ||
+                                   (Version.ExpectedIsPublished && Version.Verdict == VersionVerdict.ClientTooOld);
+
+        /// <summary>Where the launcher installs and patches the game: the folder it installed to, else the default.</summary>
+        public string GameInstallTarget => string.IsNullOrWhiteSpace(Settings.GameInstallRoot) ? ClientInstall.DefaultRoot : Settings.GameInstallRoot;
+
+        /// <summary>
+        /// The Patch button: the same update Install game runs. Fetches what is new or missing for the server's version,
+        /// unpacks it, and registers the copy with Windows when it is not registered yet. Null when it went through, or a
+        /// sentence for the player when the files are in but the registration prompt was refused.
+        /// </summary>
+        public async Task<string> PatchClientAsync(IProgress<InstallProgress> progress, System.Threading.CancellationToken ct)
+        {
+            var root = GameInstallTarget;
+            var version = Version.ExpectedIsPublished ? Version.Expected : Status.ClientVer;
+            var m = PendingClientUpdate?.Manifest;
+            if (m == null || (!string.IsNullOrEmpty(version) && m.Version != version))
+            {
+                if (string.IsNullOrEmpty(version)) throw new InvalidOperationException("The server hasn't published its version yet, so there is nothing to patch to.");
+                m = ClientManifest.Parse(await Downloader.GetStringAsync(ClientInstall.ManifestUrl(version)));
+            }
+            var ashita = HasAshita ? AshitaRoot : null;
+            var todo = ClientInstall.Remaining(m, ClientInstall.Done(root, m.Version, ashita));
+            var updateOnly = todo.Count < m.Chunks.Count && ClientInstall.IsRegistered(root);
+            var needed = todo.Sum(c => c.Size + c.Unpacked);
+            var drive = new DriveInfo(Path.GetPathRoot(root));
+            if (drive.AvailableFreeSpace < needed)
+                throw new IOException(drive.Name + " has " + (drive.AvailableFreeSpace / 1073741824.0).ToString("0.0") + " GB free and the patch needs " +
+                                      (needed / 1073741824.0).ToString("0.0") + " GB. Free some space, or pick another folder on Install game.");
+            await ClientInstall.InstallFilesAsync(Downloader, m, root, Settings.DownloadsFolder, progress, ct, ashita, Settings.LowSpec);
+            Settings.GameInstallRoot = root;
+            Settings.Save();
+            string said = null;
+            if (!updateOnly && !await Task.Run(() => ClientInstall.RunRegister(root, Settings.DownloadsFolder)))
+                said = "The files are in, but the permission prompt was refused, so Windows doesn't know where the game is yet. Press Patch again to finish; nothing downloads twice.";
+            await CheckClientUpdateAsync();
+            CheckVersion();
+            Notify();
+            return said;
+        }
+
         public async Task CheckClientUpdateAsync()
         {
             var root = Settings.GameInstallRoot;

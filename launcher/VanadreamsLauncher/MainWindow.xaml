@@ -4,54 +4,89 @@
         Title="Vanadreams Launcher" Icon="assets/moon.ico" Width="1000" Height="640" ResizeMode="CanMinimize"
         WindowStartupLocation="CenterScreen" Background="{StaticResource WindowSky}"
         FontFamily="{StaticResource Body}" UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
+    <Window.Resources>
+        <!-- one entry of the menu: the hand left of the page that is showing, and of the one the arrow keys are on -->
+        <DataTemplate x:Key="RailItem">
+            <Grid Height="31" Background="Transparent" Cursor="Hand" MouseLeftButtonUp="Nav_Click" Tag="{Binding}">
+                <TextBlock Style="{StaticResource Hand}" FontSize="22" Margin="-31,-3,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" Visibility="{Binding HandVisibility}"/>
+                <TextBlock Text="{Binding Label}" Style="{StaticResource NavText}" Opacity="{Binding Opacity}" VerticalAlignment="Center"/>
+            </Grid>
+        </DataTemplate>
+        <DataTemplate x:Key="TabItem">
+            <Grid Background="Transparent" Cursor="Hand" MouseLeftButtonUp="Nav_Click" Tag="{Binding}" Margin="{Binding TabMargin}">
+                <TextBlock Style="{StaticResource Hand}" FontSize="18" Margin="-21,-2,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" Visibility="{Binding HandVisibility}"/>
+                <TextBlock Text="{Binding Label}" Style="{StaticResource NavText}" FontSize="14" Opacity="{Binding Opacity}" Foreground="{Binding TabBrush}" VerticalAlignment="Center"/>
+                <Border Height="2" VerticalAlignment="Bottom" Margin="0,0,0,-8" Background="{StaticResource GoldSoft}" Visibility="{Binding UnderlineVisibility}">
+                    <Border.Effect><DropShadowEffect ShadowDepth="0" BlurRadius="8" Color="#FFF1CD78" Opacity="0.9"/></Border.Effect>
+                </Border>
+            </Grid>
+        </DataTemplate>
+    </Window.Resources>
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="120"/>
-        </Grid.RowDefinitions>
+        <Canvas x:Name="Stars" IsHitTestVisible="False"/>
 
-        <Canvas x:Name="Stars" Grid.RowSpan="2" IsHitTestVisible="False"/>
-
-        <ContentControl x:Name="Page" Grid.Row="0" Margin="0"/>
-
-        <!-- the mute, tucked in the bottom right corner under the strip -->
-        <Button x:Name="MuteButton" Grid.Row="1" Style="{StaticResource GhostButton}" FontSize="11" Padding="10,2"
-                HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,40,3" Click="Mute_Click" ToolTip="Music on or off"/>
-
-        <!-- The gil-and-time strip: server, client, news -->
-        <Border Grid.Row="1" Style="{StaticResource Box}" Margin="40,0,40,24">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" MaxWidth="400"/>
-                    <ColumnDefinition Width="32"/>
-                    <ColumnDefinition Width="Auto" MaxWidth="240"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto" MaxWidth="210"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                    <TextBlock Style="{StaticResource Eyebrow}" Text="✦ Vanadreams"/>
-                    <StackPanel Orientation="Horizontal">
-                        <Border Style="{StaticResource Pill}" VerticalAlignment="Center">
-                            <StackPanel Orientation="Horizontal">
-                                <Ellipse x:Name="StatusDot" Style="{StaticResource PillDot}" Fill="{StaticResource Mist}"/>
-                                <TextBlock x:Name="StatusWord" Text="Status unknown" FontWeight="Bold" FontSize="13"/>
-                                <TextBlock x:Name="StatusWhen" Style="{StaticResource Muted}" FontSize="12" Margin="8,0,0,0"/>
-                            </StackPanel>
-                        </Border>
-                        <TextBlock x:Name="StatusNote" Style="{StaticResource Muted}" FontSize="13" Margin="12,0,0,0" VerticalAlignment="Center" MaxWidth="150" TextTrimming="CharacterEllipsis"/>
+        <!-- Vertical: the menu down the left -->
+        <Border x:Name="Rail" Style="{StaticResource Box}" Width="206" HorizontalAlignment="Left" Margin="24,24,0,48" Padding="18,18,14,14">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,12">
+                    <Ellipse Width="30" Height="30" Fill="{StaticResource MoonFill}" VerticalAlignment="Center">
+                        <Ellipse.Effect><DropShadowEffect Color="#FFF1CD78" BlurRadius="22" ShadowDepth="0" Opacity="0.45"/></Ellipse.Effect>
+                    </Ellipse>
+                    <StackPanel Margin="9,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="Vanadreams" Style="{StaticResource NavText}" FontSize="19"/>
+                        <TextBlock Text="LAUNCHER" Style="{StaticResource Eyebrow}" FontSize="9.5" Margin="1,3,0,0" Typography.Capitals="Normal"/>
                     </StackPanel>
                 </StackPanel>
-                <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                    <TextBlock Style="{StaticResource Eyebrow}" Text="✦ Client check"/>
-                    <TextBlock x:Name="VersionLine" Style="{StaticResource Mono}" Text="Checking…" MaxWidth="230" TextWrapping="Wrap"/>
+                <Border DockPanel.Dock="Top" Height="1" Background="{StaticResource Line}" Margin="0,0,0,12"/>
+                <ItemsControl DockPanel.Dock="Bottom" x:Name="RailEnd" ItemTemplate="{StaticResource RailItem}" Margin="30,0,0,0"/>
+                <ItemsControl x:Name="RailMain" ItemTemplate="{StaticResource RailItem}" Margin="30,0,0,0"/>
+            </DockPanel>
+        </Border>
+
+        <!-- Horizontal: tabs across the top -->
+        <Border x:Name="Bar" Style="{StaticResource Box}" Height="64" VerticalAlignment="Top" Margin="24,20,24,0" Padding="16,0" Visibility="Collapsed">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse Width="28" Height="28" Fill="{StaticResource MoonFill}" VerticalAlignment="Center">
+                        <Ellipse.Effect><DropShadowEffect Color="#FFF1CD78" BlurRadius="18" ShadowDepth="0" Opacity="0.45"/></Ellipse.Effect>
+                    </Ellipse>
+                    <StackPanel Margin="9,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="Vanadreams" Style="{StaticResource NavText}" FontSize="18"/>
+                        <TextBlock Text="LAUNCHER" Style="{StaticResource Eyebrow}" FontSize="9.5" Margin="1,2,0,0" Typography.Capitals="Normal"/>
+                    </StackPanel>
                 </StackPanel>
-                <StackPanel Grid.Column="4" VerticalAlignment="Center" HorizontalAlignment="Right">
-                    <TextBlock Style="{StaticResource Eyebrow}" Text="✦ News" HorizontalAlignment="Right"/>
-                    <TextBlock x:Name="NewsLine" Style="{StaticResource Muted}" FontSize="13" MaxWidth="160" TextWrapping="Wrap" TextAlignment="Right" Text="Rates, rules and status are on fairywitch.ca."/>
-                    <Button x:Name="UpdateButton" Style="{StaticResource GoldButton}" FontSize="12" Padding="12,3" HorizontalAlignment="Right" Margin="0,4,0,0" Visibility="Collapsed" Click="Update_Click"/>
-                    <Button x:Name="GameUpdateButton" Style="{StaticResource GoldButton}" FontSize="12" Padding="12,3" HorizontalAlignment="Right" Margin="0,4,0,0" Visibility="Collapsed" Click="GameUpdate_Click"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <ItemsControl x:Name="BarMain" ItemTemplate="{StaticResource TabItem}" VerticalAlignment="Center">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                    <Border Width="1" Background="{StaticResource Line}" Margin="10,6,0,6" Height="30"/>
+                    <ItemsControl x:Name="BarEnd" ItemTemplate="{StaticResource TabItem}" VerticalAlignment="Center">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    </ItemsControl>
                 </StackPanel>
-            </Grid>
+            </DockPanel>
+        </Border>
+
+        <ContentControl x:Name="Page" Margin="254,24,24,48" Focusable="False"/>
+
+        <!-- The slim footer: status and versions, for troubleshooting, and the music -->
+        <Border x:Name="Footer" VerticalAlignment="Bottom" Height="27" Margin="254,0,24,10" BorderThickness="0,1,0,0" BorderBrush="{StaticResource Line}" Padding="0,5,0,0">
+            <DockPanel>
+                <Button x:Name="MuteButton" DockPanel.Dock="Right" Style="{StaticResource GhostButton}" FontSize="12" Padding="10,0" Click="Mute_Click" ToolTip="Music on or off"/>
+                <Button x:Name="UpdateButton" DockPanel.Dock="Right" Style="{StaticResource GoldButton}" FontSize="12" Padding="12,0" Margin="0,0,10,0" Visibility="Collapsed" Click="Update_Click"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse x:Name="StatusDot" Width="8" Height="8" Margin="0,0,7,0" Fill="{StaticResource Mist}" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="StatusWord" Text="Status unknown" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="StatusWhen" Style="{StaticResource Muted}" FontSize="13" VerticalAlignment="Center"/>
+                    <TextBlock Text="   ·   Launcher " Style="{StaticResource Muted}" FontSize="13" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="LauncherVersion" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Text="   ·   Game " Style="{StaticResource Muted}" FontSize="13" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="GameVersion" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Text="   ·   Ashita " Style="{StaticResource Muted}" FontSize="13" VerticalAlignment="Center"/>
+                    <TextBlock Text="v4 beta" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="NewsLine" Style="{StaticResource Muted}" FontSize="13" Margin="14,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+            </DockPanel>
         </Border>
     </Grid>
 </Window>

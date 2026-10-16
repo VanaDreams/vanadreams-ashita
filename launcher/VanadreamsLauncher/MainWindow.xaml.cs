@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,18 +14,170 @@ using Vanadreams.Services;
 
 namespace Vanadreams
 {
+    /// <summary>One entry of the launcher's menu, shown both in the rail (vertical) and as a tab (horizontal).</summary>
+    public sealed class NavItem : System.ComponentModel.INotifyPropertyChanged
+    {
+        private bool _selected, _current;
+        public string Label { get; set; }
+        public string Key { get; set; }
+        public bool Dim { get; set; }
+        /// <summary>The hand: on the page showing, or wherever the arrow keys have moved it.</summary>
+        public bool Selected { get { return _selected; } set { _selected = value; Raise(); } }
+        /// <summary>The page showing now.</summary>
+        public bool Current { get { return _current; } set { _current = value; Raise(); } }
+        public Visibility HandVisibility => Selected ? Visibility.Visible : Visibility.Hidden;
+        public Visibility UnderlineVisibility => Current ? Visibility.Visible : Visibility.Collapsed;
+        public double Opacity => Dim ? 0.55 : Selected || Current ? 1.0 : 0.9;
+        public Brush TabBrush => (Brush)Application.Current.FindResource(Current ? "GoldSoft" : "Cream");
+        /// <summary>A tab makes room on its left for the hand while it has it.</summary>
+        public Thickness TabMargin => new Thickness(Selected ? 25 : 9, 0, 0, 0);
+        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+        private void Raise()
+        {
+            foreach (var n in new[] { "Selected", "Current", "HandVisibility", "UnderlineVisibility", "Opacity", "TabBrush", "TabMargin" })
+                PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(n));
+        }
+    }
+
+    /// <summary>A page that is busy (an install, a patch) and must not be left halfway: it says why and returns false.</summary>
+    public interface IBusyPage
+    {
+        bool CanLeave();
+    }
+
     public partial class MainWindow : Window
     {
         public AppState State => App.State;
         private readonly DispatcherTimer _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(5) };
 
+        private readonly List<NavItem> _nav = new List<NavItem>
+        {
+            new NavItem { Label = "Play", Key = "play" },
+            new NavItem { Label = "Profiles", Key = "profiles" },
+            new NavItem { Label = "Addons", Key = "addons" },
+            new NavItem { Label = "Fishing", Key = "fishing" },
+            new NavItem { Label = "Vanatunes", Key = "vanatunes" },
+            new NavItem { Label = "Capture", Key = "capture" },
+            new NavItem { Label = "Setup", Key = "setup" },
+            new NavItem { Label = "Install game", Key = "install" },
+            new NavItem { Label = "Settings", Key = "settings" },
+            new NavItem { Label = "Discord", Key = "discord" },
+            new NavItem { Label = "Exit", Key = "exit", Dim = true },
+        };
+        private const int MainCount = 9;   // Discord and Exit sit apart, at the foot of the rail or past the divider
+
+        /// <summary>Snapshot hook: the layout a snapshot asked for, without touching the player's setting.</summary>
+        private bool? _forcedHorizontal;
+        public bool Horizontal => _forcedHorizontal ?? State.Settings.HorizontalMenu;
+
         public MainWindow()
         {
             InitializeComponent();
             DrawStars();
+            RailMain.ItemsSource = _nav.Take(MainCount).ToList();
+            RailEnd.ItemsSource = _nav.Skip(MainCount).ToList();
+            BarMain.ItemsSource = _nav.Take(MainCount).ToList();
+            BarEnd.ItemsSource = _nav.Skip(MainCount).ToList();
+            LauncherVersion.Text = Updater.Normalise(Updater.Current).ToString();
+            ApplyLayout();
             State.Changed += () => Dispatcher.BeginInvoke(new Action(RefreshStrip));
             Loaded += OnLoaded;
+            KeyDown += OnNavKey;
             _statusTimer.Tick += async (s, e) => await State.RefreshStatusAsync();
+        }
+
+        /// <summary>The menu down the left or across the top, as Settings says; the page and footer make room for it.</summary>
+        public void ApplyLayout()
+        {
+            var h = Horizontal;
+            Rail.Visibility = h ? Visibility.Collapsed : Visibility.Visible;
+            Bar.Visibility = h ? Visibility.Visible : Visibility.Collapsed;
+            Page.Margin = h ? new Thickness(24, 104, 24, 48) : new Thickness(254, 24, 24, 48);
+            Footer.Margin = h ? new Thickness(24, 0, 24, 10) : new Thickness(254, 0, 24, 10);
+        }
+
+        // ---- the menu ----
+
+        private void Nav_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var item = ((FrameworkElement)sender).Tag as NavItem;
+            if (item != null) Go(item.Key);
+        }
+
+        /// <summary>Up and Down (Left and Right on the tabs) move the hand; Enter goes there. Typing in a box keeps its keys.</summary>
+        private void OnNavKey(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Handled) return;
+            var src = e.OriginalSource as DependencyObject;
+            if (src is TextBox || src is PasswordBox || src is ComboBox || src is ComboBoxItem || src is ListBox || src is ListBoxItem || src is Slider) return;
+            var h = Horizontal;
+            var back = h ? System.Windows.Input.Key.Left : System.Windows.Input.Key.Up;
+            var next = h ? System.Windows.Input.Key.Right : System.Windows.Input.Key.Down;
+            var at = _nav.FindIndex(n => n.Selected);
+            if (e.Key == next || e.Key == back)
+            {
+                var to = ((at < 0 ? 0 : at) + (e.Key == next ? 1 : -1) + _nav.Count) % _nav.Count;
+                foreach (var n in _nav) n.Selected = false;
+                _nav[to].Selected = true;
+                e.Handled = true;
+            }
+            else if ((e.Key == System.Windows.Input.Key.Enter) && at >= 0)
+            {
+                Go(_nav[at].Key);
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>Open a page from the menu.</summary>
+        public void Go(string key)
+        {
+            switch (key)
+            {
+                case "discord": MenuPage.OpenUrl(MenuPage.DiscordInvite); MarkCurrent(Page.Content); return;
+                case "exit": Application.Current.Shutdown(); return;
+            }
+            var page = MakePage(key);
+            if (page != null) Navigate(page);
+        }
+
+        private UserControl MakePage(string key)
+        {
+            switch (key)
+            {
+                case "play": return new MenuPage(this);
+                case "profiles": return new ProfilesPage(this, State.Settings.LastProfile);
+                case "addons": return new AddonsPage(this);
+                case "fishing": return new FishingPage(this);
+                case "vanatunes": return new VanatunesPage(this);
+                case "capture": return new CapturePage(this);
+                case "setup": return new SetupPage(this);
+                case "install": return new InstallPage(this);
+                case "settings": return new SettingsPage(this);
+                case "windower": return new WindowerPage(this);
+                case "switcher": return new SwitcherPage(this);
+            }
+            return null;
+        }
+
+        /// <summary>The menu entry a page belongs to: the switcher and Windower pages live under Addons.</summary>
+        private static string KeyOf(object page)
+        {
+            if (page is MenuPage) return "play";
+            if (page is ProfilesPage) return "profiles";
+            if (page is AddonsPage || page is SwitcherPage || page is WindowerPage) return "addons";
+            if (page is FishingPage) return "fishing";
+            if (page is VanatunesPage) return "vanatunes";
+            if (page is CapturePage) return "capture";
+            if (page is SetupPage) return "setup";
+            if (page is InstallPage) return "install";
+            if (page is SettingsPage) return "settings";
+            return null;
+        }
+
+        private void MarkCurrent(object page)
+        {
+            var key = KeyOf(page);
+            foreach (var n in _nav) { n.Current = n.Key == key; n.Selected = n.Key == key; }
         }
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -75,14 +229,14 @@ namespace Vanadreams
             {
                 var asset = await Updater.CheckAsync(State.Downloader);
                 if (asset == null) return;
-                NewsLine.Text = "Update " + asset.Tag + " found, downloading…";
+                NewsLine.Text = "·  Launcher " + asset.Tag + " downloading…";
                 var progress = new Progress<DownloadProgress>();
                 var ready = FetchAndApplyAsync(asset, progress);
                 var box = new UpdateWindow(asset.Tag, Updater.Normalise(Updater.Current), ready, progress) { Owner = this };
                 if (box.ShowDialog() == true && _updatedExe != null) { Updater.Restart(_updatedExe); return; }
                 await ready;
-                if (_updatedExe == null) { NewsLine.Text = "Update " + asset.Tag + " could not be fetched; it is on fairywitch.ca."; return; }
-                NewsLine.Text = "Launcher " + asset.Tag + " is ready.";
+                if (_updatedExe == null) { NewsLine.Text = "·  Launcher " + asset.Tag + " is on fairywitch.ca"; return; }
+                NewsLine.Text = "";   // the button says it, and the footer has room for one of them
                 UpdateButton.Content = "Restart into " + asset.Tag;
                 UpdateButton.Visibility = Visibility.Visible;
                 RefreshStrip();
@@ -179,11 +333,12 @@ namespace Vanadreams
             base.OnClosed(e);
         }
 
-        private void GameUpdate_Click(object sender, RoutedEventArgs e) => Navigate(new InstallPage(this));
-
         public void Navigate(UserControl page)
         {
+            var busy = Page.Content as IBusyPage;
+            if (busy != null && !ReferenceEquals(busy, page) && !busy.CanLeave()) { MarkCurrent(Page.Content); return; }
             Page.Content = page;
+            MarkCurrent(page);
             page.Focus();
             RefreshMute();
         }
@@ -208,14 +363,14 @@ namespace Vanadreams
             MuteButton.Opacity = on && Music.Playing ? 0.75 : 1.0;
         }
 
+        /// <summary>The footer: server state and players, then the launcher's and the game's versions for troubleshooting.</summary>
         public void RefreshStrip()
         {
             var s = State.Status;
             StatusWord.Text = s.StateWord;
-            StatusWhen.Text = s.CheckedWord + (s.FromCache && s.CheckedAt.HasValue ? " (last seen)" : "")
-                            + (s.Online.HasValue && !s.FromCache ? " · " + s.Online.Value + (s.Online.Value == 1 ? " online" : " online") : "");
-            StatusNote.Text = string.IsNullOrWhiteSpace(s.Note) ? (s.Error != null ? "Couldn't reach fairywitch.ca." : "") : s.Note;
-            StatusNote.ToolTip = string.IsNullOrWhiteSpace(StatusNote.Text) ? null : StatusNote.Text;   // the whole note, however long
+            StatusWhen.Text = s.Online.HasValue && !s.FromCache ? " · " + s.Online.Value + " online" : s.FromCache && s.CheckedAt.HasValue ? " · " + s.CheckedWord + " (last seen)" : "";
+            var note = string.IsNullOrWhiteSpace(s.Note) ? (s.Error != null ? "Couldn't reach fairywitch.ca." : null) : s.Note;
+            StatusWord.ToolTip = note == null ? s.CheckedWord : note + "\n" + s.CheckedWord;   // the server's whole note, however long
             Brush dot;
             switch (s.State)
             {
@@ -226,18 +381,11 @@ namespace Vanadreams
             }
             StatusDot.Fill = dot;
             StatusDot.Effect = new System.Windows.Media.Effects.DropShadowEffect { Color = ((SolidColorBrush)dot).Color, BlurRadius = 8, ShadowDepth = 0 };
-            // The News corner is about 60 px tall and 170 wide: an eyebrow and one more thing. A game update takes the
-            // news line's place with one short button; the launcher's own restart button wins when both are there, and
-            // the menu's Update row still names the game update. 0.2.37 stacked both and the button was cut in half.
-            var pending = State.PendingClientUpdate;
-            var showGame = pending != null && UpdateButton.Visibility != Visibility.Visible;
-            GameUpdateButton.Visibility = showGame ? Visibility.Visible : Visibility.Collapsed;
-            NewsLine.Visibility = showGame ? Visibility.Collapsed : Visibility.Visible;
-            if (showGame) { GameUpdateButton.Content = "Update game · " + pending.Megabytes; GameUpdateButton.ToolTip = "Game update ready: " + pending.Words + ". Only these are downloaded."; }
+            // a game update is the Play page's Patch button now; the footer only names the version installed
             var v = State.Version;
-            VersionLine.Text = v.Sentence;
-            VersionLine.Foreground = (Brush)FindResource(!v.ExpectedIsPublished ? "Mist" : v.Verdict == VersionVerdict.Ready ? "Ok" : v.Verdict == VersionVerdict.Unknown ? "Warn" : "Bad");
-            // the note already sits beside the status pill; News keeps its own line
+            GameVersion.Text = string.IsNullOrEmpty(v.Installed) ? "not found" : v.Installed;
+            GameVersion.Foreground = (Brush)FindResource(!v.ExpectedIsPublished || v.Verdict == VersionVerdict.Ready ? "Cream" : v.Verdict == VersionVerdict.Unknown ? "Warn" : "Bad");
+            GameVersion.ToolTip = v.Sentence;
         }
 
         private void DrawStars()
@@ -257,26 +405,29 @@ namespace Vanadreams
         {
             UserControl page;
             var key = (App.SnapshotPage ?? "menu").ToLowerInvariant();
+            // "<page>@h" or "<page>@v": that menu layout for this picture only; the player's setting is left alone
+            var at = key.IndexOf('@');
+            if (at >= 0) { _forcedHorizontal = key.Substring(at + 1).StartsWith("h"); key = key.Substring(0, at); ApplyLayout(); }
+            // "addons#<id>": the Addons page with that addon selected
+            string item = null;
+            var hash = key.IndexOf('#');
+            if (hash >= 0) { item = key.Substring(hash + 1); key = key.Substring(0, hash); }
             // "<page>-update": the same page with a game update waiting, so a layout change can be checked with it showing
+            // "menu-patching": the Play page part way through a patch
+            var patching = key == "menu-patching";
+            if (patching) key = "menu-update";
             if (key.EndsWith("-update")) { key = key.Substring(0, key.Length - "-update".Length); State.ShowSampleClientUpdate(); }
             RefreshStrip();
             switch (key)
             {
-                case "profiles": page = new ProfilesPage(this); break;
-                case "addons": page = new AddonsPage(this); break;
-                case "setup": page = new SetupPage(this); break;
-                case "settings": page = new SettingsPage(this); break;
-                case "fishing": page = new FishingPage(this); break;
-                case "vanatunes": page = new VanatunesPage(this); break;
-                case "install": page = new InstallPage(this); break;
                 case "install-new": page = new InstallPage(this, asNewPlayer: true); break;
-                case "capture": page = new CapturePage(this); break;
-                case "windower": page = new WindowerPage(this); break;
-                case "switcher": page = new SwitcherPage(this); break;
-                default: page = new MenuPage(this); break;
+                case "menu": case "play": page = new MenuPage(this); break;
+                default: page = MakePage(key) ?? new MenuPage(this); break;
             }
             Navigate(page);
             await Task.Delay(700);
+            if (patching) { (page as MenuPage)?.ShowSamplePatch(0.42); await Task.Delay(300); }
+            if (item != null) { (page as AddonsPage)?.ShowItem(item); await Task.Delay(400); }
             var bmp = new RenderTargetBitmap((int)ActualWidth, (int)ActualHeight, 96, 96, PixelFormats.Pbgra32);
             bmp.Render(this);
             var enc = new PngBitmapEncoder();

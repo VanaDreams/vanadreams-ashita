@@ -81,7 +81,5 @@ namespace Vanadreams.Pages
             catch (Exception ex) { Log.Error("vanatunes songs", ex); Note.Text = ex.Message; }
             finally { _busy = false; GetButton.IsEnabled = true; }
         }
-
-        private void Back_Click(object sender, RoutedEventArgs e) => _win.Navigate(new MenuPage(_win));
     }
 }
