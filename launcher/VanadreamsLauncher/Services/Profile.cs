@@ -22,6 +22,8 @@ namespace Vanadreams.Services
 
         public string Name { get; set; } = "";
         public bool AutoClose { get; set; } = true;
+        /// <summary>Start Ashita as administrator, behind Windows' permission prompt. Off: it runs as the player, with no prompt.</summary>
+        public bool RunAsAdmin { get; set; }
         public string BootFile { get; set; } = "";
         public string Script { get; set; } = "";
         public LoaderCommand Command { get; set; } = new LoaderCommand();
@@ -50,6 +52,7 @@ namespace Vanadreams.Services
             p.Name = ini.Get("ashita.launcher", "name", "");
             if (string.IsNullOrWhiteSpace(p.Name)) p.Name = p.Id;
             p.AutoClose = ini.Get("ashita.launcher", "autoclose", "1") != "0";
+            p.RunAsAdmin = ini.Get("ashita.launcher", "admin", "0") == "1";
             p.GameFolder = UnescapePath(ini.Get("ashita.launcher", "game", ""));
             p.BootFile = UnescapePath(ini.Get("ashita.boot", "file", ""));
             p.Script = ini.Get("ashita.boot", "script", "");
@@ -69,6 +72,7 @@ namespace Vanadreams.Services
             if (Ini == null) Ini = IniFile.FromText("");
             Ini.Set("ashita.launcher", "name", Name);
             Ini.Set("ashita.launcher", "autoclose", AutoClose ? "1" : "0");
+            if (RunAsAdmin || Ini.Has("ashita.launcher", "admin")) Ini.Set("ashita.launcher", "admin", RunAsAdmin ? "1" : "0");
             if (!string.IsNullOrWhiteSpace(GameFolder) || Ini.Has("ashita.launcher", "game")) Ini.Set("ashita.launcher", "game", EscapePath(GameFolder));
             Ini.Set("ashita.boot", "file", EscapePath(BootFile));
             Ini.Set("ashita.boot", "command", Command.ToIniCommand());

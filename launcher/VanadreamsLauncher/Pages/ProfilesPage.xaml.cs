@@ -69,6 +69,7 @@ namespace Vanadreams.Pages
             MenuWBox.Text = p.MenuWidth > 0 ? p.MenuWidth.ToString() : ""; MenuHBox.Text = p.MenuHeight > 0 ? p.MenuHeight.ToString() : "";
             BgWBox.Text = p.BackgroundWidth > 0 ? p.BackgroundWidth.ToString() : ""; BgHBox.Text = p.BackgroundHeight > 0 ? p.BackgroundHeight.ToString() : "";
             AutoCloseBox.IsChecked = p.AutoClose;
+            AdminBox.IsChecked = p.RunAsAdmin;
             if (p.IsExample) Note.Text = "A shipped example. Duplicate it, then edit the copy.";
             else if (!string.IsNullOrEmpty(p.BootFile))
             {
@@ -148,6 +149,7 @@ namespace Vanadreams.Pages
             p.BackgroundWidth = int.TryParse(BgWBox.Text, out bw) && bw > 0 ? bw : -1;
             p.BackgroundHeight = int.TryParse(BgHBox.Text, out bh) && bh > 0 ? bh : -1;
             p.AutoClose = AutoCloseBox.IsChecked == true;
+            p.RunAsAdmin = AdminBox.IsChecked == true;
             p.Save();
             App.State.Credentials.Set(p.Id, UserBox.Text.Trim(), PassBox.Password);
             App.State.Settings.LastProfile = p.Id;
