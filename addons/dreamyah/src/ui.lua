@@ -7,6 +7,7 @@
 
 require('common')
 local imgui = require('imgui')
+local vd = require('vdstyle')
 
 local ui = {}
 
@@ -14,7 +15,7 @@ local TITLE = 'Dreamy A.H. - Your wishlist is here'
 
 local function drawHistory(title, history)
     imgui.Separator()
-    imgui.Text(title)
+    vd.Eyebrow(title)
     if #history == 0 then
         imgui.Text('No completed sales recorded.')
         return
@@ -29,12 +30,12 @@ end
 function ui.drawButton(state, actions)
     imgui.SetNextWindowPos({ 20, 200 }, ImGuiCond_FirstUseEver)
     local flags = bit.bor(ImGuiWindowFlags_NoTitleBar, ImGuiWindowFlags_AlwaysAutoResize, ImGuiWindowFlags_NoCollapse)
-    if imgui.Begin('##dreamyah_button', state.buttonOpen, flags) then
-        if imgui.Button(state.open[1] and 'Close AH Search' or 'AH Search') then
+    if vd.Begin('##dreamyah_button', state.buttonOpen, flags) then
+        if vd.Button(state.open[1] and 'Close AH Search' or 'AH Search', nil, true) then
             actions.toggleWindow()
         end
     end
-    imgui.End()
+    vd.End()
 end
 
 function ui.draw(state, actions)
@@ -43,12 +44,12 @@ function ui.draw(state, actions)
     end
 
     imgui.SetNextWindowSize({ 760, 620 }, ImGuiCond_FirstUseEver)
-    if imgui.Begin(TITLE, state.open) then
+    if vd.Begin(TITLE, state.open) then
         if imgui.InputText('##dreamyah_search', state.search, 128) then
             actions.searchChanged()
         end
         imgui.SameLine()
-        if imgui.Button('Refresh Catalog') then
+        if vd.Button('Refresh Catalog') then
             actions.requestCatalog()
         end
         imgui.Text(state.resultText)
@@ -57,9 +58,9 @@ function ui.draw(state, actions)
         local matches = actions.matches()
 
         imgui.BeginChild('dreamyah_results', { 300, 0 }, ImGuiChildFlags_Borders)
-        imgui.Text(string.format('Results (%u)', #matches))
+        vd.Eyebrow(string.format('Results (%u)', #matches))
         for _, item in ipairs(matches) do
-            if imgui.Selectable(string.format('%s##%d', item.name, item.id), state.selectedItemId == item.id) then
+            if vd.Selectable(string.format('%s##%d', item.name, item.id), state.selectedItemId == item.id) then
                 actions.inspect(item)
             end
         end
@@ -72,7 +73,7 @@ function ui.draw(state, actions)
             imgui.TextWrapped('Search and select an Auction House item.')
         else
             local name = state.selected and state.selected.name or 'Selected item'
-            imgui.Text(name)
+            vd.Eyebrow(name)
             imgui.Text(string.format('Item ID: %u   AH category: %u   Stack size: %u', state.selectedItemId, state.category, state.stackSize))
             imgui.Text(string.format('Available Singles: %u', state.singleCount))
             if state.stackSize > 1 then
@@ -80,7 +81,7 @@ function ui.draw(state, actions)
             end
 
             imgui.Separator()
-            imgui.Text('Bid')
+            vd.Eyebrow('Bid')
             if imgui.RadioButton('Single', state.selectedForm == 0) then
                 state.selectedForm = 0
             end
@@ -92,7 +93,7 @@ function ui.draw(state, actions)
             end
             imgui.InputInt('Bid amount', state.bidAmount, 1, 1000)
             state.bidAmount[1] = math.max(1, math.min(999999999, state.bidAmount[1]))
-            if imgui.Button('Bid') then
+            if vd.Button('Bid', nil, true) then
                 actions.submitBid()
             end
 
@@ -103,7 +104,7 @@ function ui.draw(state, actions)
         end
         imgui.EndChild()
     end
-    imgui.End()
+    vd.End()
 end
 
 return ui

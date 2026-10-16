@@ -21,12 +21,13 @@
 
 addon.name    = 'vanafish';
 addon.author  = 'Vanadreams';
-addon.version = '0.1.1';
+addon.version = '0.1.2';
 addon.desc    = 'Fishing bot for the Vanadreams server.';
 addon.link    = 'https://github.com/VanaDreams/vanadreams-ashita';
 
 require('common');
 local imgui    = require('imgui');
+local vd       = require('vdstyle');
 local settings = require('settings');
 
 -- ---------------------------------------------------------------------------
@@ -403,15 +404,15 @@ ashita.events.register('d3d_present', 'vanafish_present', function ()
     tick();
     if not cfg.window_open[1] then return; end
     imgui.SetNextWindowSize({ 360, 0 }, ImGuiCond_FirstUseEver);
-    if imgui.Begin('Vanadreams fishing', cfg.window_open) then
+    if vd.Begin('Vanadreams fishing', cfg.window_open) then
         local c = bot.counters;
         if bot.running then
-            if imgui.Button('Stop', { 120, 26 }) then stop('by button'); end
+            if vd.Button('Stop', { 120, 26 }, true) then stop('by button'); end
         else
-            if imgui.Button('Start fishing', { 120, 26 }) then start(); end
+            if vd.Button('Start fishing', { 120, 26 }, true) then start(); end
         end
         imgui.SameLine();
-        imgui.Text(bot.state .. (bot.stop_reason ~= '' and not bot.running and (': ' .. bot.stop_reason) or ''));
+        vd.Eyebrow(bot.state .. (bot.stop_reason ~= '' and not bot.running and (': ' .. bot.stop_reason) or ''));
         if bot.running and bot.deadline > 0 then imgui.SameLine(); imgui.TextDisabled(('%ds'):format(math.max(0, bot.deadline - now()))); end
         imgui.Separator();
         local rod, bait = equipped_item(SLOT_RANGE), equipped_item(SLOT_AMMO);
@@ -455,7 +456,7 @@ ashita.events.register('d3d_present', 'vanafish_present', function ()
             if changed then settings.save(); end
         end
     end
-    imgui.End();
+    vd.End();
 end);
 
 ashita.events.register('load', 'vanafish_load', function ()

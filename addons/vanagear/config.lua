@@ -42,8 +42,9 @@ settings.register('settings', 'settings_update', function(newSettings)
     gDefaultSettings = newSettings;
 end);
 
-local header = { 1.0, 0.75, 0.55, 1.0 };
 local imgui = require('imgui');
+local vd = require('vdstyle');
+local header = vd.Gold;
 local state = { IsOpen = { false }, ContainerMenu = nil };
 local gui = {};
 
@@ -75,7 +76,7 @@ local function DrawContainerMenu(menuState)
     end
     imgui.SetNextWindowSize({ 335, 220, });
     imgui.SetNextWindowSizeConstraints({ 335, 220, }, { FLT_MAX, FLT_MAX, });
-    if (imgui.Begin(menuState.WindowTitle, menuState.IsOpen, ImGuiWindowFlags_NoResize)) then
+    if (vd.Begin(menuState.WindowTitle, menuState.IsOpen, ImGuiWindowFlags_NoResize)) then
         imgui.BeginGroup();
         imgui.BeginChild('##LuAshitacastContainerLeftPane', { 100, 157 }, ImGuiChildFlags_None, 128);
         for i = 1,6 do
@@ -99,11 +100,11 @@ local function DrawContainerMenu(menuState)
         end
         imgui.EndChild();
         imgui.EndGroup();
-        if (imgui.Button('Cancel', { 106 })) then
+        if (vd.Button('Cancel', { 106, 0 })) then
             state.ContainerMenu = nil;
         end
         imgui.SameLine(imgui.GetWindowWidth() - 111);
-        if (imgui.Button('Save', { 106 })) then
+        if (vd.Button('Save', { 106, 0 }, true)) then
             for k,_ in pairs(menuState.Buffer) do
                 menuState.Buffer[k] = nil;
             end
@@ -117,7 +118,7 @@ local function DrawContainerMenu(menuState)
             state.ContainerMenu = nil;
         end
     end
-    imgui.End();
+    vd.End();
 end
 
 local function SliderFloat(setting, text, min, max, helpText)
@@ -150,47 +151,47 @@ function gui:Render()
     currentSettings = gSettings;
     if (state.IsOpen[1]) and (currentSettings) then
         local buffer = {};
-        if (imgui.Begin(string.format('%s v%s Configuration', addon.name, addon.version), state.IsOpen, ImGuiWindowFlags_AlwaysAutoResize)) then
+        if (vd.Begin(string.format('%s v%s Configuration', addon.name, addon.version), state.IsOpen, ImGuiWindowFlags_AlwaysAutoResize)) then
             if imgui.BeginTabBar('##LuAshitacastConfigTabBar', ImGuiTabBarFlags_NoCloseWithMiddleMouseButton) then
                 if imgui.BeginTabItem('General##LuAshitacastConfigGeneralTab') then
                     imgui.TextColored(header, 'Sequencer');
                     if (AshitaCore:GetPluginManager():Get('Sequencer') ~= nil) then
-                        imgui.TextColored({0, 1, 0, 1}, '  Active');
+                        imgui.TextColored(vd.Ok, '  Active');
                         imgui.ShowHelp('Sequencer is a plugin that enables LuAshitacast to utilize the game\'s built in auto-resend function for actions.  You have it loaded, so no further action is needed.');
                     else
-                        imgui.TextColored({1, 0, 0, 1}, '  Inactive');
+                        imgui.TextColored(vd.Bad, '  Inactive');
                         imgui.ShowHelp('Sequencer is a plugin that enables LuAshitacast to utilize the game\'s built in auto-resend function for actions.  It is recommended you load it for best performance.');
                     end
 
                     imgui.TextColored(header, 'PacketFlow');
                     if (AshitaCore:GetPluginManager():Get('PacketFlow') ~= nil) then
-                        imgui.TextColored({0, 1, 0, 1}, '  Active');
+                        imgui.TextColored(vd.Ok, '  Active');
                         imgui.ShowHelp('PacketFlow is a plugin that reduces the delay between outgoing packets when latency permits.  This increases performance.  You have it loaded, so no further action is needed.');
                     else
-                        imgui.TextColored({1, 1, 0, 1}, '  Inactive');
+                        imgui.TextColored(vd.Warn, '  Inactive');
                         imgui.ShowHelp('PacketFlow is a plugin that reduces the delay between outgoing packets when latency permits.  This increases performance, but could put you at risk on retail servers.  Load at your own risk.');
                     end
                     
                     imgui.TextColored(header, 'Profile');
                     if (gProfile ~= nil) then
-                        imgui.TextColored({0, 1, 0, 1}, '  ' .. gProfile.FilePath);
-                        if (imgui.Button('Launch Editor')) then
+                        imgui.TextColored(vd.Ok, '  ' .. gProfile.FilePath);
+                        if (vd.Button('Launch Editor')) then
                             ashita.misc.execute(gProfile.FilePath, '');
                         end
                         imgui.SameLine();
-                        if (imgui.Button('Reload')) then
+                        if (vd.Button('Reload')) then
                             gState.LoadProfileEx(gProfile.FilePath);
                         end
                         imgui.SameLine();
-                        if (imgui.Button('Unload')) then
+                        if (vd.Button('Unload')) then
                             gState.UnloadProfile();
                             print(chat.header('LuAshitacast') .. chat.message('Profile unloaded.'));
                         end
                         imgui.SameLine();
                     else
-                        imgui.TextColored({1, 0, 0, 1}, '  Not loaded.');
+                        imgui.TextColored(vd.Bad, '  Not loaded.');
                     end
-                    if (imgui.Button('Load Default')) then
+                    if (vd.Button('Load Default')) then
                         gState.AutoLoadProfile();
                     end
                     
@@ -243,7 +244,7 @@ function gui:Render()
                 end
             
                 if imgui.BeginTabItem('Inventory##LuAshitacastConfigInventoryTab') then
-                    if (imgui.Button('EquipBags##LuAshitacastConfigEquipBags')) then
+                    if (vd.Button('EquipBags##LuAshitacastConfigEquipBags')) then
                         local newState = {};
                         newState.Buffer = T(gDefaultSettings.EquipBags);
                         newState.Current = {};
@@ -255,7 +256,7 @@ function gui:Render()
                         state.ContainerMenu = newState;
                     end
                     imgui.ShowHelp('Edit the list of containers that will be checked for equipment.');
-                    if (imgui.Button('ForceDisableBags##LuAshitacastConfigForceDisableBags')) then
+                    if (vd.Button('ForceDisableBags##LuAshitacastConfigForceDisableBags')) then
                         local newState = {};
                         newState.Buffer = T(gDefaultSettings.ForceDisableBags);
                         newState.Current = {};
@@ -267,7 +268,7 @@ function gui:Render()
                         state.ContainerMenu = newState;
                     end
                     imgui.ShowHelp('Edit the list of containers that will always be treated as disabled.');
-                    if (imgui.Button('ForceEnableBags##LuAshitacastConfigForceEnableBags')) then
+                    if (vd.Button('ForceEnableBags##LuAshitacastConfigForceEnableBags')) then
                         local newState = {};
                         newState.Buffer = T(gDefaultSettings.ForceEnableBags);
                         newState.Current = {};
@@ -310,7 +311,7 @@ function gui:Render()
                 imgui.EndTabBar();
             end
         end
-        imgui.End();
+        vd.End();
     end
     if (state.IsOpen[1] ~= true) then
         state.ContainerMenu = nil;
