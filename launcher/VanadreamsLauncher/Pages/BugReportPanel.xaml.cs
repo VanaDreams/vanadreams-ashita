@@ -13,10 +13,10 @@ namespace Vanadreams.Pages
     public partial class BugReportPanel : UserControl
     {
         /// <summary>
-        /// Where the player posts the zip. The server invite, which opens Discord on Vanadreams; the channel is named in the
-        /// panel. A link straight to #bugs-we-all-found needs the server's and channel's ids in its place.
+        /// Where the player posts the zip: #bugs-we-all-found on the Vanadreams server. A player not yet in the server sees
+        /// Discord's own "no access" page there; the Discord entry on the menu has the invite.
         /// </summary>
-        public const string BugsChannel = MenuPage.DiscordInvite;
+        public const string BugsChannel = "https://discord.com/channels/1548823290485800970/1549477049146544209";
 
         public BugReportPanel()
         {
