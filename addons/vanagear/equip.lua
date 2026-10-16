@@ -27,7 +27,7 @@ local GetCurrentEquip = function(slot)
     else
         Internal[slot] = nil;
         local equippedItem = inventoryManager:GetEquippedItem(slot - 1);
-        local index = bit.band(equippedItem.Index, 0x00FF);
+        local index = (equippedItem ~= nil) and bit.band(equippedItem.Index, 0x00FF) or 0; -- vanagear: nil while zoning
         local eqEntry = {};
         if (index == 0) then
             eqEntry.Container = 0;
@@ -35,7 +35,7 @@ local GetCurrentEquip = function(slot)
         else
             eqEntry.Container = bit.band(equippedItem.Index, 0xFF00) / 256;
             eqEntry.Item = inventoryManager:GetContainerItem(eqEntry.Container, index);
-            if (eqEntry.Item.Id == 0) or (eqEntry.Item.Count == 0) then
+            if (eqEntry.Item == nil) or (eqEntry.Item.Id == 0) or (eqEntry.Item.Count == 0) then -- vanagear: nil check
                 eqEntry.Item = nil;
             end
         end
