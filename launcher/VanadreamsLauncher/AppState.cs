@@ -153,11 +153,42 @@ namespace Vanadreams
         public bool PatchNeeded => PendingClientUpdate != null || OverlayMigrationDue ||
                                    (Version.ExpectedIsPublished && Version.Verdict == VersionVerdict.ClientTooOld);
 
+        /// <summary>List the shipped overlays on disk in pivot.ini, once each (LookOverlays.GiveOnce). True when it listed any.</summary>
+        public bool GiveOverlays()
+        {
+            if (!HasAshita) return false;
+            try
+            {
+                var listed = LookOverlays.GiveOnce(AshitaRoot, Settings.GivenDefaults);
+                if (listed.Count == 0) return false;
+                Settings.Save();
+                Log.Info("overlays listed in pivot.ini: " + string.Join(", ", listed));
+                return true;
+            }
+            catch (Exception ex) { Log.Warn("overlays: " + ex.Message); return false; }
+        }
+
         /// <summary>The server ships the packs as XIPivot overlays and this copy still has them in the game folder (LookOverlays).</summary>
         public bool OverlayMigrationDue { get; private set; }
 
         /// <summary>Where the launcher installs and patches the game: the folder it installed to, else the default.</summary>
         public string GameInstallTarget => string.IsNullOrWhiteSpace(Settings.GameInstallRoot) ? ClientInstall.DefaultRoot : Settings.GameInstallRoot;
+
+        /// <summary>
+        /// The copy whose look and title packs are moved and switched: the one Vanadreams plays, when its record shows the
+        /// packs, else the recorded install. 16 Oct 2026: on Ferrin's PC the recorded install folder held no game and Play
+        /// started D:\, so a migration that only looked at the recorded folder never offered itself.
+        /// </summary>
+        public string PacksRoot(string version)
+        {
+            var candidates = new[] { VanadreamsGameRoot(), Settings.GameInstallRoot, GameInstallTarget };
+            foreach (var r in candidates)
+            {
+                if (string.IsNullOrWhiteSpace(r) || string.IsNullOrEmpty(version)) continue;
+                if (ClientInstall.Done(r, version).Any(d => LookOverlays.OverlayFor(d.Split(' ')[0]) != null)) return r;
+            }
+            return GameInstallTarget;
+        }
 
         /// <summary>
         /// The Patch button: the same update Install game runs. Fetches what is new or missing for the server's version,
@@ -175,12 +206,23 @@ namespace Vanadreams
                 m = ClientManifest.Parse(await Downloader.GetStringAsync(ClientInstall.ManifestUrl(version)));
             }
             var ashita = HasAshita ? AshitaRoot : null;
+            // decided before the move: a Patch pressed only for the packs must never become an install
+            var updateWanted = PendingClientUpdate != null || (Version.ExpectedIsPublished && Version.Verdict == VersionVerdict.ClientTooOld);
             // the packs out of the game folder into their overlays first, so nothing below sees them as missing
-            if (LookOverlays.Due(m, root, ashita))
+            var packs = PacksRoot(m.Version);
+            if (LookOverlays.Due(m, packs, ashita))
             {
                 XIPivotBundle.Ensure(ashita);
-                await LookOverlays.MigrateAsync(Http.Shared, m, root, ashita, progress, ct);
+                await LookOverlays.MigrateAsync(Http.Shared, m, packs, ashita, progress, ct);
                 ApplyEnabledAddons();
+                GiveOverlays();
+                if (!updateWanted)
+                {
+                    await CheckClientUpdateAsync();
+                    CheckVersion();
+                    Notify();
+                    return null;
+                }
             }
             var todo = ClientInstall.Remaining(m, ClientInstall.Done(root, m.Version, ashita));
             var updateOnly = todo.Count < m.Chunks.Count && ClientInstall.IsRegistered(root);
@@ -192,6 +234,8 @@ namespace Vanadreams
             await ClientInstall.InstallFilesAsync(Downloader, m, root, Settings.DownloadsFolder, progress, ct, ashita, Settings.LowSpec);
             Settings.GameInstallRoot = root;
             Settings.Save();
+            XIPivotBundle.Ensure(ashita);
+            GiveOverlays();
             string said = null;
             if (!updateOnly && !await Task.Run(() => ClientInstall.RunRegister(root, Settings.DownloadsFolder)))
                 said = "The files are in, but the permission prompt was refused, so Windows doesn't know where the game is yet. Press Patch again to finish; nothing downloads twice.";
@@ -205,12 +249,15 @@ namespace Vanadreams
         {
             var root = Settings.GameInstallRoot;
             var version = Status.ClientVer;
-            if (string.IsNullOrEmpty(version) || !GameRegistration.HasGame(root)) { PendingClientUpdate = null; Notify(); return; }
+            if (string.IsNullOrEmpty(version)) { PendingClientUpdate = null; Notify(); return; }
             try
             {
                 var m = ClientManifest.Parse(await Downloader.GetStringAsync(ClientInstall.ManifestUrl(version)));
-                OverlayMigrationDue = LookOverlays.Due(m, root, HasAshita ? AshitaRoot : null);
-                if (OverlayMigrationDue) Log.Info("the look and title packs are to move into their overlays");
+                // the packs belong to the copy Vanadreams plays, which is not always the recorded install
+                var packs = PacksRoot(m.Version);
+                OverlayMigrationDue = LookOverlays.Due(m, packs, HasAshita ? AshitaRoot : null);
+                if (OverlayMigrationDue) Log.Info("the look and title packs in " + packs + " are to move into their overlays");
+                if (!GameRegistration.HasGame(root)) { PendingClientUpdate = null; Notify(); return; }
                 var todo = ClientInstall.Updates(m, root, HasAshita ? AshitaRoot : null);
                 PendingClientUpdate = todo.Count == 0 ? null : new ClientUpdate { Root = root, Manifest = m, Parts = todo };
                 if (PendingClientUpdate != null) Log.Info("game update ready: " + string.Join(", ", todo.Select(c => c.Name)));
@@ -299,6 +346,7 @@ namespace Vanadreams
                 }
             }
             catch (Exception ex) { Log.Warn("XIPivot: " + ex.Message); }
+            if (GiveOverlays()) changed = true;
             // once per player, and only with a real catalogue to tell Ashita's own addons from ours
             if (!Settings.TickAllTidied && Catalog.Items.Count > 0)
             {
