@@ -207,14 +207,23 @@
         <Setter Property="FontFamily" Value="{StaticResource Body}"/>
         <Setter Property="FontSize" Value="14"/>
     </Style>
+    <!-- The page-wide TextBlock style (cream, shadowed) reaches the text a ComboBox template makes, and a
+         resource on the ComboBox does not. Local values on this TextBlock win, so list text follows the box. -->
+    <DataTemplate x:Key="ComboText">
+        <TextBlock Text="{Binding}" Effect="{x:Null}"
+                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Control}}"
+                   FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=Control}}"/>
+    </DataTemplate>
     <Style TargetType="ComboBox">
         <Setter Property="FontFamily" Value="{StaticResource Body}"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="Foreground" Value="#FF2A1C0A"/>
         <Setter Property="Padding" Value="8,4"/>
+        <Setter Property="ItemTemplate" Value="{StaticResource ComboText}"/>
     </Style>
     <Style TargetType="ComboBoxItem">
         <Setter Property="Foreground" Value="#FF2A1C0A"/>
+        <Setter Property="ContentTemplate" Value="{StaticResource ComboText}"/>
     </Style>
     <Style TargetType="ProgressBar">
         <Setter Property="Foreground" Value="{StaticResource Gold}"/>
