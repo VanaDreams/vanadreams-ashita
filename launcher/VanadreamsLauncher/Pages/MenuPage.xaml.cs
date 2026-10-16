@@ -322,6 +322,11 @@ namespace Vanadreams.Pages
             var reg = GameRegistration.Read();
             var root = GameRootFor(_profile, reg);
             if (root != null && !EnsureGameIsRegistered(root, reg)) return;
+            // 12 Oct 2026: Mogsy's loader logged in and closed, because neither pol.exe nor FFXiMain.dll was where
+            // Windows pointed. When no copy we know of is a whole game, the launch is all but sure to do the same.
+            if (_profile.IsVanadreams && root == null &&
+                MessageBox.Show(PlayCheck.NoGameSentence, "Vanadreams Launcher", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                return;
 
             state.CheckVersion();
             if (_profile.IsVanadreams && state.Version.BlocksPlay)   // the Vanadreams version rule has no say over other servers
@@ -331,6 +336,15 @@ namespace Vanadreams.Pages
                 return;
             }
 
+            // Antivirus takes Ashita or the loader away, and without them Ashita closes before anything shows (Services\PlayCheck.cs)
+            if (state.HasAshita && !FilesAreThere(state)) return;
+            // A network that cannot reach the server looks exactly like every other failure once the loader's window closes
+            // Hairpin profiles play from the server's own network, where the public address may not loop back, so they skip it
+            if (_profile.IsVanadreams && !_profile.Command.Hairpin && !await ServerAnswers(state)) return;
+
+            var loaderName = PlayCheck.LoaderProcessName(_profile.BootFile);
+            var before = PlayCheck.RunningIds(loaderName);
+            var launchedAt = DateTime.UtcNow;
             try
             {
                 GameLauncher.Launch(state.AshitaRoot, _profile, state.Credentials.Get(_profile.Id));
@@ -338,14 +352,99 @@ namespace Vanadreams.Pages
                 state.Settings.LastProfile = _profile.Id;
                 state.Settings.LastPlayed[_profile.Id] = DateTime.Now.ToString("o");
                 state.Settings.Save();
-                if (_profile.AutoClose) { var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(5) }; t.Tick += (s, e) => Application.Current.Shutdown(); t.Start(); }
-                else LoadProfile();
+                if (!_profile.AutoClose) LoadProfile();
+                // the launcher waits to close until the game is open, so it can still say why if it never opens
+                var autoClose = _profile.AutoClose;
+                var opened = await WatchLaunch(state, _profile, loaderName, before, launchedAt);
+                if (autoClose && opened) Application.Current.Shutdown();
             }
             catch (Exception ex)
             {
                 Log.Error("launch failed", ex);
                 MessageBox.Show(ex.Message, "Vanadreams Launcher", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        /// <summary>False, after telling the player, when antivirus or anything else has taken a file the launch needs.</summary>
+        private bool FilesAreThere(AppState state)
+        {
+            var missing = PlayCheck.Missing(state.AshitaRoot, _profile.BootFile);
+            if (missing.Count == 0) return true;
+            Log.Warn("before play, missing: " + string.Join("; ", missing));
+            ExplainMissing(state, missing);
+            return false;
+        }
+
+        private void ExplainMissing(AppState state, List<string> missing)
+        {
+            var av = PlayCheck.Antivirus();
+            var text = PlayCheck.MissingSentence(missing, av, state.AshitaRoot);
+            // Windows Security alone can be told to leave the folders alone from here; any other antivirus only by hand
+            if (PlayCheck.OtherAntivirus(av).Count == 0)
+            {
+                var ask = MessageBox.Show(text + "\n\nAdd the Ashita and game folders to Windows Security's exclusions now? Windows will ask for permission.",
+                    "Vanadreams Launcher", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (ask == MessageBoxResult.Yes)
+                {
+                    var ok = PlayCheck.AddDefenderExclusions(new[] { state.AshitaRoot, state.Settings.GameInstallRoot });
+                    MessageBox.Show(ok ? "Done. Now open Setup and press Check and update to put the missing files back, then press Play."
+                                       : "The exclusions were not added. Add the folders by hand in Windows Security, Virus & threat protection, Exclusions.",
+                        "Vanadreams Launcher", MessageBoxButton.OK, ok ? MessageBoxImage.Information : MessageBoxImage.Warning);
+                }
+                return;
+            }
+            MessageBox.Show(text, "Vanadreams Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+
+        /// <summary>False, after telling the player, when the server's login ports do not answer from this PC. A failed check never blocks Play on its own.</summary>
+        private async System.Threading.Tasks.Task<bool> ServerAnswers(AppState state)
+        {
+            PlayCheck.Reach reach;
+            try { reach = await PlayCheck.TryPortsAsync(_profile.Command.Server, PlayCheck.LoginPorts, TimeSpan.FromSeconds(4)); }
+            catch (Exception ex) { Log.Warn("port check: " + ex.Message); return true; }
+            Log.Info("port check " + reach.Host + ": open " + string.Join(",", reach.Open) + " closed " + string.Join(",", reach.Closed) + (reach.NoName ? " (no name)" : ""));
+            var text = PlayCheck.ReachSentence(reach, _profile.Command.IsTailscale, state.Status.State);
+            if (text == null) return true;
+            return MessageBox.Show(text + "\n\nPlay anyway?", "Vanadreams Launcher", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
+        }
+
+        /// <summary>
+        /// Watch the loader after Play. True once the game's window opens. When the loader closes first, say why:
+        /// a file taken, a crash Windows recorded, the server out of reach, or else what the loader's own window said.
+        /// </summary>
+        private async System.Threading.Tasks.Task<bool> WatchLaunch(AppState state, Profile profile, string loaderName, HashSet<int> before, DateTime launchedAt)
+        {
+            LaunchOutcome outcome;
+            try { outcome = await PlayCheck.WatchAsync(loaderName, before, TimeSpan.FromMinutes(3), TimeSpan.FromMinutes(15)); }
+            catch (Exception ex) { Log.Warn("launch watch: " + ex.Message); return true; }
+            Log.Info("launch " + profile.Name + ": " + outcome);
+            if (outcome == LaunchOutcome.GameOpened || outcome == LaunchOutcome.StillWaiting) return true;
+
+            var missing = state.HasAshita ? PlayCheck.Missing(state.AshitaRoot, profile.BootFile) : new List<string>();
+            if (missing.Count > 0) { Log.Warn("after play, missing: " + string.Join("; ", missing)); ExplainMissing(state, missing); return false; }
+
+            var crash = PlayCheck.LastCrash(new[] { loaderName, "Ashita-cli" }, launchedAt.AddSeconds(-5));
+            if (crash != null)
+            {
+                Log.Warn("crash after play: " + crash.App + " in " + crash.Module + " " + crash.ModuleVersion);
+                MessageBox.Show(PlayCheck.CrashSentence(crash), "Vanadreams Launcher", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            if (profile.IsVanadreams && !profile.Command.Hairpin)
+            {
+                try
+                {
+                    var reach = await PlayCheck.TryPortsAsync(profile.Command.Server, PlayCheck.LoginPorts, TimeSpan.FromSeconds(4));
+                    var text = PlayCheck.ReachSentence(reach, profile.Command.IsTailscale, state.Status.State);
+                    if (text != null) { MessageBox.Show(text, "Vanadreams Launcher", MessageBoxButton.OK, MessageBoxImage.Warning); return false; }
+                }
+                catch (Exception ex) { Log.Warn("port check after play: " + ex.Message); }
+            }
+
+            MessageBox.Show(outcome == LaunchOutcome.NeverStarted ? PlayCheck.NeverStartedNoCause : PlayCheck.ClosedNoCause,
+                "Vanadreams Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
         }
     }
 }
