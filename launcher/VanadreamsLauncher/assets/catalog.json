@@ -614,25 +614,6 @@
       }
     },
     {
-      "id": "vanadreams-music",
-      "name": "Vanadreams music",
-      "kind": "overlay",
-      "maintainer": "Vanadreams",
-      "source": {
-        "type": "repo-folder",
-        "repo": "VanaDreams/vanadreams-ashita",
-        "path": "overlays/vanadreams-music",
-        "branch": "main"
-      },
-      "version": "1.0.1",
-      "install": "pivot-overlay",
-      "requires": [
-        "pivot"
-      ],
-      "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/overlays/vanadreams-music",
-      "description": "Vanadreams' own music on the title screen and character select, through XIPivot. Only our tracks are in it; the game's files are untouched. Needs XIPivot from this page."
-    },
-    {
       "id": "vanatunes",
       "name": "vanatunes",
       "kind": "addon",

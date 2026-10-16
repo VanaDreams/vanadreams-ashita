@@ -1,0 +1,13 @@
+diff --git a/src/xi/ui/xi_simple.py b/src/xi/ui/xi_simple.py
+index f4d3bd4..b1e4551 100644
+--- a/src/xi/ui/xi_simple.py
++++ b/src/xi/ui/xi_simple.py
+@@ -382,7 +382,7 @@ def _import_one(dat_file: Path, out_file: Path, work_dir: Path, requested_format
+     if tmp_dir.exists():
+         shutil.rmtree(tmp_dir, ignore_errors=True)
+ 
+-    if converted == 0:
++    if converted == 0 and not hd_names:
+         raise click.ClickException(f'No matching .png files found in {work_dir}')
+ 
+     replaced = 0

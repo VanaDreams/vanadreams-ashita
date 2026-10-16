@@ -288,6 +288,18 @@ namespace Vanadreams
         {
             if (!HasAshita) { Log.Warn("apply addons: no Ashita folder set, nothing written"); return; }
             PivotConfig.RemoveRootPath(AshitaRoot);   // a value an earlier launcher wrote that stops overlays loading
+            try
+            {
+                if (RetiredOverlays.Present(AshitaRoot).Count > 0)
+                    foreach (var id in RetiredOverlays.Sweep(AshitaRoot, FfxiFolder))
+                    {
+                        Settings.EnabledAddons.RemoveAll(e => string.Equals(e, id, StringComparison.OrdinalIgnoreCase));
+                        Settings.InstalledVersions.Remove(id);
+                        Settings.Save();
+                        Log.Info("retired overlay removed, the game's own files carry it now: " + id);
+                    }
+            }
+            catch (Exception ex) { Log.Warn("retired overlays: " + ex.Message); }
             var entries = Catalog.ScriptEntries(Settings.EnabledAddons);
             var scriptPath = Path.Combine(AshitaRoot, "scripts", "vanadreams.txt");
             Directory.CreateDirectory(Path.GetDirectoryName(scriptPath));
