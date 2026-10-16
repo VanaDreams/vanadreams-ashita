@@ -82,6 +82,24 @@ sandbox = 0
         }
 
         [TestMethod]
+        public void Profile_runs_as_the_player_unless_it_asks_for_administrator()
+        {
+            var path = Path.Combine(_dir, "config", "boot", "vanadreams.ini");
+            File.WriteAllText(path, Example);
+            var p = Profile.Load(path);
+            Assert.IsFalse(p.RunAsAdmin, "absent means no permission prompt");
+            p.Save();
+            Assert.IsNull(IniFile.Load(path).Get("ashita.launcher", "admin"), "an untouched profile gains no key");
+            p.RunAsAdmin = true;
+            p.Save();
+            Assert.AreEqual("1", IniFile.Load(path).Get("ashita.launcher", "admin"));
+            Assert.IsTrue(Profile.Load(path).RunAsAdmin);
+            p.RunAsAdmin = false;
+            p.Save();
+            Assert.IsFalse(Profile.Load(path).RunAsAdmin);
+        }
+
+        [TestMethod]
         public void Profile_background_resolution_is_registry_0003_and_0004()
         {
             var path = Path.Combine(_dir, "config", "boot", "vanadreams.ini");

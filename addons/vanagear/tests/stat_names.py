@@ -6,10 +6,13 @@ import re
 from pathlib import Path
 
 ADDON = Path(__file__).resolve().parent.parent
-SERVER_ENUM = ADDON.parent.parent.parent / 'vanadreams' / 'scripts' / 'enum' / 'mod.codegen.lua'
+SERVER_ENUM = ADDON.parent.parent.parent / 'vanadreams' / 'data' / 'enums' / 'mod.yaml'
 
-names = set(re.findall(r'^\s*([A-Z0-9_]+)\s*=\s*\d+,', SERVER_ENUM.read_text(encoding='utf-8'), re.M))
+names = {n.upper() for n in re.findall(r'^\s+([a-z0-9_]+):\s*\d+', SERVER_ENUM.read_text(encoding='utf-8'), re.M)}
 names |= {'PDT', 'MDT'}
+# roles.lua keys its job lists by job, which are not stats
+names |= {'WAR', 'MNK', 'WHM', 'BLM', 'RDM', 'THF', 'PLD', 'DRK', 'BST', 'BRD', 'RNG', 'SAM', 'NIN', 'DRG', 'SMN',
+          'BLU', 'COR', 'PUP', 'DNC', 'SCH', 'GEO', 'RUN'}
 bad = 0
 for f in [ADDON / 'vg' / 'roles.lua', *sorted((ADDON / 'jobs').glob('*.lua'))]:
     text = re.sub(r'--\[\[.*?\]\]--', '', f.read_text(encoding='utf-8'), flags=re.S)

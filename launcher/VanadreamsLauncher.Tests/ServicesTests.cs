@@ -162,8 +162,10 @@ namespace Vanadreams.Tests
             s.InstalledVersions["lootwhore"] = "1.18c";
             s.LastPlayed["vanadreams"] = "2026-09-13T13:55:00";
             s.SetupDone = true;
+            s.TickAllTidied = true;
             s.Save();
             var again = LauncherSettings.Load(path);
+            Assert.IsTrue(again.TickAllTidied);
             Assert.AreEqual(@"C:\Games\Vanadreams", again.AshitaRoot);
             CollectionAssert.Contains(again.EnabledAddons, "distance");
             Assert.AreEqual("1.18c", again.InstalledVersions["lootwhore"]);

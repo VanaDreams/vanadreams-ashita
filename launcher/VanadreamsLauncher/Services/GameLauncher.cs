@@ -15,7 +15,7 @@ namespace Vanadreams.Services
     {
         private const string TempPrefix = ".launch-";
 
-        public static Process Launch(string ashitaRoot, Profile profile, Credential credential)
+        public static Process Launch(string ashitaRoot, Profile profile, Credential credential, bool asAdmin)
         {
             var cli = Path.Combine(ashitaRoot, "Ashita-cli.exe");
             if (!File.Exists(cli)) throw new FileNotFoundException("Ashita-cli.exe is missing from " + ashitaRoot + "; run Repair.", cli);
@@ -41,11 +41,8 @@ namespace Vanadreams.Services
                 iniName = Path.GetFileName(temp);
             }
 
-            // Ashita-cli.exe asks for administrator in its manifest. Starting it through the shell lets
-            // Windows raise the UAC prompt; a direct start fails with "requires elevation" instead.
-            var psi = new ProcessStartInfo(cli, "\"" + iniName + "\"") { WorkingDirectory = ashitaRoot, UseShellExecute = true };
             Process process;
-            try { process = Process.Start(psi); }
+            try { process = asAdmin ? StartElevated(cli, iniName, ashitaRoot) : StartAsPlayer(cli, iniName, ashitaRoot); }
             catch (Exception ex)
             {
                 Remove(temp);
@@ -54,7 +51,7 @@ namespace Vanadreams.Services
                     throw new InvalidOperationException("Windows asked to run Ashita as administrator and the prompt was cancelled. Press Play again and choose Yes.");
                 throw;
             }
-            Log.Info("Launched " + profile.Name + " via " + iniName + ", booting " + boot);
+            Log.Info("Launched " + profile.Name + " via " + iniName + ", booting " + boot + (asAdmin ? ", as administrator" : ", as the player"));
 
             if (temp != null)
             {
@@ -69,6 +66,31 @@ namespace Vanadreams.Services
             }
             return process;
         }
+
+        /// <summary>
+        /// Ashita-cli.exe asks for administrator in its manifest, but Ashita v4 needs none of it: it reads the registry
+        /// and hands the game its [ffxi.registry] values through a hook, writing nothing outside its own folder.
+        /// Windows' RunAsInvoker layer starts it as the player, so no permission prompt appears.
+        /// 28 Sept 2026: a player's second client closed at that prompt every time; only switching UAC off let him dual-box.
+        /// The prompt switches to Windows' secure desktop, which can take the display from a game already running.
+        /// The game and xiloader inherit the layer, so nothing they start prompts either.
+        /// </summary>
+        private static Process StartAsPlayer(string cli, string iniName, string ashitaRoot)
+        {
+            var psi = new ProcessStartInfo(cli, "\"" + iniName + "\"") { WorkingDirectory = ashitaRoot, UseShellExecute = false };
+            psi.EnvironmentVariables["__COMPAT_LAYER"] = "RunAsInvoker";
+            try { return Process.Start(psi); }
+            catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 740)
+            {
+                // ERROR_ELEVATION_REQUIRED: this Windows would not apply the layer, so ask the way it used to
+                Log.Warn("Ashita would not start as the player (" + ex.Message + "); asking for administrator");
+                return StartElevated(cli, iniName, ashitaRoot);
+            }
+        }
+
+        /// <summary>Through the shell, so Windows raises the UAC prompt; a direct start fails with "requires elevation" instead.</summary>
+        private static Process StartElevated(string cli, string iniName, string ashitaRoot) =>
+            Process.Start(new ProcessStartInfo(cli, "\"" + iniName + "\"") { WorkingDirectory = ashitaRoot, UseShellExecute = true });
 
         private static void Remove(string path)
         {

@@ -68,6 +68,24 @@ namespace Vanadreams.Services
             return asset.Tag;
         }
 
+        /// <summary>How many of Ashita's own addons a saved list has to tick before it counts as the old "everything on" list.</summary>
+        public const int TickAllThreshold = 50;
+
+        /// <summary>
+        /// Launchers before 0.2.24 ticked every addon that ships inside Ashita (all 86) at setup, and later launchers
+        /// leave a player's ticks alone, so those players still load crosshair, chamcham, ime, aspect and the rest.
+        /// Given such a list, this returns it without the Ashita ones (a bundled item the catalogue marks on by default
+        /// stays); everything the player installed from the catalogue stays ticked. A list the player picked by hand,
+        /// with fewer than TickAllThreshold of Ashita's addons, comes back null: nothing to tidy.
+        /// </summary>
+        public static List<string> TidyTickAll(Catalog catalog, IEnumerable<string> enabled)
+        {
+            var list = (enabled ?? Enumerable.Empty<string>()).ToList();
+            var bundled = list.Where(id => { var i = catalog.Find(id); return i != null && i.Source == SourceType.Bundled; }).ToList();
+            if (bundled.Count < TickAllThreshold) return null;
+            return list.Where(id => { var i = catalog.Find(id); return i == null || i.Source != SourceType.Bundled || (i.OnByDefault && string.IsNullOrEmpty(i.HeldBack)); }).ToList();
+        }
+
         /// <summary>The on-by-default items this player has not been given yet.</summary>
         public static List<CatalogItem> DefaultsToGive(Catalog catalog, IEnumerable<string> alreadyGiven) =>
             catalog.Items.Where(i => i.OnByDefault && i.HasV4 && string.IsNullOrEmpty(i.HeldBack)

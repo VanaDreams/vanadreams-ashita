@@ -45,10 +45,10 @@ score.Compile = function(mode)
     local function weights(from, pet)
         for name, weight in pairs(from or {}) do
             local k = key(name, pet);
+            -- a stat no item carries (Innin's nuke bonus, Deep Breathing) has nothing to dress for:
+            -- it is skipped, not reported. tests\stat_names.py catches names the server lacks.
             if (k ~= nil) then
                 c.w[k] = (c.w[k] or 0) + weight / (unit[name] or 1);
-            elseif (vdata.ModId(name) == nil) and (virtual[name] == nil) then
-                print(chat.header('vanagear') .. chat.error('Unknown stat in ' .. tostring(mode.Name) .. ': ' .. name));
             end
         end
     end
