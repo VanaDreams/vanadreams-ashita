@@ -104,7 +104,27 @@ namespace Vanadreams.Services
             File.WriteAllLines(path, ScriptLines(0, false), new UTF8Encoding(false));
         }
 
-        /// <summary>The attached displays, the main one first.</summary>
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        private struct DEVMODE
+        {
+            [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.ByValTStr, SizeConst = 32)] public string dmDeviceName;
+            public short dmSpecVersion, dmDriverVersion, dmSize, dmDriverExtra;
+            public int dmFields, dmPositionX, dmPositionY, dmDisplayOrientation, dmDisplayFixedOutput;
+            public short dmColor, dmDuplex, dmYResolution, dmTTOption, dmCollate;
+            [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.ByValTStr, SizeConst = 32)] public string dmFormName;
+            public short dmLogPixels;
+            public int dmBitsPerPel, dmPelsWidth, dmPelsHeight, dmDisplayFlags, dmDisplayFrequency;
+            public int dmICMMethod, dmICMIntent, dmMediaType, dmDitherType, dmReserved1, dmReserved2, dmPanningWidth, dmPanningHeight;
+        }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        private static extern bool EnumDisplaySettings(string deviceName, int modeNum, ref DEVMODE mode);
+
+        /// <summary>
+        /// The attached displays, the main one first, in real pixels and desktop positions from the driver's current mode.
+        /// Windows' screen list scales every display by the main one's DPI, so with the main screen at 150% a 1920x1080
+        /// display read as 2880x1620 (16 Oct 2026, Ferrin's laptop and second screen).
+        /// </summary>
         public static List<MonitorInfo> Monitors()
         {
             var list = new List<MonitorInfo>();
@@ -112,11 +132,16 @@ namespace Vanadreams.Services
             for (var i = 0; i < screens.Count; i++)
             {
                 var s = screens[i];
+                int left = s.Bounds.Left, top = s.Bounds.Top, w = s.Bounds.Width, h = s.Bounds.Height;
+                var mode = new DEVMODE { dmSize = (short)System.Runtime.InteropServices.Marshal.SizeOf(typeof(DEVMODE)) };
+                if (EnumDisplaySettings(s.DeviceName, -1, ref mode) && mode.dmPelsWidth > 0)   // -1: the current settings
+                {
+                    left = mode.dmPositionX; top = mode.dmPositionY; w = mode.dmPelsWidth; h = mode.dmPelsHeight;
+                }
                 list.Add(new MonitorInfo
                 {
-                    Device = s.DeviceName, Primary = s.Primary,
-                    Left = s.Bounds.Left, Top = s.Bounds.Top, Width = s.Bounds.Width, Height = s.Bounds.Height,
-                    Label = (s.Primary ? "Main" : "Display " + (i + 1)) + " · " + s.Bounds.Width + "×" + s.Bounds.Height
+                    Device = s.DeviceName, Primary = s.Primary, Left = left, Top = top, Width = w, Height = h,
+                    Label = (s.Primary ? "Main" : "Display " + (i + 1)) + " · " + w + "×" + h
                 });
             }
             return list;
