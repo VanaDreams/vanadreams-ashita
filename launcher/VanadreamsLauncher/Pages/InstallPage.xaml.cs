@@ -117,6 +117,9 @@ namespace Vanadreams.Pages
                     AshitaFolder, state.Settings.LowSpec);
                 state.Settings.GameInstallRoot = _root;
                 state.Settings.Save();
+                // the look and title packs land as XIPivot overlays: XIPivot in place and the overlays listed, once
+                XIPivotBundle.Ensure(AshitaFolder);
+                if (state.GiveOverlays()) state.ApplyEnabledAddons();
                 if (updateOnly) ProgressText.Text = "Updated. Press Play.";
                 else
                 {

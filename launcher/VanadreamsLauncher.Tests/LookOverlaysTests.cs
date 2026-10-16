@@ -80,6 +80,25 @@ namespace Vanadreams.Tests
         }
 
         [TestMethod]
+        public void A_fresh_install_lists_its_overlays_once_and_then_leaves_the_switch_alone()
+        {
+            var ashita = Path.Combine(_root, "ashita");
+            Directory.CreateDirectory(Path.Combine(PivotConfig.OverlaysRoot(ashita), LookOverlays.Looks));
+            var given = new System.Collections.Generic.List<string>();
+            CollectionAssert.AreEqual(new[] { LookOverlays.Looks }, LookOverlays.GiveOnce(ashita, given));
+            CollectionAssert.AreEqual(new[] { LookOverlays.Looks }, PivotConfig.ReadOverlays(ashita));
+            // the player switches it off; the next start does not switch it back on
+            PivotConfig.SetOverlays(ashita, new string[0]);
+            Assert.AreEqual(0, LookOverlays.GiveOnce(ashita, given).Count);
+            Assert.AreEqual(0, PivotConfig.ReadOverlays(ashita).Count);
+            // the title pack arrives later: it is listed too, after the packs already there
+            PivotConfig.SetOverlays(ashita, new[] { LookOverlays.Looks });
+            Directory.CreateDirectory(Path.Combine(PivotConfig.OverlaysRoot(ashita), LookOverlays.Title));
+            LookOverlays.GiveOnce(ashita, given);
+            CollectionAssert.AreEqual(new[] { LookOverlays.Looks, LookOverlays.Title }, PivotConfig.ReadOverlays(ashita));
+        }
+
+        [TestMethod]
         public void Crc32_matches_the_zip_standard()
         {
             Assert.AreEqual(0xCBF43926u, Crc32.Of(System.Text.Encoding.ASCII.GetBytes("123456789")));
