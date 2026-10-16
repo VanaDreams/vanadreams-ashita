@@ -53,10 +53,13 @@ namespace Vanadreams.Services
         /// never taken away from the player; then the others in the order given, most ours first. The first that
         /// fits the server is the one; when none fits, or the server's version is not known, the first that is a
         /// game at all. Null when there is no game anywhere we know to look, and the launch goes ahead with
-        /// whatever Windows has.
+        /// whatever Windows has. A copy the player picked themselves (pinned) beats all of it while it is a game:
+        /// 7 Oct 2026, a player with a newer copy for another server watched Vanadreams start that one, because
+        /// it was registered and fitted, and had no way to say otherwise.
         /// </summary>
-        public static string Choose(string registeredRoot, IEnumerable<string> roots, Func<string, bool> isGame, Func<string, bool> fits)
+        public static string Choose(string registeredRoot, IEnumerable<string> roots, Func<string, bool> isGame, Func<string, bool> fits, string pinned = null)
         {
+            if (!string.IsNullOrWhiteSpace(pinned) && isGame(pinned)) return pinned;
             var games = new List<string>();
             foreach (var r in new[] { registeredRoot }.Concat(roots ?? Enumerable.Empty<string>()))
                 if (!string.IsNullOrWhiteSpace(r) && !games.Any(g => SameFolder(g, r)) && isGame(r)) games.Add(r);

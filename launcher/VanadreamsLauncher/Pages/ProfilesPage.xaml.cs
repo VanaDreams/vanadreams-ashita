@@ -78,19 +78,23 @@ namespace Vanadreams.Pages
         }
 
         /// <summary>
-        /// Vanadreams profiles always play the game this launcher installed, so their box shows it and cannot be
-        /// changed. Any other server's profile names the copy that works with that server.
+        /// Vanadreams profiles share one game folder, kept in Settings (FfxiFolderOverride). Left blank, Play looks
+        /// across every copy on the PC for the one that fits the server; a folder picked here is always the one
+        /// started. Any other server's profile names the copy that works with that server.
+        /// 7 Oct 2026: the box was locked for Vanadreams, so a player whose other copy kept being picked could not fix it.
         /// </summary>
         private void ShowGameFolder(Profile p)
         {
             var state = App.State;
-            var vanadreams = p.IsVanadreams;
-            GameBox.IsReadOnly = vanadreams;   // read-only rather than disabled, so its tooltip still says why
-            GameBrowse.IsEnabled = !vanadreams;
-            if (vanadreams)
+            GameBox.IsReadOnly = false;
+            GameBrowse.IsEnabled = true;
+            if (p.IsVanadreams)
             {
-                GameBox.Text = GameRegistration.HasGame(state.Settings.GameInstallRoot) ? ClientInstall.GameFolder(state.Settings.GameInstallRoot) : "";
-                GameBox.ToolTip = "Vanadreams plays the game this launcher installed (Install game, on the menu).";
+                GameBox.Text = state.Settings.FfxiFolderOverride;
+                var auto = state.VanadreamsGameRoot();
+                GameBox.ToolTip = "The copy of Final Fantasy XI every Vanadreams profile plays. Windows is pointed at it when you press Play." +
+                    (auto != null ? "\nLeft blank, the launcher picks the copy that fits the server; right now that is " + ClientInstall.GameFolder(auto) + "."
+                                  : "\nLeft blank, the launcher picks the copy that fits the server.");
                 return;
             }
             GameBox.Text = p.GameFolder;
@@ -132,7 +136,8 @@ namespace Vanadreams.Pages
             var extra = LoaderCommand.Parse(ExtraBox.Text);
             p.Command = new LoaderCommand { Server = ServerBox.Text.Trim(), Hairpin = extra.Hairpin, Extra = extra.Extra };
             p.BootFile = BootBox.Text.Trim();
-            if (!p.IsVanadreams) p.GameFolder = GameBox.Text.Trim();
+            if (p.IsVanadreams) App.State.Settings.FfxiFolderOverride = GameBox.Text.Trim();
+            else p.GameFolder = GameBox.Text.Trim();
             p.Mode = _modes[Math.Max(0, ModeBox.SelectedIndex)].mode;
             int w, h, mw, mh;
             p.Width = int.TryParse(WidthBox.Text, out w) ? w : -1; p.Height = int.TryParse(HeightBox.Text, out h) ? h : -1;
@@ -148,7 +153,8 @@ namespace Vanadreams.Pages
             App.State.Settings.LastProfile = p.Id;
             App.State.Settings.Save();
             Reload(p.Id);
-            Note.Text = !p.IsVanadreams && !string.IsNullOrWhiteSpace(p.GameFolder) && !GameRegistration.HasGame(GameRegistration.RootOf(p.GameFolder))
+            var picked = p.IsVanadreams ? App.State.Settings.FfxiFolderOverride : p.GameFolder;
+            Note.Text = !string.IsNullOrWhiteSpace(picked) && !GameRegistration.HasGame(GameRegistration.RootOf(picked))
                 ? "Saved, but there is no game in that folder: pick FINAL FANTASY XI, with PlayOnlineViewer beside it."
                 : "Saved.";
             App.State.Notify();
