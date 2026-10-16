@@ -347,8 +347,9 @@ namespace Vanadreams.Pages
                 MessageBox.Show(ex.Message, "Vanadreams Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            // Low spec is only a rename in bootloader\, so it is put right on every Play, in case an update put a wrapper back
-            if (state.HasAshita) Effects.Apply(state.AshitaRoot, state.Settings.LowSpec);
+            // The effects are only a rename in bootloader\, so they are put right on every Play, in case an update put a
+            // wrapper back; with the profile's frame rate and display from the Graphics page (Services\Graphics.cs)
+            if (state.HasAshita) Graphics.ApplyForLaunch(state.AshitaRoot, _profile, state.Settings);
             // The game reads its own location from Windows, not from this launcher, and Windows holds one
             // such location for the whole machine. When it does not point at the copy this profile belongs to,
             // the wrong game starts: an older copy kept for another server, which Vanadreams turns away, or

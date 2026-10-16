@@ -51,7 +51,7 @@
                 <StackPanel Grid.Row="2" Margin="0,8,0,0">
                     <Button Style="{StaticResource GhostButton}" Content="Open catch log folder" Click="Folder_Click" HorizontalAlignment="Left"/>
                     <local:CrewGuide Who="chocobo" Flip="True" BubbleWidth="140"
-                                     Tip="Kweh! Rod in the ranged slot, bait in ammo, then /&#x2060;vanafish start."/>
+                                     Tip="Kweh! Rod in the ranged slot, bait in ammo, then type&#160;/&#x2060;vanafish start."/>
                 </StackPanel>
             </Grid>
         </Border>

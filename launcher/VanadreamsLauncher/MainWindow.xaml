@@ -14,8 +14,8 @@
         </DataTemplate>
         <DataTemplate x:Key="TabItem">
             <Grid Background="Transparent" Cursor="Hand" MouseLeftButtonUp="Nav_Click" Tag="{Binding}" Margin="{Binding TabMargin}">
-                <TextBlock Style="{StaticResource Hand}" FontSize="18" Margin="-21,-2,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" Visibility="{Binding HandVisibility}"/>
-                <TextBlock Text="{Binding Label}" Style="{StaticResource NavText}" FontSize="14" Opacity="{Binding Opacity}" Foreground="{Binding TabBrush}" VerticalAlignment="Center"/>
+                <TextBlock Style="{StaticResource Hand}" FontSize="15" Margin="-18,-2,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" Visibility="{Binding HandVisibility}"/>
+                <TextBlock Text="{Binding Label}" Style="{StaticResource NavText}" FontSize="13" Opacity="{Binding Opacity}" Foreground="{Binding TabBrush}" VerticalAlignment="Center"/>
                 <Border Height="2" VerticalAlignment="Bottom" Margin="0,0,0,-8" Background="{StaticResource GoldSoft}" Visibility="{Binding UnderlineVisibility}">
                     <Border.Effect><DropShadowEffect ShadowDepth="0" BlurRadius="8" Color="#FFF1CD78" Opacity="0.9"/></Border.Effect>
                 </Border>
@@ -44,14 +44,14 @@
         </Border>
 
         <!-- Horizontal: tabs across the top -->
-        <Border x:Name="Bar" Style="{StaticResource Box}" Height="64" VerticalAlignment="Top" Margin="24,20,24,0" Padding="16,0" Visibility="Collapsed">
+        <Border x:Name="Bar" Style="{StaticResource Box}" Height="64" VerticalAlignment="Top" Margin="24,20,24,0" Padding="14,0" Visibility="Collapsed">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Ellipse Width="28" Height="28" Fill="{StaticResource MoonFill}" VerticalAlignment="Center">
+                    <Ellipse Width="24" Height="24" Fill="{StaticResource MoonFill}" VerticalAlignment="Center">
                         <Ellipse.Effect><DropShadowEffect Color="#FFF1CD78" BlurRadius="18" ShadowDepth="0" Opacity="0.45"/></Ellipse.Effect>
                     </Ellipse>
-                    <StackPanel Margin="9,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="Vanadreams" Style="{StaticResource NavText}" FontSize="18"/>
+                    <StackPanel Margin="8,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="Vanadreams" Style="{StaticResource NavText}" FontSize="16.5"/>
                         <TextBlock Text="LAUNCHER" Style="{StaticResource Eyebrow}" FontSize="9.5" Margin="1,2,0,0" Typography.Capitals="Normal"/>
                     </StackPanel>
                 </StackPanel>
@@ -59,7 +59,7 @@
                     <ItemsControl x:Name="BarMain" ItemTemplate="{StaticResource TabItem}" VerticalAlignment="Center">
                         <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                     </ItemsControl>
-                    <Border Width="1" Background="{StaticResource Line}" Margin="10,6,0,6" Height="30"/>
+                    <Border Width="1" Background="{StaticResource Line}" Margin="8,6,0,6" Height="30"/>
                     <ItemsControl x:Name="BarEnd" ItemTemplate="{StaticResource TabItem}" VerticalAlignment="Center">
                         <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                     </ItemsControl>

@@ -106,6 +106,7 @@
       "id": "timestamp",
       "name": "timestamp",
       "kind": "addon",
+      "onByDefault": true,
       "source": {
         "type": "bundled"
       },

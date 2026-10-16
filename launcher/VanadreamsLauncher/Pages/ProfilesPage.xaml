@@ -79,7 +79,6 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="30"/><RowDefinition Height="30"/><RowDefinition Height="30"/><RowDefinition Height="30"/><RowDefinition Height="30"/>
                         <RowDefinition Height="30"/><RowDefinition Height="30"/><RowDefinition Height="30"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <TextBlock Text="Name" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
                     <TextBox Grid.Column="1" x:Name="NameBox" VerticalAlignment="Center"/>
@@ -109,24 +108,15 @@
                     </Grid>
                     <TextBlock Grid.Row="6" Text="Extra loader args" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
                     <TextBox Grid.Row="6" Grid.Column="1" x:Name="ExtraBox" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Row="7" Text="Window mode" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
-                    <ComboBox Grid.Row="7" Grid.Column="1" x:Name="ModeBox" VerticalAlignment="Center" Width="220" HorizontalAlignment="Left"/>
-                    <TextBlock Grid.Row="8" Text="Window size" Style="{StaticResource Muted}" VerticalAlignment="Top" Margin="0,6,0,0"/>
-                    <WrapPanel Grid.Row="8" Grid.Column="1">
-                        <StackPanel Orientation="Horizontal" Height="31" Margin="0,0,14,0">
-                            <TextBox x:Name="WidthBox" Width="64" VerticalAlignment="Center"/>
-                            <TextBlock Text=" × " VerticalAlignment="Center"/>
-                            <TextBox x:Name="HeightBox" Width="64" VerticalAlignment="Center"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Height="31">
-                            <TextBlock Text="menu " Style="{StaticResource Muted}" VerticalAlignment="Center"/>
-                            <TextBox x:Name="MenuWBox" Width="60" VerticalAlignment="Center"/>
-                            <TextBlock Text=" × " VerticalAlignment="Center"/>
-                            <TextBox x:Name="MenuHBox" Width="60" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </WrapPanel>
-                    <TextBlock Grid.Row="9" Text="Background" Style="{StaticResource Muted}" VerticalAlignment="Top" Margin="0,6,0,0"/>
-                    <WrapPanel Grid.Row="9" Grid.Column="1"
+                    <!-- window mode and size are on the Graphics page; the menu follows the window unless set here -->
+                    <TextBlock Grid.Row="7" Text="Menu size" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" ToolTip="The size the game draws its menus at. Blank follows the window size on the Graphics page.">
+                        <TextBox x:Name="MenuWBox" Width="64" VerticalAlignment="Center"/>
+                        <TextBlock Text=" × " VerticalAlignment="Center"/>
+                        <TextBox x:Name="MenuHBox" Width="64" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Grid.Row="8" Text="Background" Style="{StaticResource Muted}" VerticalAlignment="Top" Margin="0,6,0,0"/>
+                    <WrapPanel Grid.Row="8" Grid.Column="1"
                                 ToolTip="The resolution the game draws the world at. Higher is sharper and asks more of your graphics card: twice or four times the window size is usual, 4096 × 4096 is common. Leave blank for the game's own default.">
                         <StackPanel Orientation="Horizontal" Height="30" Margin="0,0,12,0">
                             <TextBox x:Name="BgWBox" Width="64" VerticalAlignment="Center"/>
@@ -135,7 +125,7 @@
                         </StackPanel>
                         <TextBlock Text="blank for default" Style="{StaticResource Muted}" FontSize="13.5" VerticalAlignment="Center" Height="30" Padding="0,6,0,0"/>
                     </WrapPanel>
-                    <WrapPanel Grid.Row="10" Grid.Column="1" Margin="0,4,0,0">
+                    <WrapPanel Grid.Row="9" Grid.Column="1" Margin="0,4,0,0">
                         <CheckBox x:Name="AutoCloseBox" VerticalAlignment="Center" Margin="0,0,18,4">
                             <TextBlock Text="Close the launcher after launching" TextWrapping="Wrap"/>
                         </CheckBox>

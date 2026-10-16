@@ -33,7 +33,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/><RowDefinition Height="Auto" MinHeight="32"/><RowDefinition Height="Auto" MinHeight="32"/><RowDefinition Height="Auto" MinHeight="32"/>
                             <RowDefinition Height="Auto" MinHeight="32"/><RowDefinition Height="Auto" MinHeight="32"/><RowDefinition Height="Auto" MinHeight="32"/>
-                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <!-- the label and what it does above the two buttons, so neither crowds the other -->
                         <StackPanel Grid.ColumnSpan="2" Margin="0,0,0,8">
@@ -57,13 +57,9 @@
                         <TextBlock Grid.Row="5" Grid.Column="1" x:Name="ExpectedBox" Style="{StaticResource Mono}" VerticalAlignment="Center" TextWrapping="Wrap"/>
                         <TextBlock Grid.Row="6" Text="Vanadreams plays" Style="{StaticResource Label}"/>
                         <TextBlock Grid.Row="6" Grid.Column="1" x:Name="DetectedBox" Style="{StaticResource Mono}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Grid.Row="7" Text="Graphics" Style="{StaticResource Label}" VerticalAlignment="Top" Margin="0,7,8,0"/>
-                        <CheckBox Grid.Row="7" Grid.Column="1" x:Name="LowSpecBox" Margin="0,7,0,0"
-                                  ToolTip="Renames d3d8.dll and d3d9.dll in Ashita's bootloader folder to .off. Untick to turn them back on.">
-                            <TextBlock Text="Low spec: turn the modern look's effects off (textures stay)" TextWrapping="Wrap"/>
-                        </CheckBox>
-                        <TextBlock Grid.Row="8" Text="Music" Style="{StaticResource Label}" VerticalAlignment="Top" Margin="0,9,8,0"/>
-                        <StackPanel Grid.Row="8" Grid.Column="1" Margin="0,9,0,0">
+                        <!-- the effects (Low spec) are the Graphics page's presets now, per profile -->
+                        <TextBlock Grid.Row="7" Text="Music" Style="{StaticResource Label}" VerticalAlignment="Top" Margin="0,7,8,0"/>
+                        <StackPanel Grid.Row="7" Grid.Column="1" Margin="0,7,0,0">
                             <CheckBox x:Name="MusicBox">
                                 <TextBlock Text="Play “The Lanterns Are Lit” while the launcher is open" TextWrapping="Wrap"/>
                             </CheckBox>
