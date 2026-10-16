@@ -1,0 +1,29 @@
+{
+  "_about": "Vana'News on the launcher's Play page. Newest first. The launcher shows the first 8 and caches the last copy it fetched.",
+  "items": [
+    {
+      "date": "2026-10-18",
+      "by": "Terry",
+      "title": "Sunday update",
+      "body": "Einherjar opens, Nyzul Isle bosses arrive and limit breaks get their rework."
+    },
+    {
+      "date": "2026-10-16",
+      "by": "Ferrin",
+      "title": "Faster leveling, bigger drops",
+      "body": "Experience and Records of Eminence are up a third, capacity points are boosted and drop rates are higher across the board."
+    },
+    {
+      "date": "2026-10-16",
+      "by": "Ferrin",
+      "title": "Login Campaign changes from 25 Oct",
+      "body": "A monthly 500 point bonus, no cap, and Dark Matter in the shop at 1,000 points."
+    },
+    {
+      "date": "2026-10-12",
+      "by": "Terry",
+      "title": "Bank of Vana'diel",
+      "body": "Loans are open. Visit the Bank Clerk at the hangout."
+    }
+  ]
+}
