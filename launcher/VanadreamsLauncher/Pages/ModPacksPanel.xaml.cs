@@ -37,7 +37,7 @@ namespace Vanadreams.Pages
         {
             var state = App.State;
             var version = state.Version.ExpectedIsPublished ? state.Version.Expected : state.Status.ClientVer;
-            _packs = ModPacks.List(state.GameInstallTarget, version, state.HasAshita ? state.AshitaRoot : null);
+            _packs = ModPacks.List(state.PacksRoot(version), version, state.HasAshita ? state.AshitaRoot : null);
             Draw();
             var overlays = _packs.Any(p => p.CanSwitch);
             Note.Text = overlays && !ModPacks.PivotInstalled(state.AshitaRoot)

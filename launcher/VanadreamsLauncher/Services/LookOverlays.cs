@@ -72,6 +72,26 @@ namespace Vanadreams.Services
         public static bool Due(ClientManifest m, string gameRoot, string ashitaRoot) =>
             m != null && !string.IsNullOrWhiteSpace(ashitaRoot) && ManifestUsesOverlays(m) && !Migrated(ashitaRoot, m.Version) && InPlace(m, gameRoot).Count > 0;
 
+        /// <summary>
+        /// The shipped overlays an install or a migration put on disk are listed in pivot.ini once each, the title pack first
+        /// so it wins; after that the Install page's switch is the player's. Returns the ids listed now.
+        /// 16 Oct 2026: a fresh install unpacked vanadreams-looks with nothing listing it, and the game showed the old look.
+        /// </summary>
+        public static List<string> GiveOnce(string ashitaRoot, ICollection<string> given)
+        {
+            var listed = new List<string>();
+            if (string.IsNullOrWhiteSpace(ashitaRoot)) return listed;
+            foreach (var id in new[] { Title, Looks })
+            {
+                var key = "overlay:" + id;
+                if (given.Contains(key) || !Directory.Exists(Path.Combine(PivotConfig.OverlaysRoot(ashitaRoot), id))) continue;
+                PivotConfig.AddOverlay(ashitaRoot, id);
+                given.Add(key);
+                listed.Add(id);
+            }
+            return listed;
+        }
+
         private static string Local(string folder, string zipName) => Path.Combine(folder, zipName.Replace('/', '\\'));
 
         private static bool Matches(string path, uint crc)
