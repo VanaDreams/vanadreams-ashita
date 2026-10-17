@@ -34,6 +34,13 @@ built sets underneath automatically, so anything they leave out is filled.
 `/vg <word>`, and Motenten's mode commands and F9-F12 keys (`/vg keys mote`) work for players
 coming from GearSwap.
 
+## Your support job's gear
+
+Vanadreams lets your main job wear the weapons and armour your support job can wear. The game's
+equipment menu only lists your main job's gear, so put the rest on with
+`/lac equip <slot> "<item>"` (for example `/lac equip main "Great Axe"` on BLM/WAR), or name it in
+one of your own sets. Weapon skills you get this way cap at 80% of the support job's cap.
+
 ## Your own sets
 
 - `/vg dress` stops the swapping. Put on what you like from the equipment menu, then
