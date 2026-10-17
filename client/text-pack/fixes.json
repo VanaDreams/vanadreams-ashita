@@ -80,6 +80,24 @@
       "old": "with a level less than half of your main one",
       "new": "with a level far below your main one",
       "why": "Support job level equals the main job's level on Vanadreams (SUBJOB_RATIO = 3), not half of it."
+    },
+    {
+      "fid": 6668,
+      "what": "Selbina English dialog",
+      "line": 6870,
+      "speaker": "Isacio (Selbina), support job lesson, event 117",
+      "old": "Splendid. As promised, I will now instruct you in a most precious skill. I call it a ",
+      "new": "Ah, I'm glad you stopped by to see me! You may already wield a most precious skill, but allow me to explain it properly. I call it a ",
+      "why": "Everyone on Vanadreams starts with support jobs unlocked, so the thank-you-for-the-items opening no longer fits; it welcomes the player and explains how support jobs work."
+    },
+    {
+      "fid": 6669,
+      "what": "Mhaura English dialog",
+      "line": 7064,
+      "speaker": "Vera (Mhaura), The Old Lady support job lesson, event 137",
+      "old": "Hmm... I see you've got some vim after all. You may become a real adventurer yet. Hoh-hoh. All right, I'll teach you about support jobs as I promised.",
+      "new": "Hoh-hoh, I'm glad you stopped by to see me! You may already have a support job, but let me tell you how they really work.",
+      "why": "Everyone on Vanadreams starts with support jobs unlocked, so the thank-you-for-the-items opening no longer fits; it welcomes the player and explains how support jobs work."
     }
   ]
 }
