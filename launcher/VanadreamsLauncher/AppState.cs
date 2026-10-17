@@ -385,10 +385,24 @@ namespace Vanadreams
                 }
                 catch (Exception ex) { Log.Warn(item.Id + " not updated at start, will try again: " + ex.Message); }
             }
-            if (!changed) return;
+            if (!changed) { ApplyFileEdits(); return; }   // ApplyEnabledAddons runs them otherwise
             Settings.Save();
             ApplyEnabledAddons();
             Notify();
+        }
+
+        /// <summary>
+        /// The catalogue's file edits for every enabled item (Services\FileEdits.cs), such as Fancychat's welcome popup
+        /// marked as already seen. Run at every start too, so a settings file the addon wrote since is caught.
+        /// </summary>
+        public void ApplyFileEdits()
+        {
+            if (!HasAshita) return;
+            foreach (var item in Catalog.ScriptEntries(Settings.EnabledAddons).Select(e => Catalog.Find(e.Id)).Where(i => i != null && i.FileEdits.Count > 0))
+            {
+                try { foreach (var f in FileEdits.Apply(AshitaRoot, item)) Log.Info("file edit " + item.Id + ": " + f); }
+                catch (Exception ex) { Log.Warn("file edits " + item.Id + ": " + ex.Message); }
+            }
         }
 
         public int EnabledCount => Settings.EnabledAddons.Count(id => Catalog.Find(id) != null);
@@ -429,6 +443,7 @@ namespace Vanadreams
             var scriptPath = Path.Combine(AshitaRoot, "scripts", "vanadreams.txt");
             Directory.CreateDirectory(Path.GetDirectoryName(scriptPath));
             ScriptWriter.Write(scriptPath, entries);
+            ApplyFileEdits();
             Graphics.EnsureScript(AshitaRoot);   // the startup script runs it
             // XIPivot overlays: listed in pivot.ini while enabled, dropped from it when not
             foreach (var overlay in Catalog.Items.Where(i => i.Install == InstallAction.PivotOverlay))
