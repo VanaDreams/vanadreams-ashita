@@ -121,12 +121,14 @@ bags.ReadStorage = function()
 end
 
 -- Can the player wear this piece in this slot (LuAshitacast index 1-16) at this job and level?
-bags.CanWear = function(piece, slot, who)
+-- withSub: the support job's gear counts too (Vanadreams allows it in the player's own sets).
+bags.CanWear = function(piece, slot, who, withSub)
     local s = piece.Server;
     if (bit.band(s.slot, vdata.SlotBit[slot]) == 0) then
         return false;
     end
-    if (bit.band(s.jobs, bit.lshift(1, who.Job - 1)) == 0) then
+    if (bit.band(s.jobs, bit.lshift(1, who.Job - 1)) == 0) and
+       (not withSub or (who.Sub or 0) == 0 or bit.band(s.jobs, bit.lshift(1, who.Sub - 1)) == 0) then
         return false;
     end
     if (s.level > who.Level) then

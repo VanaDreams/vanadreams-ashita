@@ -105,12 +105,13 @@ local function sortedNames()
     return names;
 end
 
--- The pieces the player carries that can go in this slot now, one per name.
+-- The pieces the player carries that can go in this slot now, one per name. The support job's
+-- gear is offered too: on Vanadreams the player's own sets are where it gets worn.
 local function choices(slot)
     local bags = require('vg.bags');
     local list, seen = {}, {};
     for _, p in ipairs(gVana.Pieces) do
-        if (not seen[p.Name]) and (gVana.Who ~= nil) and (bags.CanWear(p, slot, gVana.Who)) then
+        if (not seen[p.Name]) and (gVana.Who ~= nil) and (bags.CanWear(p, slot, gVana.Who, true)) then
             seen[p.Name] = true;
             list[#list + 1] = p.Name;
         end
