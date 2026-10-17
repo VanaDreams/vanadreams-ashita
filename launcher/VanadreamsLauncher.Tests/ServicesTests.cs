@@ -215,6 +215,33 @@ namespace Vanadreams.Tests
         }
 
         [TestMethod]
+        public void File_edits_mark_fancychat_welcome_seen_in_defaults_and_saved_settings_once()
+        {
+            var json = "{\"schema\":1,\"items\":[{\"id\":\"fancychat\",\"load\":\"/addon load fancychat\",\"source\":{\"type\":\"github-release\",\"repo\":\"a/b\",\"asset\":\"source\"},"
+                     + "\"fileEdits\":[{\"path\":\"addons\\\\fancychat\\\\lib\\\\defaults.lua\",\"pattern\":\"(firstLoadMessage\\\\s*=\\\\s*T\\\\s*\\\\{\\\\s*)false\",\"replacement\":\"${1}true\"},"
+                     + "{\"path\":\"config\\\\addons\\\\fancychat\\\\*\\\\*.lua\",\"pattern\":\"(firstLoadMessage[\\\"'\\\\]]*\\\\s*=\\\\s*T?\\\\s*\\\\{[^}]*?)false\",\"replacement\":\"${1}true\"}]}]}";
+            var item = Catalog.Parse(json).Find("fancychat");
+            Assert.AreEqual(2, item.FileEdits.Count);
+
+            var root = Path.Combine(_dir, "ashita");
+            Directory.CreateDirectory(Path.Combine(root, "addons", "fancychat", "lib"));
+            File.WriteAllText(Path.Combine(root, "addons", "fancychat", "lib", "defaults.lua"), "\t\tfirstLoadMessage     = T{false},\n\t\tother = T{false},\n");
+            var saved = Path.Combine(root, "config", "addons", "fancychat", "Terry_12345");
+            Directory.CreateDirectory(saved);
+            File.WriteAllText(Path.Combine(saved, "allSettings.lua"), "settings[\"firstLoadMessage\"] = T{\n    [1] = false,\n};\nsettings[\"x\"] = T{ false, };\n");
+
+            var changed = FileEdits.Apply(root, item);
+            Assert.AreEqual(2, changed.Count);
+            StringAssert.Contains(File.ReadAllText(Path.Combine(root, "addons", "fancychat", "lib", "defaults.lua")), "firstLoadMessage     = T{true}");
+            StringAssert.Contains(File.ReadAllText(Path.Combine(root, "addons", "fancychat", "lib", "defaults.lua")), "other = T{false}");
+            var after = File.ReadAllText(Path.Combine(saved, "allSettings.lua"));
+            StringAssert.Contains(after, "[1] = true,");
+            StringAssert.Contains(after, "settings[\"x\"] = T{ false, };");
+            Assert.AreEqual(0, FileEdits.Apply(root, item).Count);   // a second run changes nothing
+            Assert.AreEqual(0, FileEdits.Expand(root, "..\\x\\*.lua").Count);
+        }
+
+        [TestMethod]
         public void Firewall_parser_reads_netsh_verbose_output()
         {
             var text = "Rule Name: Vanadreams - xiloader.exe\r\n----------------------------------------------------------------------\r\nEnabled: Yes\r\nDirection: In\r\nProfiles: Private,Public\r\nAction: Allow\r\nProgram: C:\\Games\\Vanadreams\\bootloader\\xiloader.exe\r\n\r\nRule Name: Blocked thing\r\nEnabled: Yes\r\nDirection: In\r\nAction: Block\r\nProgram: C:\\bad.exe\r\n\r\nRule Name: Out only\r\nEnabled: Yes\r\nDirection: Out\r\nAction: Allow\r\nProgram: C:\\out.exe\r\n";
