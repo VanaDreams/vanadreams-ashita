@@ -6,6 +6,7 @@ local EquippedItems = {};
 local Internal = {};
 local Fallback = nil; -- vanagear: built pieces for slots whose named piece is not carried
 local CurrentJob = 0;
+local CurrentSubJob = 0; -- vanagear: Vanadreams lets the main job wear its support job's gear
 local CurrentLevel = 0;
 local inventoryManager = AshitaCore:GetMemoryManager():GetInventory();
 local resourceManager = AshitaCore:GetResourceManager();
@@ -14,6 +15,7 @@ local japanese = (AshitaCore:GetConfigurationManager():GetInt32('boot', 'ashita.
 
 local UpdateJobLevel = function()    
     CurrentJob = AshitaCore:GetMemoryManager():GetPlayer():GetMainJob();
+    CurrentSubJob = AshitaCore:GetMemoryManager():GetPlayer():GetSubJob(); -- vanagear
     CurrentLevel = AshitaCore:GetMemoryManager():GetPlayer():GetJobLevel(CurrentJob);
     if (gSettings.AllowSyncEquip == false) then
         CurrentLevel = AshitaCore:GetMemoryManager():GetPlayer():GetMainJobLevel();
@@ -173,7 +175,8 @@ local CheckResource = function(resource)
         return false;
     end
 
-    if (bit.band(resource.Jobs, math.pow(2, CurrentJob)) == 0) then
+    -- vanagear: the support job's gear counts too; the server says no where that is not allowed
+    if (bit.band(resource.Jobs, math.pow(2, CurrentJob)) == 0) and ((CurrentSubJob == 0) or (bit.band(resource.Jobs, math.pow(2, CurrentSubJob)) == 0)) then
         return false;
     end
 
