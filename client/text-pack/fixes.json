@@ -8,6 +8,78 @@
       "old": "Give it to Teilsa at the bottom of the staircast in Northern San d'Oria.",
       "new": "Give it to Teilsa at the bottom of the staircase leading to Northern San d'Oria.",
       "why": "Retail typo, and Teilsa is in Port San d'Oria (F-9), not Northern San d'Oria. The Japanese line says she is at the bottom of the stairs toward Northern San d'Oria."
+    },
+    {
+      "fid": 6668,
+      "what": "Selbina English dialog",
+      "line": 6872,
+      "speaker": "Isacio (Selbina), support job lesson, event 117",
+      "old": "exceed \u001e\u0005half\u001e\u0001 that of your main job",
+      "new": "exceed that of your main job",
+      "why": "Support job level equals the main job's level on Vanadreams (SUBJOB_RATIO = 3), not half of it."
+    },
+    {
+      "fid": 6668,
+      "what": "Selbina English dialog",
+      "line": 6876,
+      "speaker": "Isacio (Selbina), support job lesson, event 117",
+      "old": "your potential as a warrior would be reduced to half that of your main job. Thus, 5! Not a wise decision, is it?",
+      "new": "your potential as a warrior would be held to that of your main job. Thus, 10! Not a wise decision, is it?",
+      "why": "Support job level equals the main job's level on Vanadreams (SUBJOB_RATIO = 3), not half of it."
+    },
+    {
+      "fid": 6668,
+      "what": "Selbina English dialog",
+      "line": 6877,
+      "speaker": "Isacio (Selbina), support job lesson, event 117",
+      "old": "If your support job level is less than half that of your main job, your undeveloped skills would make not a difference.",
+      "new": "If your support job level is far below that of your main job, your undeveloped skills would make little difference.",
+      "why": "Support job level equals the main job's level on Vanadreams (SUBJOB_RATIO = 3), not half of it."
+    },
+    {
+      "fid": 6668,
+      "what": "Selbina English dialog",
+      "line": 6878,
+      "speaker": "Isacio (Selbina), support job lesson, event 117",
+      "old": "or one that enhances its strengths.",
+      "new": "or one that enhances its strengths. Why, a beastmaster and a summoner, in either order, can fight with two companions at once!",
+      "why": "Same fix, plus a note that BST and SMN as main and support job keep a pet and an avatar out together (ENABLE_DUAL_PETS, tested in scripts/tests/systems/dual_pets.lua)."
+    },
+    {
+      "fid": 6669,
+      "what": "Mhaura English dialog",
+      "line": 7066,
+      "speaker": "Vera (Mhaura), The Old Lady support job lesson, event 137",
+      "old": "will never exceed half that of your main one",
+      "new": "will never exceed that of your main one",
+      "why": "Support job level equals the main job's level on Vanadreams (SUBJOB_RATIO = 3), not half of it."
+    },
+    {
+      "fid": 6669,
+      "what": "Mhaura English dialog",
+      "line": 7068,
+      "speaker": "Vera (Mhaura), The Old Lady support job lesson, event 137",
+      "old": "also stays at 10--half the level of your main job.",
+      "new": "also stays at 10, since it is below the level of your main job.",
+      "why": "Support job level equals the main job's level on Vanadreams (SUBJOB_RATIO = 3), not half of it."
+    },
+    {
+      "fid": 6669,
+      "what": "Mhaura English dialog",
+      "line": 7070,
+      "speaker": "Vera (Mhaura), The Old Lady support job lesson, event 137",
+      "old": "drops to 5, half the level of your main job.",
+      "new": "is held to 10, the level of your main job.",
+      "why": "Support job level equals the main job's level on Vanadreams (SUBJOB_RATIO = 3), not half of it."
+    },
+    {
+      "fid": 6669,
+      "what": "Mhaura English dialog",
+      "line": 7071,
+      "speaker": "Vera (Mhaura), The Old Lady support job lesson, event 137",
+      "old": "with a level less than half of your main one",
+      "new": "with a level far below your main one",
+      "why": "Support job level equals the main job's level on Vanadreams (SUBJOB_RATIO = 3), not half of it."
     }
   ]
 }
