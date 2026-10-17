@@ -36,10 +36,11 @@ coming from GearSwap.
 
 ## Your support job's gear
 
-Vanadreams lets your main job wear the weapons and armour your support job can wear. The game's
-equipment menu only lists your main job's gear, so put the rest on with
-`/lac equip <slot> "<item>"` (for example `/lac equip main "Great Axe"` on BLM/WAR), or name it in
-one of your own sets. Weapon skills you get this way cap at 80% of the support job's cap.
+Vanadreams lets your main job wear the weapons and armour your support job can wear, through your
+own sets. The game's equipment menu and the built sets only use your main job's gear. In the `/vg`
+window, every slot's list of your own set also offers your support job's pieces; or use
+`/vg set <name> <slot> <item>` (for example `/vg set Axe Main Great Axe` on BLM/WAR), then
+`/vg wear <name>`. Weapon skills you get this way cap at 80% of the support job's cap.
 
 ## Your own sets
 
