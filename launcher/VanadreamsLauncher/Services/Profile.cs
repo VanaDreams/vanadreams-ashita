@@ -29,8 +29,33 @@ namespace Vanadreams.Services
         public LoaderCommand Command { get; set; } = new LoaderCommand();
         public int Width { get; set; } = -1;
         public int Height { get; set; } = -1;
+        /// <summary>
+        /// Menu resolution (registry 0037/0038): the canvas the game draws its menus on, then stretches to the window.
+        /// The same as the window draws them at 1:1, which is tiny on a big screen; half the window draws them twice as big.
+        /// </summary>
         public int MenuWidth { get; set; } = -1;
         public int MenuHeight { get; set; } = -1;
+
+        /// <summary>The menu scales a player picks from: how many times bigger than 1:1 the menus are drawn.</summary>
+        public static readonly double[] MenuScales = { 1, 1.25, 1.5, 2, 2.5, 3 };
+
+        /// <summary>How many times the game stretches its menus to fill the window; 1 when either size is unknown.</summary>
+        public double MenuScale => Width > 0 && MenuWidth > 0 ? (double)Width / MenuWidth : 1;
+
+        /// <summary>The menu set to the window's size divided by the scale, so the menus are drawn that many times bigger.</summary>
+        public void SetMenuScale(double scale)
+        {
+            if (scale <= 0) scale = 1;
+            MenuWidth = Width > 0 ? (int)Math.Round(Width / scale) : -1;
+            MenuHeight = Height > 0 ? (int)Math.Round(Height / scale) : -1;
+        }
+
+        /// <summary>The smallest scale that keeps the menu at most 1200 tall: 1x up to 1200, 1.5x for 1600, 2x for 2160 (4K).</summary>
+        public static double DefaultMenuScale(int windowHeight)
+        {
+            foreach (var s in MenuScales) if (windowHeight / s <= 1200) return s;
+            return MenuScales[MenuScales.Length - 1];
+        }
         /// <summary>Background resolution (registry 0003/0004): the size the game draws the world at. -1 is the game's default.</summary>
         public int BackgroundWidth { get; set; } = -1;
         public int BackgroundHeight { get; set; } = -1;

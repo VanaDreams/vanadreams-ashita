@@ -16,12 +16,19 @@ namespace Vanadreams.Services
         /// Tailscale makes ordinary outgoing connections, so it gets through routers and providers that
         /// refuse the game's ports.
         /// </summary>
-        public const string TailscaleServer = "100.114.52.41";
+        public const string TailscaleServer = "100.93.179.33";
+
+        /// <summary>
+        /// Where the server was on Tailscale before it moved to the new server PC (18 Oct 2026). Profiles that
+        /// still carry it are Tailscale profiles too, and are written out with the current address.
+        /// </summary>
+        public const string PreviousTailscaleServer = "100.114.52.41";
 
         public string Server { get; set; } = "";
         public bool Hairpin { get; set; }
 
-        public bool IsTailscale => string.Equals(Server, TailscaleServer, System.StringComparison.OrdinalIgnoreCase);
+        public bool IsTailscale => string.Equals(Server, TailscaleServer, System.StringComparison.OrdinalIgnoreCase)
+                                   || string.Equals(Server, PreviousTailscaleServer, System.StringComparison.OrdinalIgnoreCase);
 
         /// <summary>The command logs in to Vanadreams: its public name, any other fairywitch name with vanadreams in it, or its Tailscale address.</summary>
         public bool IsVanadreams => IsTailscale || (Server ?? "").IndexOf("vanadreams", System.StringComparison.OrdinalIgnoreCase) >= 0;
@@ -39,6 +46,29 @@ namespace Vanadreams.Services
         public string User { get; set; } = "";
         public string Password { get; set; } = "";
         public string Extra { get; set; } = "";
+
+        /// <summary>
+        /// The PlayOnline language xiloader is told with --lang: 0 Japanese, 1 English (also when absent or not
+        /// understood, as xiloader keeps its default), 2 European. It decides which PlayOnline registry key the
+        /// loader reads, so the registration has to be written under the same one.
+        /// </summary>
+        public int Lang => LangOf(Extra);
+
+        public static int LangOf(string extra)
+        {
+            var tokens = new List<string>();
+            foreach (Match m in Token.Matches(extra ?? "")) tokens.Add(m.Value.Trim('"'));
+            var lang = 1;
+            for (var i = 0; i + 1 < tokens.Count; i++)
+            {
+                if (!string.Equals(tokens[i], "--lang", System.StringComparison.OrdinalIgnoreCase)) continue;
+                var v = tokens[i + 1];
+                if (v.StartsWith("JP", System.StringComparison.OrdinalIgnoreCase) || v.StartsWith("0")) lang = 0;
+                else if (v.StartsWith("US", System.StringComparison.OrdinalIgnoreCase) || v.StartsWith("1")) lang = 1;
+                else if (v.StartsWith("EU", System.StringComparison.OrdinalIgnoreCase) || v.StartsWith("2")) lang = 2;
+            }
+            return lang;
+        }
 
         public static LoaderCommand Parse(string command)
         {
@@ -66,7 +96,11 @@ namespace Vanadreams.Services
         public string ToIniCommand()
         {
             var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(Server)) { parts.Add("--server"); parts.Add(Quote(Server)); }
+            if (!string.IsNullOrWhiteSpace(Server))
+            {
+                var server = string.Equals(Server, PreviousTailscaleServer, System.StringComparison.OrdinalIgnoreCase) ? TailscaleServer : Server;
+                parts.Add("--server"); parts.Add(Quote(server));
+            }
             if (Hairpin) parts.Add("--hairpin");
             if (!string.IsNullOrWhiteSpace(Extra)) parts.Add(Extra.Trim());
             return string.Join(" ", parts);

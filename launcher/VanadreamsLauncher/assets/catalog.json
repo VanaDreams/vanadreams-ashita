@@ -66,7 +66,7 @@
         "path": "addons/charcapture",
         "branch": "main"
       },
-      "version": "0.1.7",
+      "version": "0.1.8",
       "install": "copy-to-addons",
       "load": "/addon load charcapture",
       "config": "config\\charcapture\\",
@@ -546,7 +546,7 @@
         "path": "addons/vanagear",
         "branch": "main"
       },
-      "version": "0.1.6",
+      "version": "0.1.9",
       "install": "copy-to-addons",
       "load": "/addon load vanagear",
       "config": "config\\addons\\luashitacast\\",
@@ -616,6 +616,52 @@
         "carry": "overlays",
         "note": "Overlays moved from plugins\\DATs to polplugins\\DATs and the overlay list rewritten as config\\pivot\\pivot.ini. Enabled in the boot profile, not the script."
       }
+    },
+    {
+      "id": "xi-vision",
+      "name": "XI-Vision maps",
+      "kind": "overlay",
+      "maintainer": "Drauku",
+      "source": {
+        "type": "repo-folder",
+        "repo": "Drauku/FFXI-Vision",
+        "path": "FFXI-map-dats",
+        "branch": "master",
+        "skip": [
+          "ROM/119/51.DAT"
+        ],
+        "patch": {
+          "file": "ROM/119/51.DAT",
+          "chunks": [
+            "anc :32",
+            "btwa:32",
+            "butt:32",
+            "gaug:32",
+            "font:32",
+            "men1:32"
+          ]
+        }
+      },
+      "version": "2022-09-20.2",
+      "install": "pivot-overlay",
+      "docs": "https://github.com/Drauku/FFXI-Vision",
+      "description": "Redrawn zone maps (Drauku's fork of Caradog's XI-Vision), loaded through XIPivot so your game files stay as they are. It needs XIPivot ticked and installed. The pack's interface file is from an older client and can crash the game when the chat window is maximised, so the launcher builds it on your PC instead: Vision's arrows, buttons, font, gauge and menu tweaks are laid onto your own current interface file. Nothing of Square Enix's is downloaded or hosted."
+    },
+    {
+      "id": "xiview",
+      "name": "XI View interface",
+      "kind": "overlay",
+      "maintainer": "KenshiDRK",
+      "source": {
+        "type": "repo-folder",
+        "repo": "KenshiDRK/XiView",
+        "path": "Widescreen",
+        "branch": "master"
+      },
+      "version": "2.5.3",
+      "install": "pivot-overlay",
+      "docs": "https://github.com/KenshiDRK/XiView",
+      "description": "A cleaner game interface: menu skins for 16:9 and 16:10 screens, fonts, menu icons and status icons (KenshiDRK's XI View 2.0, widescreen version). Loaded through XIPivot so your game files stay as they are, and it is made for the current client. It needs XIPivot ticked and installed. For status icons to show, set Menu > Config > Misc > Icon Type 2 in game."
     },
     {
       "id": "vanatunes",
