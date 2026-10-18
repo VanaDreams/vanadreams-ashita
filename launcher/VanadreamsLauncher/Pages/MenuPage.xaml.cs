@@ -446,6 +446,7 @@ namespace Vanadreams.Pages
                 // the launcher waits to close until the game is open, so it can still say why if it never opens
                 var autoClose = _profile.AutoClose;
                 var opened = await WatchLaunch(state, _profile, loaderName, before, launchedAt);
+                GiveOtherGameBack(state, root, previousRoot, loaderName, before, lang);
                 // with the window switcher on, "close" means the tray: the switcher has to keep running for the game
                 if (autoClose && opened && !_win.HideToTray()) Application.Current.Shutdown();
             }
@@ -454,6 +455,33 @@ namespace Vanadreams.Pages
                 Log.Error("launch failed", ex);
                 MessageBox.Show(ex.Message, "Vanadreams Launcher", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        /// <summary>
+        /// Windows' one Final Fantasy XI location was moved to the copy this profile starts. Windower and PlayOnline read
+        /// that same location, so a player who keeps an older client elsewhere would find them starting ours (18 Oct 2026).
+        /// Once the loader closes, a hidden PowerShell registers the copy Windows had before; Play moves it back next time.
+        /// </summary>
+        private void GiveOtherGameBack(AppState state, string root, string previousRoot, string loaderName, HashSet<int> before, int lang)
+        {
+            if (!state.Settings.RestoreOtherGame) return;
+            try
+            {
+                var back = GameRegistration.RestoreTarget(previousRoot, root, state.Settings.OtherGameRoot);
+                if (back == null) return;
+                var ids = PlayCheck.RunningIds(loaderName);
+                ids.ExceptWith(before ?? new HashSet<int>());
+                var downloads = state.Settings.DownloadsFolder;
+                Directory.CreateDirectory(downloads);
+                var cmd = Path.Combine(downloads, "restore-other-game.cmd");
+                var ps1 = Path.Combine(downloads, "restore-other-game.ps1");
+                File.WriteAllText(cmd, ClientInstall.RegisterScript(back, lang));
+                File.WriteAllText(ps1, GameRegistration.WatcherScript(ids, cmd));
+                Process.Start(new ProcessStartInfo("powershell.exe", "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"" + ps1 + "\"")
+                    { UseShellExecute = false, CreateNoWindow = true });
+                Log.Info("when the loader closes, Windows is pointed back at " + back);
+            }
+            catch (Exception ex) { Log.Warn("restore of the other game not set up: " + ex.Message); }
         }
 
         /// <summary>False, after telling the player, when antivirus or anything else has taken a file the launch needs.</summary>
