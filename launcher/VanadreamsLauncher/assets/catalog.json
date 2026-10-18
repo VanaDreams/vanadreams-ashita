@@ -637,6 +637,22 @@
       "description": "Redrawn zone maps (Drauku's fork of Caradog's XI-Vision), loaded through XIPivot so your game files stay as they are. It needs XIPivot ticked and installed. Its ROM/119 interface files are left out on purpose: they are from an older client and can crash the game when the chat window is maximised."
     },
     {
+      "id": "xiview",
+      "name": "XI View interface",
+      "kind": "overlay",
+      "maintainer": "KenshiDRK",
+      "source": {
+        "type": "repo-folder",
+        "repo": "KenshiDRK/XiView",
+        "path": "Widescreen",
+        "branch": "master"
+      },
+      "version": "2.5.3",
+      "install": "pivot-overlay",
+      "docs": "https://github.com/KenshiDRK/XiView",
+      "description": "A cleaner game interface: menu skins for 16:9 and 16:10 screens, fonts, menu icons and status icons (KenshiDRK's XI View 2.0, widescreen version). Loaded through XIPivot so your game files stay as they are, and it is made for the current client. It needs XIPivot ticked and installed. For status icons to show, set Menu > Config > Misc > Icon Type 2 in game."
+    },
+    {
       "id": "vanatunes",
       "name": "vanatunes",
       "kind": "addon",
