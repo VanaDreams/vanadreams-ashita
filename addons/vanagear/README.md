@@ -34,6 +34,24 @@ built sets underneath automatically, so anything they leave out is filled.
 `/vg <word>`, and Motenten's mode commands and F9-F12 keys (`/vg keys mote`) work for players
 coming from GearSwap.
 
+## Your support job's gear
+
+Vanadreams lets your main job wear the weapons and armour your support job can wear, through your
+own sets. The game's equipment menu and the built sets only use your main job's gear. In the `/vg`
+window, every slot's list of your own set also offers your support job's pieces; or use
+`/vg set <name> <slot> <item>` (for example `/vg set Axe Main Great Axe` on BLM/WAR), then
+`/vg wear <name>`. Weapon skills you get this way cap at 80% of the support job's cap.
+
+## Weapons
+
+With `/vg weapons off` (the default) nothing changes Main, Sub or Range: not the built sets, not
+your own sets, not a profile's sets, not an imported GearSwap file. The only way a weapon changes
+is the lists on the Main, Sub and Range lines of the `/vg` window (or `/vg weapon main <item>`):
+they start at "Leave it alone", and the weapon picked is worn in every set for that job.
+
+A profile of your own can still put on a weapon for a command of its own (a fishing rod for `/fish`):
+it lists the item names in `gVana.WeaponAllow` and vanagear lets those through.
+
 ## Your own sets
 
 - `/vg dress` stops the swapping. Put on what you like from the equipment menu, then

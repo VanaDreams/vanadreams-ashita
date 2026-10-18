@@ -18,9 +18,10 @@ namespace Vanadreams.Services
         /// downloaded, and files an earlier install put there are removed once the repo has dropped them.
         /// report is called with (file, number, of how many) for each download.
         /// </summary>
-        public static async Task<RepoSync.Plan> InstallRepoFolderAsync(Downloader downloader, LauncherSettings settings, string ashitaRoot, CatalogItem item, Action<string, int, int> report = null)
+        public static async Task<RepoSync.Plan> InstallRepoFolderAsync(Downloader downloader, LauncherSettings settings, string ashitaRoot, CatalogItem item, Action<string, int, int> report = null, string gameFolder = null)
         {
-            var files = await downloader.ListRepoFolderAsync(item.Repo, item.Path, item.Branch).ConfigureAwait(false);
+            var listed = await downloader.ListRepoFolderAsync(item.Repo, item.Path, item.Branch).ConfigureAwait(false);
+            var files = RepoSync.Skipping(listed, item.Skip);
             if (files.Count == 0) throw new InvalidOperationException("Nothing found at " + item.Repo + "/" + item.Path + ".");
 
             var target = TargetFolder(ashitaRoot, item);
@@ -39,10 +40,33 @@ namespace Vanadreams.Services
                 catch (Exception ex) { Log.Warn("could not remove " + rel + ": " + ex.Message); }
             }
             RepoSync.WriteManifest(target, files.Where(f => RepoSync.IsSafeRel(f.Rel)).Select(f => f.Rel));
+            await PatchOwnFileAsync(downloader, listed, item, target, gameFolder).ConfigureAwait(false);
 
             settings.InstalledVersions[item.Id] = item.Version ?? DateTime.Now.ToString("yyyy-MM-dd");
             if (item.Install == InstallAction.PivotOverlay) PivotConfig.AddOverlay(ashitaRoot, item.Id);
             return plan;
+        }
+
+        /// <summary>
+        /// For an item that names a patch (source.patch): the pack's copy of that file is fetched to a temporary place, its
+        /// listed chunks are laid over the player's own current file (DatPatch), and the result goes into the overlay.
+        /// A failure here is logged and never fails the install: the rest of the pack still works.
+        /// </summary>
+        private static async Task PatchOwnFileAsync(Downloader downloader, List<RepoFile> listed, CatalogItem item, string target, string gameFolder)
+        {
+            if (string.IsNullOrEmpty(item.PatchFile) || item.PatchChunks.Count == 0 || string.IsNullOrWhiteSpace(gameFolder)) return;
+            var temp = Path.Combine(Path.GetTempPath(), "vdl-donor-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                var donor = listed.FirstOrDefault(f => string.Equals(f.Rel, item.PatchFile, StringComparison.OrdinalIgnoreCase));
+                if (donor == null || !RepoSync.IsSafeRel(item.PatchFile)) { Log.Warn(item.Id + ": " + item.PatchFile + " is not in the repo folder"); return; }
+                await downloader.DownloadFileAsync(donor.Url, temp).ConfigureAwait(false);
+                var own = Path.Combine(gameFolder, item.PatchFile.Replace('/', '\\'));
+                var said = await Task.Run(() => DatPatch.ApplyToFile(own, temp, RepoSync.LocalPath(target, item.PatchFile), item.PatchChunks)).ConfigureAwait(false);
+                Log.Info(item.Id + ": " + said);
+            }
+            catch (Exception ex) { Log.Warn(item.Id + ": interface patch not applied: " + ex.Message); }
+            finally { try { File.Delete(temp); } catch (Exception) { /* a temp file left behind is harmless */ } }
         }
 
         /// <summary>

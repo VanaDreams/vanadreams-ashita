@@ -6,6 +6,7 @@ local EquippedItems = {};
 local Internal = {};
 local Fallback = nil; -- vanagear: built pieces for slots whose named piece is not carried
 local CurrentJob = 0;
+local CurrentSubJob = 0; -- vanagear: Vanadreams lets the main job wear its support job's gear
 local CurrentLevel = 0;
 local inventoryManager = AshitaCore:GetMemoryManager():GetInventory();
 local resourceManager = AshitaCore:GetResourceManager();
@@ -14,6 +15,7 @@ local japanese = (AshitaCore:GetConfigurationManager():GetInt32('boot', 'ashita.
 
 local UpdateJobLevel = function()    
     CurrentJob = AshitaCore:GetMemoryManager():GetPlayer():GetMainJob();
+    CurrentSubJob = AshitaCore:GetMemoryManager():GetPlayer():GetSubJob(); -- vanagear
     CurrentLevel = AshitaCore:GetMemoryManager():GetPlayer():GetJobLevel(CurrentJob);
     if (gSettings.AllowSyncEquip == false) then
         CurrentLevel = AshitaCore:GetMemoryManager():GetPlayer():GetMainJobLevel();
@@ -173,7 +175,8 @@ local CheckResource = function(resource)
         return false;
     end
 
-    if (bit.band(resource.Jobs, math.pow(2, CurrentJob)) == 0) then
+    -- vanagear: the support job's gear counts too; the server says no where that is not allowed
+    if (bit.band(resource.Jobs, math.pow(2, CurrentJob)) == 0) and ((CurrentSubJob == 0) or (bit.band(resource.Jobs, math.pow(2, CurrentSubJob)) == 0)) then
         return false;
     end
 
@@ -524,6 +527,18 @@ local EquipSet = function(set, style)
     for i = 1,16,1 do
         if (set[i] ~= nil) and (set[i].Name == 'ignore') then
             set[i] = nil;
+        end
+    end
+
+    -- vanagear: with /vg weapons off nothing from any set, built, profile or imported, touches
+    -- Main, Sub or Range; only the weapons picked in the window, or named in a profile's gVana.WeaponAllow (its own
+    -- /fish rod and the like), go on
+    if (gVana ~= nil) and (gVana.Prefs ~= nil) and (not gVana.Prefs.Weapons) then
+        local picks = gVana.WeaponPicks or {};
+        for i = 1,3,1 do
+            if (set[i] ~= nil) and (not picks[set[i].Name]) and (not (gVana.WeaponAllow and gVana.WeaponAllow[set[i].Name])) then
+                set[i] = nil;
+            end
         end
     end
 

@@ -187,13 +187,52 @@ namespace Vanadreams.Services
 
         public static int RegisterSteps => 7 + RetailDefaults.Length + ComServers.Length;
 
+        /// <summary>The PlayOnline registry key xiloader reads for --lang: Japanese PlayOnline, English PlayOnlineUS, European PlayOnlineEU.</summary>
+        public static string VendorKey(int lang) => lang == 0 ? "PlayOnline" : lang == 2 ? "PlayOnlineEU" : "PlayOnlineUS";
+
+        /// <summary>Every key to look in, the one for this language first.</summary>
+        public static string[] VendorKeys(int lang) =>
+            new[] { VendorKey(lang), "PlayOnlineUS", "PlayOnline", "PlayOnlineEU" }.Distinct().ToArray();
+
+        /// <summary>Steps in the script for a Japanese or European copy: both folders, Japanese only the language, then the COM servers.</summary>
+        public static int RegisterStepsFor(int lang) => lang == 1 ? RegisterSteps : 2 + (lang == 0 ? 1 : 0) + ComServers.Length;
+
+        /// <summary>
+        /// Register a copy for a Japanese (0) or European (2) loader. The player's own PlayOnline already holds the
+        /// language and controller settings, so only the two folders xiloader reads are written (Japanese keeps its
+        /// settings under "Square", and gets its language only where missing), then the COM servers.
+        /// </summary>
+        private static string RegisterScriptOther(string root, int lang)
+        {
+            var game = GameFolder(root) + "\\";
+            var viewer = ViewerFolder(root);
+            var folders = @"HKLM\SOFTWARE\" + VendorKey(lang) + @"\InstallFolder";
+            const string regsvr = @"%SystemRoot%\SysWOW64\regsvr32.exe";
+            var lines = new List<string>
+            {
+                "@echo off",
+                $"reg add \"{folders}\" /v 0001 /t REG_SZ /d \"{game}\\\" /f /reg:32 || exit /b 1",
+                $"reg add \"{folders}\" /v 1000 /t REG_SZ /d \"{viewer}\" /f /reg:32 || exit /b 2",
+            };
+            var step = 3;
+            if (lang == 0)
+            {
+                var settings = @"HKLM\SOFTWARE\PlayOnline\Square\PlayOnlineViewer\Settings";
+                lines.Add($"reg query \"{settings}\" /v Language /reg:32 >nul 2>&1 || reg add \"{settings}\" /v Language /t REG_DWORD /d 0 /f /reg:32 || exit /b {step++}");
+            }
+            lines.AddRange(ComServers.Select(rel => $"\"{regsvr}\" /s \"{Path.Combine(root, rel)}\" || exit /b {step++}"));
+            lines.Add("exit /b 0");
+            return string.Join("\r\n", lines) + "\r\n";
+        }
+
         /// <summary>The elevated step, 32-bit registry view as PlayOnline writes it: both folders into InstallFolder,
         /// the PlayOnline language xiloader reads (English), a controller mapping so a gamepad works from the first
         /// launch (Lee's, 25 Sept 2026; only written where the player has none), and both COM servers registered with
         /// the 32-bit regsvr32. Other game settings are left to the game's own defaults.
         /// Exit code is the number of the first step that failed.</summary>
-        public static string RegisterScript(string root)
+        public static string RegisterScript(string root, int lang = 1)
         {
+            if (lang != 1) return RegisterScriptOther(root, lang);
             var game = GameFolder(root) + "\\";
             var viewer = ViewerFolder(root);
             const string folders = @"HKLM\SOFTWARE\PlayOnlineUS\InstallFolder";
@@ -276,17 +315,17 @@ namespace Vanadreams.Services
         };
 
         /// <summary>Runs the register script with one administrator prompt. False if the prompt was refused.</summary>
-        public static bool RunRegister(string root, string downloads)
+        public static bool RunRegister(string root, string downloads, int lang = 1)
         {
             Directory.CreateDirectory(downloads);
             var script = Path.Combine(downloads, "register-game.cmd");
-            File.WriteAllText(script, RegisterScript(root));
+            File.WriteAllText(script, RegisterScript(root, lang));
             try
             {
                 using (var p = Process.Start(new ProcessStartInfo("cmd.exe", "/c \"" + script + "\"") { UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden }))
                 {
                     p.WaitForExit();
-                    if (p.ExitCode != 0) throw new InvalidOperationException("Registering the game failed at step " + p.ExitCode + " of " + RegisterSteps + ".");
+                    if (p.ExitCode != 0) throw new InvalidOperationException("Registering the game failed at step " + p.ExitCode + " of " + RegisterStepsFor(lang) + ".");
                 }
                 return true;
             }

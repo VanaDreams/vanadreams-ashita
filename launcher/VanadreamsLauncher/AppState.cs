@@ -364,7 +364,7 @@ namespace Vanadreams
                 try
                 {
                     if (item.Source == SourceType.RepoFolder)
-                        await AddonInstaller.InstallRepoFolderAsync(Downloader, Settings, AshitaRoot, item);
+                        await AddonInstaller.InstallRepoFolderAsync(Downloader, Settings, AshitaRoot, item, null, FfxiFolder);
                     else if (item.Source != SourceType.Bundled) continue;   // release archives are installed from the Addons page
                     if (!Settings.EnabledAddons.Contains(item.Id, StringComparer.OrdinalIgnoreCase)) Settings.EnabledAddons.Add(item.Id);
                     Settings.GivenDefaults.Add(item.Id);
@@ -373,22 +373,34 @@ namespace Vanadreams
                 }
                 catch (Exception ex) { Log.Warn("default " + item.Id + " not installed, will try again: " + ex.Message); }
             }
-            // Any installed repo-folder addon the catalogue has moved past: its files are brought up to date now, so
-            // a fix reaches every player at their next start without the Update button. Their tick is left alone.
-            foreach (var item in AddonInstaller.InstalledToUpdate(Catalog, Settings.InstalledVersions))
-            {
-                try
-                {
-                    var plan = await AddonInstaller.InstallRepoFolderAsync(Downloader, Settings, AshitaRoot, item);
-                    changed = true;
-                    Log.Info(item.Id + " updated to " + item.Version + " at start: " + plan.Download.Count + " file(s) downloaded");
-                }
-                catch (Exception ex) { Log.Warn(item.Id + " not updated at start, will try again: " + ex.Message); }
-            }
+            if (await UpdateInstalledAddonsAsync("at start")) changed = true;
             if (!changed) { ApplyFileEdits(); return; }   // ApplyEnabledAddons runs them otherwise
             Settings.Save();
             ApplyEnabledAddons();
             Notify();
+        }
+
+        /// <summary>
+        /// Any installed repo-folder addon the catalogue has moved past: its files are brought up to date now, so
+        /// a fix reaches every player without the Update button. Their tick is left alone. Run at start and again
+        /// on every Play, because the launcher sits in the tray for days and a start alone missed a whole day's
+        /// addon update (16 Oct 2026: the shared window look). Returns whether anything was updated.
+        /// </summary>
+        public async Task<bool> UpdateInstalledAddonsAsync(string when)
+        {
+            if (!HasAshita) return false;
+            var changed = false;
+            foreach (var item in AddonInstaller.InstalledToUpdate(Catalog, Settings.InstalledVersions))
+            {
+                try
+                {
+                    var plan = await AddonInstaller.InstallRepoFolderAsync(Downloader, Settings, AshitaRoot, item, null, FfxiFolder);
+                    changed = true;
+                    Log.Info(item.Id + " updated to " + item.Version + " " + when + ": " + plan.Download.Count + " file(s) downloaded");
+                }
+                catch (Exception ex) { Log.Warn(item.Id + " not updated " + when + ", will try again: " + ex.Message); }
+            }
+            return changed;
         }
 
         /// <summary>

@@ -19,6 +19,9 @@ namespace Vanadreams.Services
         public string Repo { get; set; }            // owner/name
         public string Asset { get; set; }           // glob for the release asset
         public string Path { get; set; }            // folder in the repo for repo-folder
+        public List<string> Skip { get; set; } = new List<string>();   // repo-folder files left out of the install (RepoSync.Skipping); the author's repo is untouched
+        public string PatchFile { get; set; }       // repo-folder: a file of the repo whose listed chunks are carried onto the player's own copy (DatPatch)
+        public List<string> PatchChunks { get; set; } = new List<string>();
         public string Branch { get; set; } = "main";
         public string Version { get; set; }
         public InstallAction Install { get; set; }
@@ -195,6 +198,10 @@ namespace Vanadreams.Services
                 item.Repo = Json.Str(src, "repo");
                 item.Asset = Json.Str(src, "asset");
                 item.Path = Json.Str(src, "path");
+                item.Skip = Json.Strings(src, "skip");
+                var patch = Json.Obj(src != null && src.ContainsKey("patch") ? src["patch"] : null);
+                item.PatchFile = Json.Str(patch, "file");
+                item.PatchChunks = Json.Strings(patch, "chunks");
                 item.Branch = Json.Str(src, "branch") ?? "main";
                 var install = (Json.Str(d, "install") ?? "").ToLowerInvariant();
                 item.Install = install == "unzip-to-root" ? InstallAction.UnzipToRoot

@@ -62,7 +62,8 @@ namespace Vanadreams.Services
         /// <summary>The packs Vanadreams ships go by their names; any other overlay by its folder.</summary>
         public static string NameOf(string id) =>
             string.Equals(id, LookOverlays.Looks, StringComparison.OrdinalIgnoreCase) ? "Modern look pack"
-            : string.Equals(id, LookOverlays.Title, StringComparison.OrdinalIgnoreCase) ? "Title pack" : id;
+            : string.Equals(id, LookOverlays.Title, StringComparison.OrdinalIgnoreCase) ? "Title pack"
+            : string.Equals(id, LookOverlays.Text, StringComparison.OrdinalIgnoreCase) ? "Text fixes" : id;
 
         /// <summary>True when XIPivot itself is in Ashita's polplugins folder, without which no overlay loads.</summary>
         public static bool PivotInstalled(string ashitaRoot) =>
