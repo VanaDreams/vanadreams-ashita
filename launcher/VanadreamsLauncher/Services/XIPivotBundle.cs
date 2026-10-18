@@ -32,12 +32,20 @@ namespace Vanadreams.Services
             {
                 var target = Path.Combine(ashitaRoot, f.Item2);
                 if (File.Exists(target)) continue;
-                var res = Application.GetResourceStream(new Uri("pack://application:,,,/assets/xipivot/" + f.Item1));
-                if (res == null) continue;
-                Directory.CreateDirectory(Path.GetDirectoryName(target));
-                using (var s = res.Stream)
-                using (var o = File.Create(target)) s.CopyTo(o);
-                placed |= f.Item1 == "pivot.dll";
+                try
+                {
+                    var res = Application.GetResourceStream(new Uri("pack://application:,,,/assets/xipivot/" + f.Item1));
+                    if (res == null) continue;
+                    Directory.CreateDirectory(Path.GetDirectoryName(target));
+                    using (var s = res.Stream)
+                    using (var o = File.Create(target)) s.CopyTo(o);
+                    placed |= f.Item1 == "pivot.dll";
+                }
+                catch (Exception ex)
+                {
+                    // A missing or unwritable bundled file must never stop an install; the overlays just stay off.
+                    Log.Info("XIPivot file " + f.Item1 + " not put in place: " + ex.Message);
+                }
             }
             if (placed) Log.Info("XIPivot " + Version + " put in place from the launcher");
             return placed;

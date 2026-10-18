@@ -105,12 +105,13 @@ local function sortedNames()
     return names;
 end
 
--- The pieces the player carries that can go in this slot now, one per name.
+-- The pieces the player carries that can go in this slot now, one per name. The support job's
+-- gear is offered too: on Vanadreams the player's own sets are where it gets worn.
 local function choices(slot)
     local bags = require('vg.bags');
     local list, seen = {}, {};
     for _, p in ipairs(gVana.Pieces) do
-        if (not seen[p.Name]) and (gVana.Who ~= nil) and (bags.CanWear(p, slot, gVana.Who)) then
+        if (not seen[p.Name]) and (gVana.Who ~= nil) and (bags.CanWear(p, slot, gVana.Who, true)) then
             seen[p.Name] = true;
             list[#list + 1] = p.Name;
         end
@@ -142,7 +143,29 @@ renderSlots = function(name)
         local ranks = ex and ex.ranks[slot];
         imgui.Text(string.format('%-6s', slotName));
         imgui.SameLine(80);
-        if (gVana.Held[slot] ~= nil) and (not own[slotName]) then
+        if (slot <= 3) and (not gVana.Prefs.Weapons) then
+            -- one weapon per slot for the job, worn in every set; nothing else ever changes it
+            local core = require('vg.core');
+            local picked = ((gVana.Prefs.WeaponPick or {})[gVana.Who and gVana.Who.JobName or ''] or {})[slotName];
+            imgui.PushItemWidth(260);
+            if (imgui.BeginCombo('##vg_slot_' .. slotName, picked or '(left alone)', ImGuiComboFlags_None)) then
+                if (imgui.Selectable('Leave it alone##vg_wnone_' .. slotName, picked == nil)) then
+                    core.SetWeaponPick(slotName, nil);
+                end
+                if (imgui.Selectable('Nothing (take it off)##vg_wrem_' .. slotName, picked == 'remove')) then
+                    core.SetWeaponPick(slotName, 'remove');
+                end
+                for _, piece in ipairs(choices(slot)) do
+                    if (imgui.Selectable(piece .. '##vg_wpick_' .. slotName, picked == piece)) then
+                        core.SetWeaponPick(slotName, piece);
+                    end
+                end
+                imgui.EndCombo();
+            end
+            imgui.PopItemWidth();
+            imgui.SameLine();
+            imgui.TextDisabled('every set');
+        elseif (gVana.Held[slot] ~= nil) and (not own[slotName]) then
             imgui.TextDisabled(gVana.Held[slot]);
         else
             imgui.PushItemWidth(260);
