@@ -101,6 +101,13 @@ ashita.events.register('packet_out', 'vanagear_packet_out_cb', function (e)
     guard('outgoing packet', gPacketHandlers.HandleOutgoingPacket, e);
 end);
 
+-- the server's answers about your trusts, for their tabs (hidden from chat)
+ashita.events.register('text_in', 'vanagear_text_in_cb', function (e)
+    if (string.find(e.message or '', '[VG ', 1, true) ~= nil) then
+        guard('trust info', require('vg.trusts').TextIn, e);
+    end
+end);
+
 ashita.events.register('command', 'vanagear_command_cb', function (e)
     guard('command', function ()
         if (gVanaCommands.Handle(e)) then

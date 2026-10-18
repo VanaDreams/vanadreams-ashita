@@ -1,6 +1,7 @@
-r"""Off-game test of vg\trusts.lua: the trusts in the party get a set built from the bags for
-their job and level, your picks lay over it, and the line sent to the server carries the item
-ids in the server's slot order (Main 0 ... Back 15).
+r"""Off-game test of vg\trusts.lua: the trusts in the party get sets built from the bags for
+their job, level and what the server says they use (Idle, Engaged, a set per spell kind and
+weaponskill, Ability for a tank), your picks lay over them, only changed sets are sent, and the
+lines carry the item ids in the server's slot order (Main 0 ... Back 15).
 
     python addons/vanagear/tests/trusts.py
 """
@@ -28,15 +29,16 @@ package.loaded['vg.data'] = {
     ModId = function(name) return ids[name] end,
     SlotBit = (function() local t = {} for i = 1, 16 do t[i] = bit.lshift(1, i - 1) end return t end)(),
     Items = function() return {} end,
+    Weaponskills = function() return { [42] = { key = 'savage_blade', skill = 3, level = 0, wsc = { STR = 0.5, MND = 0.5 }, hits = 2, kind = 'physical' } } end,
 }
 package.preload['encoding'] = function() return { ShiftJIS_To_UTF8 = function(_, s) return s end } end
 
 local sent = {}
-local jobs = { [1] = 'WAR', [3] = 'WHM' }
--- party: you (0), Excenmille the WAR trust (1), a player (2), Kupipi the WHM trust (3)
+local jobs = { [1] = 'WAR', [3] = 'WHM', [7] = 'PLD' }
+-- party: you (0), Excenmille the PLD/WAR trust (1), a player (2), Kupipi the WHM trust (3)
 local members = {
     [0] = { id = 1000, name = 'Me', job = 1, lv = 99 },
-    [1] = { id = 0x0100A001, name = 'Excenmille', job = 1, lv = 99, sub = 0 },
+    [1] = { id = 0x0100A001, name = 'Excenmille', job = 7, lv = 99, sub = 1 },
     [2] = { id = 1234, name = 'Friend', job = 3, lv = 99 },
     [3] = { id = 0x0100A002, name = 'Kupipi', job = 3, lv = 99, sub = 0 },
 }
@@ -59,7 +61,7 @@ AshitaCore = {
 gData = { Constants = { EquipSlotNames = { 'Main', 'Sub', 'Range', 'Ammo', 'Head', 'Body', 'Hands', 'Legs', 'Feet',
                                            'Neck', 'Waist', 'Ear1', 'Ear2', 'Ring1', 'Ring2', 'Back' } } }
 
-local WAR, WHM = bit.lshift(1, 0), bit.lshift(1, 2)
+local WAR, WHM, PLD = bit.lshift(1, 0), bit.lshift(1, 2), bit.lshift(1, 6)
 local function piece(id, name, slot, jobMask, level, stats)
     local m = {}
     for k, v in pairs(stats) do m[ids[k]] = v end
@@ -75,34 +77,74 @@ gVana = {
         piece(103, 'Shared Ring', 13, WAR + WHM, 50, { ACC = 5, CURE_POTENCY = 5 }),
         piece(104, 'Shared Ring', 13, WAR + WHM, 50, { ACC = 5, CURE_POTENCY = 5 }),
         piece(105, 'High Belt', 10, WAR, 120, { ACC = 50 }),
+        piece(106, 'Knight Helm', 4, PLD, 99, { DMGPHYS = -500, ENMITY = 6 }),
+        piece(107, 'Strong Helm', 4, PLD, 99, { STR = 20, ATT = 30 }),
+        piece(108, 'Bold Ring', 13, PLD, 1, { ENMITY = 5 }),
     },
 }
 
 local trusts = require('vg.trusts')
 local out = {}
 local called = trusts.Called()
-out[#out + 1] = 'called ' .. #called .. ' ' .. called[1].Name .. ' ' .. called[2].Name
-out[#out + 1] = trusts.Line(called[1])
-out[#out + 1] = trusts.Line(called[2])
-trusts.SetSlot(called[1], 'Head', 'remove')
-trusts.SetSlot(called[2], 'Body', 'Fighter Mask')
-out[#out + 1] = trusts.Line(called[1])
-out[#out + 1] = trusts.Line(called[2])
+local exc, kup = called[1], called[2]
+out[#out + 1] = 'called ' .. #called .. ' ' .. exc.Name .. ' ' .. kup.Name
+-- nothing is sent until the server says the trust is yours; first it is asked about once
+gVana.Who = { Job = 1 }
+os.clock = (function() local c = 0 return function() c = c + 5 return c end end)()
+trusts.Tick() trusts.Tick() trusts.Tick() trusts.Tick()
+out[#out + 1] = table.concat(sent, ' ; ')
+out[#out + 1] = 'ours ' .. tostring(trusts.Ours(exc)) .. ' ' .. tostring(trusts.Ours(kup))
+-- the server's answer, hidden from chat
+local e = { message = '\x1e\x01[VG trust] 16818177|Excenmille|7|1|99' }
+trusts.TextIn(e)
+local e2 = { message = '[VG uses] 16818177|flash:ability,cure_iv:cure,savage_blade:weaponskill,sentinel:ability' }
+trusts.TextIn(e2)
+out[#out + 1] = 'blocked ' .. tostring(e.blocked) .. ' ' .. tostring(e2.blocked) .. ' uses ' .. #trusts.Info(exc).Uses
+local names = {}
+for _, set in ipairs(trusts.Sets(exc)) do names[#names + 1] = set.Name end
+out[#out + 1] = 'sets ' .. table.concat(names, ',')
+out[#out + 1] = trusts.Pretty('cure_iv') .. '/' .. trusts.Key('Savage Blade')
+sent = {}
+for _ = 1, 12 do trusts.Tick() end
+out[#out + 1] = table.concat(sent, ' ; ')
+-- nothing changed: nothing more goes
+sent = {}
+for _ = 1, 4 do trusts.Tick() end
+out[#out + 1] = 'again ' .. #sent
+-- a pick changes one set; a set of your own is added and then deleted
+trusts.SetSlot(exc, 'Engaged', 'Head', 'remove')
+trusts.AddSet(exc, 'Flash')
+trusts.SetSlot(exc, 'Flash', 'Head', 'Healer Cap')
+for _ = 1, 4 do trusts.Tick() end
+trusts.Reset(exc, 'Flash')
+for _ = 1, 4 do trusts.Tick() end
+out[#out + 1] = table.concat(sent, ' ; ')
 -- the picks are on disk and come back after a reload
 package.loaded['vg.trusts'] = nil
 trusts = require('vg.trusts')
-out[#out + 1] = 'reloaded ' .. tostring(trusts.Own(called[1]).Head)
+out[#out + 1] = 'reloaded ' .. tostring(trusts.Own(exc, 'Engaged').Head)
 return table.concat(out, '\n')
 """, str(ADDON), TMP)
 print(result)
 lines = result.split('\n')
 #              main sub rng ammo head body hands legs feet neck waist ear1 ear2 ring1 ring2 back
+#   main sub rng ammo head body hands legs feet neck waist ear1 ear2 ring1 ring2 back
+def line(set_name, ids):
+    return f'/say !trustgear 16818177 {set_name} ' + ' '.join(str(i) for i in ids)
+def head_ring(head, ring=0):
+    return [0, 0, 0, 0, head] + [0] * 8 + [ring, 0, 0]
 expect = [
     'called 2 Excenmille Kupipi',
-    '/say !trustgear 16818177 0 0 0 0 101 0 0 0 0 0 0 0 0 103 103 0',
-    '/say !trustgear 16818178 0 0 0 0 102 0 0 0 0 0 0 0 0 103 103 0',
-    '/say !trustgear 16818177 0 0 0 0 0 0 0 0 0 0 0 0 0 103 103 0',
-    '/say !trustgear 16818178 0 0 0 0 102 101 0 0 0 0 0 0 0 103 103 0',
+    '/say !trustgear 16818177 info ; /say !trustgear 16818178 info',
+    'ours false false',
+    'blocked true true uses 4',
+    'sets Idle,Engaged,Weaponskill,Cure,Ability,Savage Blade',
+    'Cure IV/savageblade',
+    # the tank's Engaged and Ability sets take the damage taken and enmity helm, its weaponskills the strong one
+    ' ; '.join([line('idle', head_ring(106)), line('engaged', head_ring(106, 108)), line('weaponskill', head_ring(107)),
+                line('ability', head_ring(106, 108)), line('savageblade', head_ring(107))]),
+    'again 0',
+    ' ; '.join([line('engaged', head_ring(0, 108)), line('flash', head_ring(102)), '/say !trustgear 16818177 flash clear']),
     'reloaded remove',
 ]
 assert lines == expect, '\n'.join(f'{a!r} vs {b!r}' for a, b in zip(lines, expect) if a != b)

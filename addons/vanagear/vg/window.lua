@@ -257,69 +257,168 @@ renderSlots = function(name)
 end
 
 
--- A trust's tab: its set from your bags, every slot a list like yours. Nothing is worn: the
--- trust gets the stats of these pieces while you carry them (vg\trusts.lua).
+-- A trust's tab: who it is and what it uses, its sets from your bags (Idle, Engaged and a set for
+-- each kind of action), every slot a list like yours. Nothing is worn: the trust gets the stats
+-- of these pieces while you carry them, and the server swaps sets as the trust acts (vg\trusts.lua).
 local trustNote = nil;
+local trustSel = {};
+local trustNewSet = { '' };
+local onTrust = nil;
+local overlaySets = { idle = false, engaged = false };
+
+local function jobName(id)
+    local s = AshitaCore:GetResourceManager():GetString('jobs.names', id);
+    return (type(s) == 'string') and s:trimend('\x00') or '';
+end
+
+local function useLabel(trusts, use)
+    if (use.Name == 'magic') then return 'other spells'; end
+    if (use.Name == 'ability') then return 'other abilities'; end
+    return trusts.Pretty(use.Name);
+end
+
 local function renderTrust(t)
     local trusts = require('vg.trusts');
     local bags = require('vg.bags');
     local who = trusts.Who(t);
-    local mine = trusts.Own(t);
-    local set = trusts.Built(t);
-    vd.Eyebrow(string.format('%s  %s%d/%s', t.Name, t.JobName, t.Level or 0, t.SubName));
+    local i = trusts.Info(t);
+
+    -- who the trust is, its jobs and what it uses
+    vd.Eyebrow(t.Name);
     imgui.SameLine();
     imgui.TextDisabled('  stats only: your gear stays in your bags');
+    local sub = (t.Sub ~= nil) and (t.Sub > 0) and string.format(', support job %s (%s)', jobName(t.Sub), t.SubName) or '';
+    imgui.Text(string.format('Job: %s (%s) level %d%s', jobName(t.Job), t.JobName, t.Level or 0, sub));
+    local sets = trusts.Sets(t);
+    local hasSet = {};
+    for _, s in ipairs(sets) do hasSet[s.Key] = true; end
+    if (i == nil) then
+        imgui.TextDisabled('Asking the server what ' .. t.Name .. ' uses...');
+    elseif (#i.Uses == 0) then
+        imgui.TextDisabled('Uses: only its weapon.');
+    else
+        local names = {};
+        for _, use in ipairs(i.Uses) do names[#names + 1] = useLabel(trusts, use); end
+        imgui.TextWrapped('Uses: ' .. table.concat(names, ', '));
+    end
     imgui.Separator();
-    for slot = 1, 16 do
-        local slotName = gData.Constants.EquipSlotNames[slot];
-        local pick = mine[slotName];
-        local builtPiece = set[slot] and set[slot].Name or nil;
-        local shown = (pick == 'remove') and nil or (pick or builtPiece);
-        imgui.Text(string.format('%-6s', slotName));
-        imgui.SameLine(80);
-        imgui.PushItemWidth(260);
-        local preview = (shown or '(nothing)') .. ((pick ~= nil) and '  *' or '');
-        if (imgui.BeginCombo('##vg_t_' .. t.Name .. slotName, preview, ImGuiComboFlags_None)) then
-            if (imgui.Selectable('Built: ' .. (builtPiece or 'nothing') .. '##vg_tb_' .. slotName, pick == nil)) then
-                trusts.SetSlot(t, slotName, nil);
-            end
-            if (imgui.Selectable('Nothing##vg_tn_' .. slotName, pick == 'remove')) then
-                trusts.SetSlot(t, slotName, 'remove');
-            end
-            local seen = {};
-            local list = {};
-            for _, p in ipairs(gVana.Pieces or {}) do
-                if (not seen[p.Name]) and (bags.CanWear(p, slot, who, true)) then
-                    seen[p.Name] = true;
-                    list[#list + 1] = p.Name;
-                end
-            end
-            table.sort(list);
-            for _, piece in ipairs(list) do
-                if (imgui.Selectable(piece .. '##vg_tp_' .. slotName, pick == piece)) then
-                    trusts.SetSlot(t, slotName, piece);
-                end
-            end
-            imgui.EndCombo();
+
+    local sel = trustSel[t.Name];
+    local selected = nil;
+    for _, s in ipairs(sets) do
+        if (s.Name == sel) then selected = s; end
+    end
+    if (selected == nil) then
+        selected = sets[2] or sets[1];
+        trustSel[t.Name] = selected and selected.Name or nil;
+    end
+
+    -- the set list, and a set to add for each thing it uses that has none
+    imgui.BeginChild('trust_sets', { 190, -60 }, ImGuiChildFlags_Borders);
+    for _, s in ipairs(sets) do
+        local picked = next(trusts.Own(t, s.Name)) ~= nil;
+        if (vd.Selectable(s.Name .. (picked and '  *' or '') .. '##vg_ts_' .. s.Key, selected == s)) then
+            trustSel[t.Name] = s.Name;
         end
-        imgui.PopItemWidth();
     end
-    imgui.Separator();
-    if (vd.Button('Send to ' .. t.Name, nil, true)) then
-        trusts.Send(t);
-        trustNote = 'Sent. The server answers in chat with what went on.';
+    if (i ~= nil) then
+        local first = true;
+        for _, use in ipairs(i.Uses) do
+            local name = (use.Name == 'magic') and 'Magic' or (use.Name == 'ability') and 'Ability' or trusts.Pretty(use.Name);
+            if (not hasSet[trusts.Key(name)]) then
+                if (first) then
+                    imgui.Separator();
+                    imgui.TextDisabled('Add a set for:');
+                    first = false;
+                end
+                hasSet[trusts.Key(name)] = true;
+                if (imgui.Selectable('+ ' .. name .. '##vg_tu_' .. use.Name, false)) then
+                    trustSel[t.Name] = trusts.AddSet(t, name);
+                end
+            end
+        end
     end
-    if (next(mine) ~= nil) then
+    imgui.EndChild();
+    imgui.SameLine();
+
+    imgui.BeginChild('trust_set_slots', { 0, -60 }, ImGuiChildFlags_Borders);
+    if (selected ~= nil) then
+        local overlay = overlaySets[selected.Key] == nil;
+        imgui.Text(selected.Name);
         imgui.SameLine();
-        if (vd.Button('Undo my changes')) then
-            trusts.Reset(t);
-            trustNote = t.Name .. ' is back to the built set.';
+        imgui.TextDisabled(selected.Built and ('  goes on for ' .. selected.For) or
+            ('  goes on when ' .. t.Name .. ' uses ' .. selected.Name .. ' (or anything of that kind)'));
+        if (overlay) then
+            imgui.TextDisabled('Slots left empty keep the Idle or Engaged piece.');
+        end
+        local mine = trusts.Own(t, selected.Name);
+        local set = trusts.Built(t)[selected.Name] or {};
+        for slot = 1, 16 do
+            local slotName = gData.Constants.EquipSlotNames[slot];
+            local pick = mine[slotName];
+            local builtPiece = set[slot] and set[slot].Name or nil;
+            local shown = (pick == 'remove') and nil or (pick or builtPiece);
+            imgui.Text(string.format('%-6s', slotName));
+            imgui.SameLine(80);
+            imgui.PushItemWidth(260);
+            local empty = overlay and '(keeps Idle/Engaged)' or '(nothing)';
+            local preview = (shown or empty) .. ((pick ~= nil) and '  *' or '');
+            if (imgui.BeginCombo('##vg_t_' .. t.Name .. selected.Key .. slotName, preview, ImGuiComboFlags_None)) then
+                if (selected.Built) and (imgui.Selectable('Built: ' .. (builtPiece or 'nothing') .. '##vg_tb_' .. slotName, pick == nil)) then
+                    trusts.SetSlot(t, selected.Name, slotName, nil);
+                end
+                if (imgui.Selectable((overlay and 'Nothing: keep the Idle/Engaged piece' or 'Nothing') .. '##vg_tn_' .. slotName, pick == 'remove')) then
+                    trusts.SetSlot(t, selected.Name, slotName, 'remove');
+                end
+                local seen = {};
+                local list = {};
+                for _, p in ipairs(gVana.Pieces or {}) do
+                    if (not seen[p.Name]) and (bags.CanWear(p, slot, who, true)) then
+                        seen[p.Name] = true;
+                        list[#list + 1] = p.Name;
+                    end
+                end
+                table.sort(list);
+                for _, piece in ipairs(list) do
+                    if (imgui.Selectable(piece .. '##vg_tp_' .. slotName, pick == piece)) then
+                        trusts.SetSlot(t, selected.Name, slotName, piece);
+                    end
+                end
+                imgui.EndCombo();
+            end
+            imgui.PopItemWidth();
+        end
+        if (next(mine) ~= nil) or (not selected.Built) then
+            if (vd.Button(selected.Built and 'Undo my changes' or 'Delete this set')) then
+                trusts.Reset(t, selected.Name);
+                trustNote = selected.Built and (selected.Name .. ' is back to the built set.') or (selected.Name .. ' deleted.');
+            end
         end
     end
-    imgui.TextDisabled('* = your pick. Changes are sent by themselves; the trust keeps them for the next call.');
-    if (trustNote ~= nil) then
-        imgui.TextDisabled(trustNote);
+    imgui.EndChild();
+end
+
+-- The bar under a trust's tab, in place of the one for your own sets.
+local function renderTrustBar(t)
+    local trusts = require('vg.trusts');
+    imgui.PushItemWidth(160);
+    imgui.InputText('##vg_t_new_set', trustNewSet, 64);
+    imgui.PopItemWidth();
+    imgui.SameLine();
+    if (vd.Button('New set for ' .. t.Name)) then
+        local name = trusts.AddSet(t, trustNewSet[1]);
+        if (name ~= nil) then
+            trustSel[t.Name] = name;
+            trustNewSet[1] = '';
+            trustNote = name .. ' goes on when ' .. t.Name .. ' uses it. Name it after a spell, weaponskill or ability.';
+        end
     end
+    imgui.SameLine();
+    if (vd.Button('Send all again', nil, true)) then
+        trusts.Send(t, true);
+        trustNote = 'Sent every set. Changes go by themselves; the server keeps them for the next call.';
+    end
+    imgui.TextDisabled(trustNote or '* = your pick. Changes are sent by themselves; the trust keeps them for the next call.');
 end
 
 window.Render = function()
@@ -348,6 +447,7 @@ window.Render = function()
 
             -- tabs: your sets, your commands, and one for every trust you have called
             local called = require('vg.trusts').Called();
+            onTrust = nil;
             local tabs = imgui.BeginTabBar('##vg_tabs', ImGuiTabBarFlags_None);
             if (not tabs) or (imgui.BeginTabItem('Your sets##vg_tab_you')) then
                 local names = sortedNames();
@@ -380,10 +480,10 @@ window.Render = function()
             end
             if (tabs) then
                 for _, t in ipairs(called) do
-                    if (imgui.BeginTabItem(t.Name .. '##vg_tab_' .. t.Id)) then
-                        imgui.BeginChild('trust_slots', { 0, -60 }, ImGuiChildFlags_Borders);
+                    -- only your own trusts: the server says which they are
+                    if (require('vg.trusts').Ours(t)) and (imgui.BeginTabItem(t.Name .. '##vg_tab_' .. t.Id)) then
+                        onTrust = t;
                         renderTrust(t);
-                        imgui.EndChild();
                         imgui.EndTabItem();
                     end
                 end
@@ -391,6 +491,12 @@ window.Render = function()
             end
         end
         imgui.Separator();
+        if (onTrust ~= nil) then
+            renderTrustBar(onTrust);
+            vd.End();
+            if (not isOpen[1]) then window.Open = false; end
+            return;
+        end
         imgui.PushItemWidth(160);
         imgui.InputText('##vg_new_set', newSet, 64);
         imgui.PopItemWidth();

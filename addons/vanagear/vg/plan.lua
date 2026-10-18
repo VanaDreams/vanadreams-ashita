@@ -77,6 +77,8 @@ local function wsMode(ws, displayName)
     return m;
 end
 
+plan.WsMode = wsMode;
+
 -- The set name a weaponskill's set goes by: its name with spaces and punctuation taken out,
 -- as the starter profiles already name them (Savage Blade -> SavageBlade).
 plan.WsSetName = function(name)

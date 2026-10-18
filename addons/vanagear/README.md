@@ -54,20 +54,34 @@ window, every slot's list of your own set also offers your support job's pieces;
 
 ## Your trusts
 
-Every trust you have called gets its own tab in the `/vg` window, next to yours. vanagear builds
-it a set from your inventory and wardrobes for its job and level (fighters for melee, White Mage
-trusts for cures, Black Mage trusts for nukes, and so on), and every slot is a list you can
-change, the same as your own sets.
+Every trust you have called gets its own tab in the `/vg` window, next to yours. The top of the
+tab says who the trust is: its name, its job and support job, its level, and the spells,
+abilities and weaponskills it uses (the server tells vanagear; those lines stay out of your chat).
+
+Like your own, a trust has several sets, built from your inventory and wardrobes for its job and
+level:
+
+- **Idle** while it stands around, and **Engaged** while it fights. A Paladin or Rune Fencer
+  trust's Engaged set is a tank's: damage taken down, HP, defence and enmity.
+- **Weaponskill**, and a set for each weaponskill it uses that vanagear knows (Savage Blade...).
+- A set for each kind of spell it casts: **Cure**, **Nuke**, **Enfeebling**, **Enhancing**,
+  **Dark**, **Divine**, **Song**, **Ninjutsu**, **Blue Magic**, **Geomancy**.
+- **Ability** (enmity) for a tank.
+
+Every slot of every set is a list you can change. Under the set list, **Add a set for** offers a
+set for anything the trust uses that has none yet (Flash, Sentinel, Cure IV), and **New set for**
+takes any name. An action's set goes on over Idle or Engaged while the action goes off: first a
+set with the action's own name, else one for its kind, else **Magic** for any spell. Slots it
+leaves empty keep the Idle or Engaged piece.
 
 The trust never wears anything and nothing leaves your bags: the server gives the trust the
-stats of the pieces in its set for as long as you carry them. A weapon's damage counts when it
-beats the trust's own, evened out to the trust's swing speed. A piece you drop, sell or move to
-storage stops counting; the trust's job and level must fit the piece, the same as yours (its
-support job's gear counts too). The trust keeps its set for the next time you call it.
-
-The set is sent by itself when you call the trust and whenever it changes; **Send** sends it
-again. `/vg trusts off` stops vanagear sending anything. Without vanagear, `!trustgear <trust>`
-shows a trust's set and `!trustgear <trust> clear` empties it. Your picks are kept in
+stats of the pieces, and a weapon's damage when it beats the trust's own, evened out to the
+trust's swing speed. A piece you drop, sell or move to storage stops counting; the trust's job
+and level must fit the piece, the same as yours (its support job's gear counts too). The server
+keeps every set, so a set is only sent again when it changes; **Send all again** sends them all.
+`/vg trusts off` stops vanagear sending anything. Without vanagear, `!trustgear <trust>` lists a
+trust's sets, `!trustgear <trust> <set>` shows one, `!trustgear <trust> <set> clear` deletes it
+and `!trustgear <trust> clear` deletes them all. Your picks are kept in
 `config\addons\vanagear\trusts.lua`.
 
 ## Weapons
