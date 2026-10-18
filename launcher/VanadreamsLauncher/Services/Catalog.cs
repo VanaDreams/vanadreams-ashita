@@ -35,6 +35,7 @@ namespace Vanadreams.Services
         public List<string> Conflicts { get; set; } = new List<string>();   // ids this item gives way to while they are enabled
         public string HeldBack { get; set; }        // why this item is never written to the startup script, however it is ticked
         public bool OnByDefault { get; set; }       // installed and ticked for the player once, without being asked; theirs to untick after
+        public List<FileEdit> FileEdits { get; set; } = new List<FileEdit>();   // text changes made to its files while it is ticked
         public string V3Name { get; set; }
         public string V3Carry { get; set; }
         public string V3Note { get; set; }
@@ -180,6 +181,11 @@ namespace Vanadreams.Services
                     HeldBack = Json.Str(d, "heldBack"),
                     OnByDefault = Json.Bool(d, "onByDefault"),
                 };
+                foreach (var fe in Json.List(d.ContainsKey("fileEdits") ? d["fileEdits"] : null))
+                {
+                    var e = Json.Obj(fe);
+                    if (e != null) item.FileEdits.Add(new FileEdit { Path = Json.Str(e, "path"), Pattern = Json.Str(e, "pattern"), Replacement = Json.Str(e, "replacement") ?? "" });
+                }
                 var src = Json.Obj(d.ContainsKey("source") ? d["source"] : null);
                 var type = (Json.Str(src, "type") ?? "none").ToLowerInvariant();
                 switch (type)
