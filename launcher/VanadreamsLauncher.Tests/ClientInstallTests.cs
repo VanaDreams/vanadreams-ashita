@@ -140,6 +140,42 @@ namespace Vanadreams.Tests
         }
 
         [TestMethod]
+        public void RegisterScript_Japanese_WritesTheJapaneseKeyOnlyAndKeepsTheirSettings()
+        {
+            var s = ClientInstall.RegisterScript(@"C:\Games\JP", 0);
+            StringAssert.Contains(s, @"reg add ""HKLM\SOFTWARE\PlayOnline\InstallFolder"" /v 0001 /t REG_SZ /d ""C:\Games\JP\FINAL FANTASY XI\\"" /f /reg:32 || exit /b 1");
+            StringAssert.Contains(s, @"/v 1000 /t REG_SZ /d ""C:\Games\JP\PlayOnlineViewer"" /f /reg:32 || exit /b 2");
+            StringAssert.Contains(s, @"reg query ""HKLM\SOFTWARE\PlayOnline\Square\PlayOnlineViewer\Settings"" /v Language /reg:32 >nul 2>&1 || reg add");
+            Assert.IsFalse(s.Contains("PlayOnlineUS"));
+            Assert.IsFalse(s.Contains("padsin000"));
+            foreach (var dll in ClientInstall.ComServers) StringAssert.Contains(s, @"/s ""C:\Games\JP\" + dll + @"""");
+            StringAssert.Contains(s, "exit /b " + ClientInstall.RegisterStepsFor(0));
+            Assert.AreEqual(3 + ClientInstall.ComServers.Length, ClientInstall.RegisterStepsFor(0));
+        }
+
+        [TestMethod]
+        public void RegisterScript_European_WritesTheEuropeanKeyWithoutALanguage()
+        {
+            var s = ClientInstall.RegisterScript(@"C:\Games\EU", 2);
+            StringAssert.Contains(s, @"HKLM\SOFTWARE\PlayOnlineEU\InstallFolder");
+            Assert.IsFalse(s.Contains("Language"));
+            Assert.AreEqual(2 + ClientInstall.ComServers.Length, ClientInstall.RegisterStepsFor(2));
+        }
+
+        [TestMethod]
+        public void LoaderCommand_Lang_ReadsTheLoadersFlag()
+        {
+            Assert.AreEqual(1, LoaderCommand.Parse("--server x").Lang);
+            Assert.AreEqual(0, LoaderCommand.Parse("--server x --lang JP").Lang);
+            Assert.AreEqual(0, LoaderCommand.Parse("--lang jp --hairpin").Lang);
+            Assert.AreEqual(0, LoaderCommand.Parse("--lang 0").Lang);
+            Assert.AreEqual(2, LoaderCommand.Parse("--lang EU").Lang);
+            Assert.AreEqual(1, LoaderCommand.Parse("--lang US").Lang);
+            Assert.AreEqual(1, LoaderCommand.Parse("--lang").Lang);
+            Assert.AreEqual("--lang JP", LoaderCommand.Parse("--server x --lang JP").Extra);   // kept for the loader
+        }
+
+        [TestMethod]
         public void RegisterScript_AddsRetailPlayOnlineSettingsOnlyWhereMissing()
         {
             var s = ClientInstall.RegisterScript(@"C:\Games\Vanadreams");
