@@ -193,5 +193,41 @@ namespace Vanadreams.Tests
             Assert.AreEqual(0, AddonInstaller.InstalledToUpdate(cat, new Dictionary<string, string>()).Count);
             Assert.AreEqual(0, AddonInstaller.InstalledToUpdate(cat, null).Count);
         }
+
+        [TestMethod]
+        public void Skipping_LeavesOutTheListedFilesAndTheInstallDropsOnesAnEarlierRunPutThere()
+        {
+            var remote = new List<RepoFile>
+            {
+                Remote("ROM/17/24.DAT", "map"),
+                Remote("ROM/119/51.DAT", "old interface"),
+                Remote("ROM/119/57.DAT", "icons"),
+                Remote("ROM/0/12.DAT", "other"),
+            };
+            var kept = RepoSync.Skipping(remote, new[] { "rom/119/*" });   // case-insensitive, * runs across slashes
+            CollectionAssert.AreEqual(new[] { "ROM/17/24.DAT", "ROM/0/12.DAT" }, kept.Select(f => f.Rel).ToList());
+            Assert.AreEqual(4, RepoSync.Skipping(remote, null).Count);
+            Assert.AreEqual(4, RepoSync.Skipping(remote, new string[0]).Count);
+            Assert.AreEqual(3, RepoSync.Skipping(remote, new[] { "ROM/119/51.DAT" }).Count);   // an exact name works too
+            Assert.AreEqual(4, RepoSync.Skipping(remote, new[] { "ROM/11" }).Count);          // no partial match
+
+            // an earlier install that had the interface file: it is no longer listed, so Make removes it
+            Put("ROM/119/51.DAT", "old interface");
+            RepoSync.WriteManifest(_dir, remote.Select(f => f.Rel));
+            var plan = RepoSync.Make(kept, _dir);
+            CollectionAssert.AreEqual(new[] { "ROM/119/51.DAT" }, plan.Delete);
+        }
+
+        [TestMethod]
+        public void TheCatalogueReadsAnEntrysSkipList()
+        {
+            var cat = Catalog.Parse(@"{ ""schema"": 1, ""items"": [
+  { ""id"": ""xi-vision"", ""kind"": ""overlay"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""Drauku/FFXI-Vision"", ""path"": ""FFXI-map-dats"", ""branch"": ""master"", ""skip"": [ ""ROM/119/*"" ] }, ""install"": ""pivot-overlay"" },
+  { ""id"": ""crafty"", ""kind"": ""addon"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""VanaDreams/vanadreams-ashita"", ""path"": ""addons/crafty"" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load crafty"" }
+] }");
+            CollectionAssert.AreEqual(new[] { "ROM/119/*" }, cat.Find("xi-vision").Skip);
+            Assert.AreEqual(InstallAction.PivotOverlay, cat.Find("xi-vision").Install);
+            Assert.AreEqual(0, cat.Find("crafty").Skip.Count);
+        }
     }
 }
