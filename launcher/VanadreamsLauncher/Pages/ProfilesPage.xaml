@@ -108,13 +108,10 @@
                     </Grid>
                     <TextBlock Grid.Row="6" Text="Extra loader args" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
                     <TextBox Grid.Row="6" Grid.Column="1" x:Name="ExtraBox" VerticalAlignment="Center"/>
-                    <!-- window mode and size are on the Graphics page; the menu follows the window unless set here -->
-                    <TextBlock Grid.Row="7" Text="Menu size" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" ToolTip="The size the game draws its menus at. Blank follows the window size on the Graphics page.">
-                        <TextBox x:Name="MenuWBox" Width="64" VerticalAlignment="Center"/>
-                        <TextBlock Text=" × " VerticalAlignment="Center"/>
-                        <TextBox x:Name="MenuHBox" Width="64" VerticalAlignment="Center"/>
-                    </StackPanel>
+                    <!-- window mode and size are on the Graphics page; the menu is drawn at a scale of the window -->
+                    <TextBlock Grid.Row="7" Text="Menu scale" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+                    <ComboBox Grid.Row="7" Grid.Column="1" x:Name="MenuScaleBox" HorizontalAlignment="Left" MinWidth="170" FontSize="14" VerticalAlignment="Center"
+                              ToolTip="How big the game draws its menus and text. 1x is the smallest; 2x is twice as big. It follows the window size on the Graphics page."/>
                     <TextBlock Grid.Row="8" Text="Background" Style="{StaticResource Muted}" VerticalAlignment="Top" Margin="0,6,0,0"/>
                     <WrapPanel Grid.Row="8" Grid.Column="1"
                                 ToolTip="The resolution the game draws the world at. Higher is sharper and asks more of your graphics card: twice or four times the window size is usual, 4096 × 4096 is common. Leave blank for the game's own default.">

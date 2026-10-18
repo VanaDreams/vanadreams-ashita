@@ -58,7 +58,7 @@ namespace Vanadreams.Pages
             BootBox.Text = p.BootFile;
             ShowGameFolder(p);
             ExtraBox.Text = p.Command.Extra + (p.Command.Hairpin ? (p.Command.Extra.Length > 0 ? " " : "") + "--hairpin" : "");
-            MenuWBox.Text = p.MenuWidth > 0 ? p.MenuWidth.ToString() : ""; MenuHBox.Text = p.MenuHeight > 0 ? p.MenuHeight.ToString() : "";
+            ShowMenuScale(p);
             BgWBox.Text = p.BackgroundWidth > 0 ? p.BackgroundWidth.ToString() : ""; BgHBox.Text = p.BackgroundHeight > 0 ? p.BackgroundHeight.ToString() : "";
             AutoCloseBox.IsChecked = p.AutoClose;
             AdminBox.IsChecked = p.RunAsAdmin;
@@ -68,6 +68,37 @@ namespace Vanadreams.Pages
                 var bf = Path.IsPathRooted(p.BootFile) ? p.BootFile : Path.Combine(App.State.AshitaRoot, p.BootFile);
                 if (!File.Exists(bf)) Note.Text = "Boot file not found. Run Setup or browse to xiloader.";
             }
+        }
+
+        /// <summary>One row of the Menu scale box. Scale 0 is a menu size typed on an older launcher, kept as it is.</summary>
+        private sealed class MenuScaleChoice
+        {
+            public double Scale;
+            public string Text;
+            public override string ToString() => Text;
+        }
+
+        /// <summary>
+        /// 18 Oct 2026: the box was "Menu size", and a player who typed their window size there (2560 x 1600) got the
+        /// menus at 1:1, tiny. The game stretches the menu to the window, so the player picks how big, not a size.
+        /// </summary>
+        private void ShowMenuScale(Profile p)
+        {
+            MenuScaleBox.Items.Clear();
+            var current = p.MenuScale;
+            MenuScaleChoice picked = null;
+            foreach (var s in Profile.MenuScales)
+            {
+                var c = new MenuScaleChoice { Scale = s, Text = s + "x" + (s == 1 ? " (smallest)" : "") + (p.Height > 0 ? "   menu " + Math.Round(p.Width / s) + " × " + Math.Round(p.Height / s) : "") };
+                MenuScaleBox.Items.Add(c);
+                if (Math.Abs(s - current) < 0.02) picked = c;
+            }
+            if (picked == null)
+            {
+                picked = new MenuScaleChoice { Scale = 0, Text = "Custom   menu " + p.MenuWidth + " × " + p.MenuHeight };
+                MenuScaleBox.Items.Add(picked);
+            }
+            MenuScaleBox.SelectedItem = picked;
         }
 
         /// <summary>
@@ -132,9 +163,9 @@ namespace Vanadreams.Pages
             if (p.IsVanadreams) App.State.Settings.FfxiFolderOverride = GameBox.Text.Trim();
             else p.GameFolder = GameBox.Text.Trim();
             // the window's mode and size belong to the Graphics page, which saves them as they are picked
-            int mw, mh;
-            p.MenuWidth = int.TryParse(MenuWBox.Text, out mw) ? mw : (p.Width > 0 ? p.Width : -1);
-            p.MenuHeight = int.TryParse(MenuHBox.Text, out mh) ? mh : (p.Height > 0 ? p.Height : -1);
+            // a size typed on an older launcher that matches no scale stays as it was until another scale is picked
+            var scale = MenuScaleBox.SelectedItem as MenuScaleChoice;
+            if (scale != null && scale.Scale > 0) p.SetMenuScale(scale.Scale);
             // blank or not a number: the game's own default
             int bw, bh;
             p.BackgroundWidth = int.TryParse(BgWBox.Text, out bw) && bw > 0 ? bw : -1;
