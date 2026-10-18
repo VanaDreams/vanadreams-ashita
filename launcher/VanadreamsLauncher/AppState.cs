@@ -364,7 +364,7 @@ namespace Vanadreams
                 try
                 {
                     if (item.Source == SourceType.RepoFolder)
-                        await AddonInstaller.InstallRepoFolderAsync(Downloader, Settings, AshitaRoot, item);
+                        await AddonInstaller.InstallRepoFolderAsync(Downloader, Settings, AshitaRoot, item, null, FfxiFolder);
                     else if (item.Source != SourceType.Bundled) continue;   // release archives are installed from the Addons page
                     if (!Settings.EnabledAddons.Contains(item.Id, StringComparer.OrdinalIgnoreCase)) Settings.EnabledAddons.Add(item.Id);
                     Settings.GivenDefaults.Add(item.Id);
@@ -394,7 +394,7 @@ namespace Vanadreams
             {
                 try
                 {
-                    var plan = await AddonInstaller.InstallRepoFolderAsync(Downloader, Settings, AshitaRoot, item);
+                    var plan = await AddonInstaller.InstallRepoFolderAsync(Downloader, Settings, AshitaRoot, item, null, FfxiFolder);
                     changed = true;
                     Log.Info(item.Id + " updated to " + item.Version + " " + when + ": " + plan.Download.Count + " file(s) downloaded");
                 }
