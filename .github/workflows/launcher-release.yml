@@ -30,6 +30,7 @@ jobs:
           gh release view "v$v" --repo $env:GITHUB_REPOSITORY 2>$null
           if ($LASTEXITCODE -eq 0) { throw "Release v$v already exists; bump <Version> first" }
           "version=$v" >> $env:GITHUB_OUTPUT
+          $global:LASTEXITCODE = 0   # gh's "release not found" exit code must not end this step red
         env:
           GH_TOKEN: ${{ github.token }}
 
