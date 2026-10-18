@@ -265,7 +265,7 @@ namespace Vanadreams.Pages
         /// Make sure Windows starts the copy of the game in this root, fixing it in place when it does not.
         /// False only when it could not be put right and the player has been told why.
         /// </summary>
-        private bool EnsureGameIsRegistered(string root, RegisteredGame reg)
+        private bool EnsureGameIsRegistered(string root, RegisteredGame reg, int lang = 1)
         {
             var state = App.State;
             if (GameRegistration.PointsAt(reg, root) || _registerDidNotTake.Contains(root))
@@ -284,10 +284,10 @@ namespace Vanadreams.Pages
 
             try
             {
-                if (ClientInstall.RunRegister(root, state.Settings.DownloadsFolder))
+                if (ClientInstall.RunRegister(root, state.Settings.DownloadsFolder, lang))
                 {
                     Log.Info("registration pointed at " + ClientInstall.GameFolder(root));
-                    var after = GameRegistration.Read();
+                    var after = GameRegistration.Read(lang);
                     if (!GameRegistration.PointsAt(after, root))
                     {
                         _registerDidNotTake.Add(root);
@@ -368,10 +368,11 @@ namespace Vanadreams.Pages
             // prompt, and only on the launch after it drifted or when they switch between servers.
             // 26 Sept 2026: a player installed twice, to C: and then to D:, and the registration stayed on
             // the first. He spent an hour on it and nothing anywhere said why.
-            var reg = GameRegistration.Read();
+            var lang = _profile.Command.Lang;
+            var reg = GameRegistration.Read(lang);
             var root = GameRootFor(_profile, reg);
             var previousRoot = GameRegistration.CurrentRoot(reg);
-            if (root != null && !EnsureGameIsRegistered(root, reg)) return;
+            if (root != null && !EnsureGameIsRegistered(root, reg, lang)) return;
             // 12 Oct 2026: Mogsy's loader logged in and closed, because neither pol.exe nor FFXiMain.dll was where
             // Windows pointed. When no copy we know of is a whole game, the launch is all but sure to do the same.
             if (_profile.IsVanadreams && root == null &&
