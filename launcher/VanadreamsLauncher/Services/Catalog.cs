@@ -22,6 +22,7 @@ namespace Vanadreams.Services
         public List<string> Skip { get; set; } = new List<string>();   // repo-folder files left out of the install (RepoSync.Skipping); the author's repo is untouched
         public string PatchFile { get; set; }       // repo-folder: a file of the repo whose listed chunks are carried onto the player's own copy (DatPatch)
         public List<string> PatchChunks { get; set; } = new List<string>();
+        public string PatchBase { get; set; }       // repo-folder: URL of a clean current copy of PatchFile, built on when the player's own copy is an old mod's (DatPatch.HasLayoutOf)
         public string Branch { get; set; } = "main";
         public string Version { get; set; }
         public InstallAction Install { get; set; }
@@ -202,6 +203,7 @@ namespace Vanadreams.Services
                 var patch = Json.Obj(src != null && src.ContainsKey("patch") ? src["patch"] : null);
                 item.PatchFile = Json.Str(patch, "file");
                 item.PatchChunks = Json.Strings(patch, "chunks");
+                item.PatchBase = Json.Str(patch, "base");
                 item.Branch = Json.Str(src, "branch") ?? "main";
                 var install = (Json.Str(d, "install") ?? "").ToLowerInvariant();
                 item.Install = install == "unzip-to-root" ? InstallAction.UnzipToRoot

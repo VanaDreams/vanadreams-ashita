@@ -84,10 +84,48 @@ namespace Vanadreams.Tests
         public void TheCatalogueReadsAnEntrysPatch()
         {
             var cat = Catalog.Parse(@"{ ""schema"": 1, ""items"": [
-  { ""id"": ""xi-vision"", ""kind"": ""overlay"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""Drauku/FFXI-Vision"", ""path"": ""FFXI-map-dats"", ""branch"": ""master"", ""patch"": { ""file"": ""ROM/119/51.DAT"", ""chunks"": [ ""anc :32"", ""font:32"" ] } }, ""install"": ""pivot-overlay"" }
+  { ""id"": ""xi-vision"", ""kind"": ""overlay"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""Drauku/FFXI-Vision"", ""path"": ""FFXI-map-dats"", ""branch"": ""master"", ""patch"": { ""file"": ""ROM/119/51.DAT"", ""chunks"": [ ""anc :32"", ""font:32"" ], ""base"": ""https://example.org/51.DAT"" } }, ""install"": ""pivot-overlay"" }
 ] }");
             Assert.AreEqual("ROM/119/51.DAT", cat.Find("xi-vision").PatchFile);
             CollectionAssert.AreEqual(new[] { "anc :32", "font:32" }, cat.Find("xi-vision").PatchChunks);
+            Assert.AreEqual("https://example.org/51.DAT", cat.Find("xi-vision").PatchBase);
+        }
+
+        [TestMethod]
+        public void AnOldModsFileLacksTheCurrentMenuLayouts()
+        {
+            var clean = Dat(Chunk("que1", 48, 4, 1), Chunk("itm1", 48, 2, 1), Chunk("font", 32, 2, 1));
+            var newer = Dat(Chunk("que1", 48, 4, 2), Chunk("itm1", 48, 2, 2), Chunk("acop", 48, 2, 2), Chunk("font", 32, 2, 2));
+            var old = Dat(Chunk("que1", 48, 3, 1), Chunk("font", 32, 2, 9));
+            Assert.IsTrue(DatPatch.HasLayoutOf(clean, clean));
+            Assert.IsTrue(DatPatch.HasLayoutOf(newer, clean), "a newer client's file has all a clean one's layouts and more");
+            Assert.IsFalse(DatPatch.HasLayoutOf(old, clean), "an old mod's copy is missing itm1");
+        }
+
+        [TestMethod]
+        public void RepairPutsACleanFileBackOnlyWhenYoursIsAnOldModsCopy()
+        {
+            var dir = Path.Combine(Path.GetTempPath(), "dp" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            try
+            {
+                var own = Path.Combine(dir, "51.DAT"); var clean = Path.Combine(dir, "clean.dat");
+                var cleanBytes = Dat(Chunk("que1", 48, 4, 1), Chunk("itm1", 48, 2, 1));
+                File.WriteAllBytes(clean, cleanBytes);
+
+                var healthy = Dat(Chunk("que1", 48, 4, 3), Chunk("itm1", 48, 2, 3), Chunk("acop", 48, 2, 3));
+                File.WriteAllBytes(own, healthy);
+                Assert.IsFalse(DatPatch.RepairOwnFile(own, clean, out _));
+                CollectionAssert.AreEqual(healthy, File.ReadAllBytes(own), "a healthy file is left exactly as it is");
+
+                var old = Dat(Chunk("que1", 48, 3, 7));
+                File.WriteAllBytes(own, old);
+                Assert.IsTrue(DatPatch.RepairOwnFile(own, clean, out var said));
+                CollectionAssert.AreEqual(cleanBytes, File.ReadAllBytes(own));
+                CollectionAssert.AreEqual(old, File.ReadAllBytes(own + ".old-mod"));
+                StringAssert.Contains(said, "old-mod");
+            }
+            finally { Directory.Delete(dir, true); }
         }
     }
 }
