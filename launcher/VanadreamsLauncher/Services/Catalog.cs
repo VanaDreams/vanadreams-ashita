@@ -20,8 +20,7 @@ namespace Vanadreams.Services
         public string Asset { get; set; }           // glob for the release asset
         public string Path { get; set; }            // folder in the repo for repo-folder
         public List<string> Skip { get; set; } = new List<string>();   // repo-folder files left out of the install (RepoSync.Skipping); the author's repo is untouched
-        public string PatchFile { get; set; }       // repo-folder: a file of the repo whose listed chunks are carried onto the player's own copy (DatPatch)
-        public List<string> PatchChunks { get; set; } = new List<string>();
+        public List<PatchSpec> Patches { get; set; } = new List<PatchSpec>();   // repo-folder: files of the repo whose listed chunks are carried onto the player's own copies (DatPatch)
         public string Branch { get; set; } = "main";
         public string Version { get; set; }
         public InstallAction Install { get; set; }
@@ -199,9 +198,16 @@ namespace Vanadreams.Services
                 item.Asset = Json.Str(src, "asset");
                 item.Path = Json.Str(src, "path");
                 item.Skip = Json.Strings(src, "skip");
-                var patch = Json.Obj(src != null && src.ContainsKey("patch") ? src["patch"] : null);
-                item.PatchFile = Json.Str(patch, "file");
-                item.PatchChunks = Json.Strings(patch, "chunks");
+                // "patch" is one {file, chunks} or a list of them
+                var patchNode = src != null && src.ContainsKey("patch") ? src["patch"] : null;
+                var patchList = patchNode is System.Collections.IList ? Json.List(patchNode) : new List<object> { patchNode };
+                foreach (var node in patchList)
+                {
+                    var one = Json.Obj(node);
+                    var file = Json.Str(one, "file");
+                    if (string.IsNullOrEmpty(file)) continue;
+                    item.Patches.Add(new PatchSpec { File = file, Chunks = Json.Strings(one, "chunks") });
+                }
                 item.Branch = Json.Str(src, "branch") ?? "main";
                 var install = (Json.Str(d, "install") ?? "").ToLowerInvariant();
                 item.Install = install == "unzip-to-root" ? InstallAction.UnzipToRoot

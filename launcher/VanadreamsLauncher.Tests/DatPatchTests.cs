@@ -86,8 +86,37 @@ namespace Vanadreams.Tests
             var cat = Catalog.Parse(@"{ ""schema"": 1, ""items"": [
   { ""id"": ""xi-vision"", ""kind"": ""overlay"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""Drauku/FFXI-Vision"", ""path"": ""FFXI-map-dats"", ""branch"": ""master"", ""patch"": { ""file"": ""ROM/119/51.DAT"", ""chunks"": [ ""anc :32"", ""font:32"" ] } }, ""install"": ""pivot-overlay"" }
 ] }");
-            Assert.AreEqual("ROM/119/51.DAT", cat.Find("xi-vision").PatchFile);
-            CollectionAssert.AreEqual(new[] { "anc :32", "font:32" }, cat.Find("xi-vision").PatchChunks);
+            var patches = cat.Find("xi-vision").Patches;
+            Assert.AreEqual(1, patches.Count);
+            Assert.AreEqual("ROM/119/51.DAT", patches[0].File);
+            CollectionAssert.AreEqual(new[] { "anc :32", "font:32" }, patches[0].Chunks);
+        }
+
+        [TestMethod]
+        public void TheCatalogueReadsAListOfPatches()
+        {
+            var cat = Catalog.Parse(@"{ ""schema"": 1, ""items"": [
+  { ""id"": ""xiview"", ""kind"": ""overlay"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""KenshiDRK/XiView"", ""path"": ""Widescreen"", ""branch"": ""master"", ""patch"": [ { ""file"": ""ROM/119/51.DAT"", ""chunks"": [ ""*:32"" ] }, { ""file"": ""ROM/280/15.DAT"", ""chunks"": [ ""*:32"" ] } ] }, ""install"": ""pivot-overlay"" },
+  { ""id"": ""crafty"", ""kind"": ""addon"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""VanaDreams/vanadreams-ashita"", ""path"": ""addons/crafty"" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load crafty"" }
+] }");
+            Assert.AreEqual(2, cat.Find("xiview").Patches.Count);
+            Assert.AreEqual("ROM/280/15.DAT", cat.Find("xiview").Patches[1].File);
+            Assert.AreEqual(0, cat.Find("crafty").Patches.Count);
+        }
+
+        [TestMethod]
+        public void StarSpecCarriesEveryTextureOfTheSizeButNeverALayoutChunk()
+        {
+            var own = Dat(Chunk("tex1", 32, 2, 1), Chunk("tex2", 32, 2, 1), Chunk("tex2", 32, 2, 1), Chunk("big ", 32, 2, 1), Chunk("menu", 48, 2, 1));
+            var pack = Dat(Chunk("tex1", 32, 2, 9), Chunk("tex2", 32, 2, 8), Chunk("tex2", 32, 2, 7), Chunk("big ", 32, 3, 9), Chunk("menu", 48, 2, 9));
+            var r = DatPatch.Transplant(own, pack, new[] { "*:32" }, out var copied, out var skipped);
+            Assert.AreEqual(3, copied);
+            Assert.AreEqual(9, r[16]);         // tex1
+            Assert.AreEqual(8, r[32 + 16]);    // first tex2 pairs with the pack's first
+            Assert.AreEqual(7, r[64 + 16]);    // second with the second
+            Assert.AreEqual(1, r[96 + 16]);    // a different size stays yours
+            Assert.AreEqual(1, r[128 + 16]);   // type 48 is never touched by *:32
+            Assert.AreEqual(1, skipped.Count);
         }
     }
 }
