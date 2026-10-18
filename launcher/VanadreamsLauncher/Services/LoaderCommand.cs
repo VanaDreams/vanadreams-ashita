@@ -16,12 +16,19 @@ namespace Vanadreams.Services
         /// Tailscale makes ordinary outgoing connections, so it gets through routers and providers that
         /// refuse the game's ports.
         /// </summary>
-        public const string TailscaleServer = "100.114.52.41";
+        public const string TailscaleServer = "100.93.179.33";
+
+        /// <summary>
+        /// Where the server was on Tailscale before it moved to the new server PC (18 Oct 2026). Profiles that
+        /// still carry it are Tailscale profiles too, and are written out with the current address.
+        /// </summary>
+        public const string PreviousTailscaleServer = "100.114.52.41";
 
         public string Server { get; set; } = "";
         public bool Hairpin { get; set; }
 
-        public bool IsTailscale => string.Equals(Server, TailscaleServer, System.StringComparison.OrdinalIgnoreCase);
+        public bool IsTailscale => string.Equals(Server, TailscaleServer, System.StringComparison.OrdinalIgnoreCase)
+                                   || string.Equals(Server, PreviousTailscaleServer, System.StringComparison.OrdinalIgnoreCase);
 
         /// <summary>The command logs in to Vanadreams: its public name, any other fairywitch name with vanadreams in it, or its Tailscale address.</summary>
         public bool IsVanadreams => IsTailscale || (Server ?? "").IndexOf("vanadreams", System.StringComparison.OrdinalIgnoreCase) >= 0;
@@ -66,7 +73,11 @@ namespace Vanadreams.Services
         public string ToIniCommand()
         {
             var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(Server)) { parts.Add("--server"); parts.Add(Quote(Server)); }
+            if (!string.IsNullOrWhiteSpace(Server))
+            {
+                var server = string.Equals(Server, PreviousTailscaleServer, System.StringComparison.OrdinalIgnoreCase) ? TailscaleServer : Server;
+                parts.Add("--server"); parts.Add(Quote(server));
+            }
             if (Hairpin) parts.Add("--hairpin");
             if (!string.IsNullOrWhiteSpace(Extra)) parts.Add(Extra.Trim());
             return string.Join(" ", parts);
