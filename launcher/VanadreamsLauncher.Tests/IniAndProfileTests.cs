@@ -100,6 +100,34 @@ sandbox = 0
         }
 
         [TestMethod]
+        public void Profile_menu_scale_divides_the_window_into_registry_0037_and_0038()
+        {
+            var path = Path.Combine(_dir, "config", "boot", "vanadreams.ini");
+            File.WriteAllText(path, Example);
+            var p = Profile.Load(path);
+            p.Width = 2560; p.Height = 1600;
+            p.MenuWidth = 2560; p.MenuHeight = 1600;
+            Assert.AreEqual(1, p.MenuScale, 0.001, "menu the size of the window is 1:1");
+            p.SetMenuScale(2);
+            p.Save();
+            var again = Profile.Load(path);
+            Assert.AreEqual("1280", again.Ini.Get("ffxi.registry", "0037"));
+            Assert.AreEqual("800", again.Ini.Get("ffxi.registry", "0038"));
+            Assert.AreEqual(2, again.MenuScale, 0.001);
+            Assert.AreEqual(2560, again.Width, "the window size is left as it was");
+        }
+
+        [TestMethod]
+        public void Default_menu_scale_keeps_the_menu_at_most_1200_tall()
+        {
+            Assert.AreEqual(1, Profile.DefaultMenuScale(1080));
+            Assert.AreEqual(1.5, Profile.DefaultMenuScale(1600));
+            Assert.AreEqual(1.25, Profile.DefaultMenuScale(1440));
+            Assert.AreEqual(2, Profile.DefaultMenuScale(2160));
+            Assert.AreEqual(1, Profile.DefaultMenuScale(-1), "unknown window");
+        }
+
+        [TestMethod]
         public void Profile_background_resolution_is_registry_0003_and_0004()
         {
             var path = Path.Combine(_dir, "config", "boot", "vanadreams.ini");

@@ -145,7 +145,7 @@ namespace Vanadreams.Pages
                     p.Script = "vanadreams.txt";
                     p.AutoClose = true;
                     // a new player starts borderless at their own screen's size, never fullscreen
-                    if (p.Width <= 0) { var s = ScreenSize.PrimaryPixels(); p.Width = s.Width; p.Height = s.Height; p.MenuWidth = s.Width; p.MenuHeight = s.Height; }
+                    if (p.Width <= 0) { var s = ScreenSize.PrimaryPixels(); p.Width = s.Width; p.Height = s.Height; p.SetMenuScale(Profile.DefaultMenuScale(s.Height)); }
                     if (p.Mode == WindowMode.Registry || p.Mode == WindowMode.Fullscreen) p.Mode = WindowMode.Borderless;
                     p.Save();
                 }

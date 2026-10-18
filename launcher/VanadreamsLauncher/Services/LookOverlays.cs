@@ -24,6 +24,8 @@ namespace Vanadreams.Services
     {
         public const string Looks = "vanadreams-looks";
         public const string Title = "vanadreams-title";
+        /// <summary>Corrections to retail dialog lines (client/text-pack). It only ever ships as an overlay.</summary>
+        public const string Text = "vanadreams-text";
         public const string Marker = ".vanadreams-overlays.txt";
 
         /// <summary>The overlay a chunk belongs to, or null. The effects zip (bootloader DLLs) is not a DAT pack.</summary>
@@ -33,6 +35,7 @@ namespace Vanadreams.Services
             if (chunkName.StartsWith("looks-effects", StringComparison.OrdinalIgnoreCase)) return null;
             if (chunkName.StartsWith("looks-", StringComparison.OrdinalIgnoreCase)) return Looks;
             if (chunkName.StartsWith("vanadreams-title", StringComparison.OrdinalIgnoreCase)) return Title;
+            if (chunkName.StartsWith("vanadreams-text", StringComparison.OrdinalIgnoreCase)) return Text;
             return null;
         }
 
@@ -76,14 +79,14 @@ namespace Vanadreams.Services
         /// The shipped overlays an install or a migration put on disk are listed in pivot.ini once each; after that the Install
         /// page's switch is the player's. Returns the ids listed now. XIPivot gives the first-listed overlay priority (its sample
         /// pivot.ini: "the overlay with the lower number always wins"), which the Install page shows at the bottom. The title
-        /// pack goes first, so it is the bottom row; the two packs share no files, so their order changes nothing in game.
+        /// pack goes first, so it is the bottom row; the packs share no files, so their order changes nothing in game.
         /// 16 Oct 2026: a fresh install unpacked vanadreams-looks with nothing listing it, and the game showed the old look.
         /// </summary>
         public static List<string> GiveOnce(string ashitaRoot, ICollection<string> given)
         {
             var listed = new List<string>();
             if (string.IsNullOrWhiteSpace(ashitaRoot)) return listed;
-            foreach (var id in new[] { Title, Looks })
+            foreach (var id in new[] { Title, Text, Looks })
             {
                 var key = "overlay:" + id;
                 if (given.Contains(key) || !Directory.Exists(Path.Combine(PivotConfig.OverlaysRoot(ashitaRoot), id))) continue;

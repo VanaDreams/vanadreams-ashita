@@ -76,7 +76,7 @@ end
 -- address the launcher switches to when a network blocks the game's ports, and the home network.
 -- Kept here rather than in the settings file, so a list saved by an older version never hides one.
 local VANADREAMS_NAMES = { 'vanadreams', 'fairywitch' };
-local VANADREAMS_ADDRS = { '100.114.52.41', '192.168.0.19' };
+local VANADREAMS_ADDRS = { '100.93.179.33', '192.168.0.12', '100.114.52.41', '192.168.0.19' };
 local VANADREAMS_HOST  = 'vanadreams.fairywitch.ca';
 
 local function resolve(host)

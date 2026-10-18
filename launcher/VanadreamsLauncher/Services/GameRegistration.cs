@@ -117,9 +117,9 @@ namespace Vanadreams.Services
         }
 
         /// <summary>Read the registration as a 32-bit process sees it, which is how xiloader and the game see it.</summary>
-        public static RegisteredGame Read()
+        public static RegisteredGame Read(int lang = 1)
         {
-            var reg = new RegisteredGame { GameFolder = ClientVersion.FindFfxiFolder(), ViewerFolder = ReadViewerFolder() };
+            var reg = new RegisteredGame { GameFolder = ClientVersion.FindFfxiFolder(lang), ViewerFolder = ReadViewerFolder(lang) };
             try
             {
                 using (var hkcr = RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, RegistryView.Registry32))
@@ -150,9 +150,9 @@ namespace Vanadreams.Services
             return reg;
         }
 
-        private static string ReadViewerFolder()
+        private static string ReadViewerFolder(int lang)
         {
-            foreach (var vendor in new[] { "PlayOnlineUS", "PlayOnline", "PlayOnlineEU" })
+            foreach (var vendor in ClientInstall.VendorKeys(lang))
             {
                 try
                 {

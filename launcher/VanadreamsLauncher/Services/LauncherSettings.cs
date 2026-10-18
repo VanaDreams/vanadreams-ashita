@@ -34,6 +34,12 @@ namespace Vanadreams.Services
         /// own plays this one, so taking the registration for Vanadreams never strands the player's other game.
         /// </summary>
         public string OtherGameRoot { get; set; } = "";
+        /// <summary>
+        /// The game folder (…\FINAL FANTASY XI) the last Play started. Macros and config live in that copy's USER
+        /// folder, so when the next Play starts a different copy they are carried across (UserFolderBackup.CarryOver).
+        /// Empty on a launcher that has not played since 0.2.48.
+        /// </summary>
+        public string LastGameFolder { get; set; } = "";
         public string LastProfile { get; set; } = "";
         public string CatalogUrl { get; set; } = "https://raw.githubusercontent.com/VanaDreams/vanadreams-ashita/main/catalog.json";
         public string StatusUrl { get; set; } = ServerStatusClient.DefaultUrl;
@@ -85,6 +91,7 @@ namespace Vanadreams.Services
                 s.FfxiFolderOverride = Json.Str(d, "ffxiFolderOverride", "");
                 s.GameInstallRoot = Json.Str(d, "gameInstallRoot", "");
                 s.OtherGameRoot = Json.Str(d, "otherGameRoot", "");
+                s.LastGameFolder = Json.Str(d, "lastGameFolder", "");
                 s.LastProfile = Json.Str(d, "lastProfile", "");
                 s.CatalogUrl = Json.Str(d, "catalogUrl", s.CatalogUrl);
                 s.StatusUrl = Json.Str(d, "statusUrl", s.StatusUrl);
@@ -134,6 +141,7 @@ namespace Vanadreams.Services
                 { "ffxiFolderOverride", FfxiFolderOverride ?? "" },
                 { "gameInstallRoot", GameInstallRoot ?? "" },
                 { "otherGameRoot", OtherGameRoot ?? "" },
+                { "lastGameFolder", LastGameFolder ?? "" },
                 { "lastProfile", LastProfile ?? "" },
                 { "catalogUrl", CatalogUrl },
                 { "statusUrl", StatusUrl },
