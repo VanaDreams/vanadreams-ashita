@@ -54,24 +54,19 @@ namespace Vanadreams.Services
         /// </summary>
         private static async Task PatchOwnFileAsync(Downloader downloader, List<RepoFile> listed, CatalogItem item, string target, string gameFolder)
         {
-            if (item.Patches.Count == 0 || string.IsNullOrWhiteSpace(gameFolder)) return;
-            foreach (var patch in item.Patches)
+            if (string.IsNullOrEmpty(item.PatchFile) || item.PatchChunks.Count == 0 || string.IsNullOrWhiteSpace(gameFolder)) return;
+            var temp = Path.Combine(Path.GetTempPath(), "vdl-donor-" + Guid.NewGuid().ToString("N"));
+            try
             {
-                if (patch.Chunks.Count == 0) continue;
-                var temp = Path.Combine(Path.GetTempPath(), "vdl-donor-" + Guid.NewGuid().ToString("N"));
-                try
-                {
-                    var donor = listed.FirstOrDefault(f => string.Equals(f.Rel, patch.File, StringComparison.OrdinalIgnoreCase));
-                    if (donor == null || !RepoSync.IsSafeRel(patch.File)) { Log.Warn(item.Id + ": " + patch.File + " is not in the repo folder"); continue; }
-                    await downloader.DownloadFileAsync(donor.Url, temp).ConfigureAwait(false);
-                    var own = Path.Combine(gameFolder, patch.File.Replace('/', '\\'));
-                    var chunks = patch.Chunks;
-                    var said = await Task.Run(() => DatPatch.ApplyToFile(own, temp, RepoSync.LocalPath(target, patch.File), chunks)).ConfigureAwait(false);
-                    Log.Info(item.Id + " " + patch.File + ": " + said);
-                }
-                catch (Exception ex) { Log.Warn(item.Id + ": interface patch of " + patch.File + " not applied: " + ex.Message); }
-                finally { try { File.Delete(temp); } catch (Exception) { /* a temp file left behind is harmless */ } }
+                var donor = listed.FirstOrDefault(f => string.Equals(f.Rel, item.PatchFile, StringComparison.OrdinalIgnoreCase));
+                if (donor == null || !RepoSync.IsSafeRel(item.PatchFile)) { Log.Warn(item.Id + ": " + item.PatchFile + " is not in the repo folder"); return; }
+                await downloader.DownloadFileAsync(donor.Url, temp).ConfigureAwait(false);
+                var own = Path.Combine(gameFolder, item.PatchFile.Replace('/', '\\'));
+                var said = await Task.Run(() => DatPatch.ApplyToFile(own, temp, RepoSync.LocalPath(target, item.PatchFile), item.PatchChunks)).ConfigureAwait(false);
+                Log.Info(item.Id + ": " + said);
             }
+            catch (Exception ex) { Log.Warn(item.Id + ": interface patch not applied: " + ex.Message); }
+            finally { try { File.Delete(temp); } catch (Exception) { /* a temp file left behind is harmless */ } }
         }
 
         /// <summary>

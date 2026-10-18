@@ -656,30 +656,12 @@
         "type": "repo-folder",
         "repo": "KenshiDRK/XiView",
         "path": "Widescreen",
-        "branch": "master",
-        "skip": [
-          "ROM/119/51.DAT",
-          "ROM/280/15.DAT"
-        ],
-        "patch": [
-          {
-            "file": "ROM/119/51.DAT",
-            "chunks": [
-              "*:32"
-            ]
-          },
-          {
-            "file": "ROM/280/15.DAT",
-            "chunks": [
-              "*:32"
-            ]
-          }
-        ]
+        "branch": "master"
       },
-      "version": "2.5.4",
+      "version": "2.5.3",
       "install": "pivot-overlay",
       "docs": "https://github.com/KenshiDRK/XiView",
-      "description": "A cleaner game interface: menu skins, fonts and menu icons (KenshiDRK's XI View 2.0, widescreen version, used with the permission of Drauku). Loaded through XIPivot so your game files stay as they are. To keep the game from crashing on the current client, the launcher takes only the pack's pictures and lays them onto your own current interface files; the old menu layouts are never copied. It needs XIPivot ticked and installed. For status icons to show, set Menu > Config > Misc > Icon Type 2 in game."
+      "description": "A cleaner game interface: menu skins for 16:9 and 16:10 screens, fonts, menu icons and status icons (KenshiDRK's XI View 2.0, widescreen version). Loaded through XIPivot so your game files stay as they are, and it is made for the current client. It needs XIPivot ticked and installed. For status icons to show, set Menu > Config > Misc > Icon Type 2 in game."
     },
     {
       "id": "vanatunes",
