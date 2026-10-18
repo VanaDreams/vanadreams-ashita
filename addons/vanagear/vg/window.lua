@@ -143,18 +143,27 @@ renderSlots = function(name)
         local ranks = ex and ex.ranks[slot];
         imgui.Text(string.format('%-6s', slotName));
         imgui.SameLine(80);
-        if (gVana.Held[slot] ~= nil) and (not own[slotName]) then
+        if (gVana.Held[slot] ~= nil) and (not own[slotName]) and (slot > 3) then
             imgui.TextDisabled(gVana.Held[slot]);
         else
             imgui.PushItemWidth(260);
-            local preview = (entry or '(nothing)') .. (own[slotName] and '  *' or '');
+            -- a weapon slot with weapons off is left alone unless you pick a weapon here
+            local weaponHeld = (slot <= 3) and (gVana.Held[slot] ~= nil) and (not own[slotName]);
+            local preview = (weaponHeld and '(left alone)' or (entry or '(nothing)')) .. (own[slotName] and '  *' or '');
             if (imgui.BeginCombo('##vg_slot_' .. slotName, preview, ImGuiComboFlags_None)) then
                 local builtPiece = pieceName(built[slotName]);
-                if (imgui.Selectable('Built: ' .. (builtPiece or 'nothing') .. '##vg_built_' .. slotName, not own[slotName])) then
+                if (weaponHeld or ((slot <= 3) and (not gVana.Prefs.Weapons))) then
+                    if (imgui.Selectable('Leave it alone##vg_built_' .. slotName, not own[slotName])) then
+                        mine.SetSlot(name, slotName, nil);
+                    end
+                elseif (imgui.Selectable('Built: ' .. (builtPiece or 'nothing') .. '##vg_built_' .. slotName, not own[slotName])) then
                     mine.SetSlot(name, slotName, nil);
                 end
                 if (imgui.Selectable('Nothing (take it off)##vg_none_' .. slotName, own[slotName] and entry == 'remove')) then
                     mine.SetSlot(name, slotName, 'remove');
+                end
+                if (slot <= 3) then
+                    imgui.TextDisabled('Picking a weapon here is the only way this set changes it.');
                 end
                 for _, piece in ipairs(choices(slot)) do
                     if (imgui.Selectable(piece .. '##vg_pick_' .. slotName, own[slotName] and entry == piece)) then

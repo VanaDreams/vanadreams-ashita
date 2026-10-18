@@ -530,6 +530,17 @@ local EquipSet = function(set, style)
         end
     end
 
+    -- vanagear: with /vg weapons off nothing from any set, built, profile or imported, touches
+    -- Main, Sub or Range; only a weapon the player picked in one of their own sets goes on
+    if (gVana ~= nil) and (gVana.Prefs ~= nil) and (not gVana.Prefs.Weapons) then
+        local picks = gVana.WeaponPicks or {};
+        for i = 1,3,1 do
+            if (set[i] ~= nil) and (not picks[set[i].Name]) then
+                set[i] = nil;
+            end
+        end
+    end
+
     --Flag items that are already equipped.  If all are already equipped, don't bother parsing inventory.
     if (FlagEquippedItems(set) == true) then
         return;

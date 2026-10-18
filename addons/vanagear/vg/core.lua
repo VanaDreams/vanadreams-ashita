@@ -202,6 +202,16 @@ core.ApplyOwn = function()
     for k in pairs(gVana.Sets) do gVana.Sets[k] = nil; end
     for k, v in pairs(sets) do gVana.Sets[k] = v; end
     gVana.Own = own;
+    -- the weapons the player picked in their own sets: the only ones that go on with weapons off
+    local picks = {};
+    for _, set in pairs(require('vg.mine').Sets()) do
+        for _, slot in ipairs({ 'Main', 'Sub', 'Range' }) do
+            local piece = set[slot];
+            if (type(piece) == 'table') then piece = piece.Name; end
+            if (type(piece) == 'string') then picks[string.lower(piece)] = true; end
+        end
+    end
+    gVana.WeaponPicks = picks;
 end
 
 -- ---------------------------------------------------------------- watching for changes

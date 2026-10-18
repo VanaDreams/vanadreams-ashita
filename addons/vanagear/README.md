@@ -42,6 +42,13 @@ window, every slot's list of your own set also offers your support job's pieces;
 `/vg set <name> <slot> <item>` (for example `/vg set Axe Main Great Axe` on BLM/WAR), then
 `/vg wear <name>`. Weapon skills you get this way cap at 80% of the support job's cap.
 
+## Weapons
+
+With `/vg weapons off` (the default) nothing touches Main, Sub or Range: not the built sets, not a
+profile's sets, not an imported GearSwap file. The one exception is a weapon you pick yourself:
+in the `/vg` window, the Main, Sub and Range slots have a list that starts at "Leave it alone",
+and a weapon picked there goes on with that set.
+
 ## Your own sets
 
 - `/vg dress` stops the swapping. Put on what you like from the equipment menu, then
