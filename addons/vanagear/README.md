@@ -44,10 +44,10 @@ window, every slot's list of your own set also offers your support job's pieces;
 
 ## Weapons
 
-With `/vg weapons off` (the default) nothing touches Main, Sub or Range: not the built sets, not a
-profile's sets, not an imported GearSwap file. The one exception is a weapon you pick yourself:
-in the `/vg` window, the Main, Sub and Range slots have a list that starts at "Leave it alone",
-and a weapon picked there goes on with that set.
+With `/vg weapons off` (the default) nothing changes Main, Sub or Range: not the built sets, not
+your own sets, not a profile's sets, not an imported GearSwap file. The only way a weapon changes
+is the lists on the Main, Sub and Range lines of the `/vg` window (or `/vg weapon main <item>`):
+they start at "Leave it alone", and the weapon picked is worn in every set for that job.
 
 ## Your own sets
 
