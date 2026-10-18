@@ -1,13 +1,11 @@
 # Builds, tests, signs (Azure Artifact Signing) and publishes the launcher as a GitHub release, the same steps as
-# launcher\release.ps1 -Publish but on a GitHub runner. Run it from the Actions tab, or push a tag v<version>.
+# launcher\release.ps1 -Publish but on a GitHub runner. Run it from the Actions tab on main.
 # Azure sign-in is OpenID Connect (no stored password): repo variables AZURE_CLIENT_ID, AZURE_TENANT_ID and
 # AZURE_SUBSCRIPTION_ID name an app registration with the 'Artifact Signing Certificate Profile Signer' role.
 name: Launcher release
 
 on:
   workflow_dispatch:
-  push:
-    tags: ['v*']
 
 concurrency:
   group: launcher-release
@@ -29,7 +27,6 @@ jobs:
         run: |
           $v = ([xml](Get-Content launcher\VanadreamsLauncher\VanadreamsLauncher.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
           if (-not $v) { throw 'No <Version> in the csproj' }
-          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$v") { throw "Tag $env:GITHUB_REF_NAME does not match version $v" }
           gh release view "v$v" --repo $env:GITHUB_REPOSITORY 2>$null
           if ($LASTEXITCODE -eq 0) { throw "Release v$v already exists; bump <Version> first" }
           "version=$v" >> $env:GITHUB_OUTPUT
