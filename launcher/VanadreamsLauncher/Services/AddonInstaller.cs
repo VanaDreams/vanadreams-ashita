@@ -20,7 +20,7 @@ namespace Vanadreams.Services
         /// </summary>
         public static async Task<RepoSync.Plan> InstallRepoFolderAsync(Downloader downloader, LauncherSettings settings, string ashitaRoot, CatalogItem item, Action<string, int, int> report = null)
         {
-            var files = await downloader.ListRepoFolderAsync(item.Repo, item.Path, item.Branch).ConfigureAwait(false);
+            var files = RepoSync.Skipping(await downloader.ListRepoFolderAsync(item.Repo, item.Path, item.Branch).ConfigureAwait(false), item.Skip);
             if (files.Count == 0) throw new InvalidOperationException("Nothing found at " + item.Repo + "/" + item.Path + ".");
 
             var target = TargetFolder(ashitaRoot, item);

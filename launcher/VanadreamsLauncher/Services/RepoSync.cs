@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using System.Text;
 
 namespace Vanadreams.Services
@@ -57,6 +58,21 @@ namespace Vanadreams.Services
             if (string.IsNullOrWhiteSpace(rel)) return false;
             if (Path.IsPathRooted(rel) || rel.Contains(":")) return false;
             return !rel.Split('/', '\\').Any(part => part == ".." || part == ".");
+        }
+
+        /// <summary>
+        /// The listing without the files a catalogue entry says to leave out. A pattern is matched against the path under the
+        /// folder, case-insensitively, with * for any run of characters (slashes too), so "ROM/119/*" leaves a whole folder out.
+        /// Nothing about the repo changes: the files are simply never downloaded, and one an earlier install put there is
+        /// removed by Make because it is no longer listed.
+        /// </summary>
+        public static List<RepoFile> Skipping(IEnumerable<RepoFile> remote, IEnumerable<string> patterns)
+        {
+            var all = (remote ?? Enumerable.Empty<RepoFile>()).ToList();
+            var rx = (patterns ?? Enumerable.Empty<string>()).Where(p => !string.IsNullOrWhiteSpace(p))
+                .Select(p => new Regex("^" + Regex.Escape(p.Trim().Replace('\\', '/')).Replace("\\*", ".*") + "$",
+                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)).ToList();
+            return rx.Count == 0 ? all : all.Where(f => !rx.Any(r => r.IsMatch((f.Rel ?? "").Replace('\\', '/')))).ToList();
         }
 
         public static string LocalPath(string targetDir, string rel) => Path.Combine(targetDir, rel.Replace('/', '\\'));
