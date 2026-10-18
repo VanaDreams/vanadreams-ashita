@@ -1,0 +1,95 @@
+# Builds, tests, signs (Azure Artifact Signing) and publishes the launcher as a GitHub release, the same steps as
+# launcher\release.ps1 -Publish but on a GitHub runner. Run it from the Actions tab on main.
+# Azure sign-in is OpenID Connect (no stored password): repo variables AZURE_CLIENT_ID, AZURE_TENANT_ID and
+# AZURE_SUBSCRIPTION_ID name an app registration with the 'Artifact Signing Certificate Profile Signer' role.
+name: Launcher release
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: launcher-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Version
+        id: ver
+        shell: pwsh
+        run: |
+          $v = ([xml](Get-Content launcher\VanadreamsLauncher\VanadreamsLauncher.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          if (-not $v) { throw 'No <Version> in the csproj' }
+          gh release view "v$v" --repo $env:GITHUB_REPOSITORY 2>$null
+          if ($LASTEXITCODE -eq 0) { throw "Release v$v already exists; bump <Version> first" }
+          "version=$v" >> $env:GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Build and test
+        shell: pwsh
+        run: |
+          dotnet build launcher\VanadreamsLauncher\VanadreamsLauncher.csproj -c Release --nologo -v q
+          if ($LASTEXITCODE) { throw 'Build failed.' }
+          dotnet test launcher\VanadreamsLauncher.Tests -c Release --nologo -v q
+          if ($LASTEXITCODE) { throw 'Tests failed.' }
+          New-Item -ItemType Directory -Force launcher\dist | Out-Null
+          Copy-Item launcher\VanadreamsLauncher\bin\Release\net48\VanadreamsLauncher.exe launcher\dist\VanadreamsLauncher.exe
+
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Sign
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: https://eus.codesigning.azure.net/
+          signing-account-name: vanadreams
+          certificate-profile-name: vanadreams-public
+          files-folder: launcher\dist
+          files-folder-filter: exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+          exclude-environment-credential: true
+          exclude-workload-identity-credential: true
+          exclude-managed-identity-credential: true
+          exclude-shared-token-cache-credential: true
+          exclude-visual-studio-credential: true
+          exclude-visual-studio-code-credential: true
+          exclude-azure-cli-credential: false
+          exclude-azure-powershell-credential: true
+          exclude-azure-developer-cli-credential: true
+          exclude-interactive-browser-credential: true
+
+      - name: Verify signature and scan
+        shell: pwsh
+        run: |
+          $sig = Get-AuthenticodeSignature launcher\dist\VanadreamsLauncher.exe
+          if ($sig.Status -ne 'Valid') { throw "Signature is $($sig.Status)" }
+          "Signed by: $($sig.SignerCertificate.Subject)"
+          $mpcmd = Get-ChildItem 'C:\ProgramData\Microsoft\Windows Defender\Platform\*\MpCmdRun.exe' -ErrorAction SilentlyContinue |
+                   Sort-Object FullName -Descending | Select-Object -First 1
+          if ($mpcmd) {
+            & $mpcmd.FullName -Scan -ScanType 3 -File (Resolve-Path launcher\dist\VanadreamsLauncher.exe) -DisableRemediation | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "Defender flagged the exe (exit $LASTEXITCODE). Not publishing." }
+            'Defender: clean'
+          } else { 'Defender is not on this runner; skipped the scan' }
+
+      - name: Publish
+        shell: pwsh
+        run: |
+          $v = '${{ steps.ver.outputs.version }}'
+          gh release create "v$v" launcher\dist\VanadreamsLauncher.exe --repo $env:GITHUB_REPOSITORY --title "Vanadreams Launcher $v" --notes "Signed build. Download VanadreamsLauncher.exe and run it."
+          if ($LASTEXITCODE) { throw 'gh release create failed.' }
+        env:
+          GH_TOKEN: ${{ github.token }}
