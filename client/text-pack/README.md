@@ -22,3 +22,11 @@ Bump `PACK` in `build.py` for every new pack, upload the zip and append its `.ch
 
 Teilsa stands in Port San d'Oria (F-9), at the foot of the stairs up to Northern San d'Oria; the Japanese line says
 exactly that (北サンドリア方面の階段下). The English line had a typo and put her in the wrong city.
+
+### Support job lesson (Isacio in Selbina, Vera in Mhaura)
+
+Vanadreams runs `SUBJOB_RATIO = 3`: the support job's level equals the main job's level, not half of it. Both NPCs
+that teach the support job (Elder Memories / The Old Lady) said "half". The lines that mentioned half (Selbina file id 6668
+lines 6870, 6872, 6876, 6877; Mhaura file id 6669 lines 7064, 7066, 7068, 7070, 7071) now say the support job is held to the main job's level.
+Isacio's closing advice (line 6878) also says a beastmaster and a summoner, in either order, keep two companions at once
+(`main.ENABLE_DUAL_PETS`, covered by `scripts/tests/systems/dual_pets.lua` in the server repo).
