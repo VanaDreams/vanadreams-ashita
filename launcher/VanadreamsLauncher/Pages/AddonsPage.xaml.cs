@@ -128,7 +128,7 @@ namespace Vanadreams.Pages
                 return;
             }
             ItemName.Text = i.Name;
-            var kind = i.Kind == "polplugin" ? "POL plugin" : i.Kind == "plugin" ? "Plugin" : "Addon";
+            var kind = i.Kind == "polplugin" ? "POL plugin" : i.Kind == "plugin" ? "Plugin" : i.Kind == "overlay" ? "Game-file pack" : "Addon";
             ItemMeta.Text = kind + (string.IsNullOrEmpty(i.Maintainer) && string.IsNullOrEmpty(i.Repo) ? "" : " by " + (i.Maintainer ?? i.Repo.Split('/')[0])) + (string.IsNullOrEmpty(i.Version) ? "" : " · " + i.Version) + (i.Source == SourceType.GithubRelease ? " · built for interface " + App.State.Catalog.Interface : "");
             ItemDesc.Text = i.Description ?? "";
             if (!i.HasV4)

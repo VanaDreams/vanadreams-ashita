@@ -618,6 +618,25 @@
       }
     },
     {
+      "id": "xi-vision",
+      "name": "XI-Vision maps",
+      "kind": "overlay",
+      "maintainer": "Drauku",
+      "source": {
+        "type": "repo-folder",
+        "repo": "Drauku/FFXI-Vision",
+        "path": "FFXI-map-dats",
+        "branch": "master",
+        "skip": [
+          "ROM/119/*"
+        ]
+      },
+      "version": "2022-09-20",
+      "install": "pivot-overlay",
+      "docs": "https://github.com/Drauku/FFXI-Vision",
+      "description": "Redrawn zone maps (Drauku's fork of Caradog's XI-Vision), loaded through XIPivot so your game files stay as they are. It needs XIPivot ticked and installed. Its ROM/119 interface files are left out on purpose: they are from an older client and can crash the game when the chat window is maximised."
+    },
+    {
       "id": "vanatunes",
       "name": "vanatunes",
       "kind": "addon",
