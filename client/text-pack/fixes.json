@@ -99,5 +99,19 @@
       "new": "Hoh-hoh, I'm glad you stopped by to see me! You may already have a support job, but let me tell you how they really work.",
       "why": "Everyone on Vanadreams starts with support jobs unlocked, so the thank-you-for-the-items opening no longer fits; it welcomes the player and explains how support jobs work."
     }
+  ],
+  "items": [
+    {
+      "fid": 55668,
+      "what": "Armor 2 English item strings, Jubilee Ring (item 27593)",
+      "id": 27593,
+      "old_name": "Jubilee Ring",
+      "new_name": "Skillz Ring",
+      "old_log": ["jubilee ring", "jubilee rings"],
+      "new_log": ["skillz ring", "skillz rings"],
+      "old_desc": "Experience point bonus: +50%\nSkill gains increased by 100% when under 400 skill.",
+      "new_desc": "Skill-up rate +100%\n(skill 300 or below)",
+      "why": "The ring is now the Skillz Ring: skill-up rate +100% up to skill 300, and no experience bonus."
+    }
   ]
 }
