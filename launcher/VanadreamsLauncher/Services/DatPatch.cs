@@ -88,6 +88,19 @@ namespace Vanadreams.Services
             return layouts(reference).All(r => mine.TryGetValue(r.Key, out var n) && n >= r.Value);
         }
 
+        /// <summary>Menu layouts Square Enix added to 51.DAT in the March 2026 update; XI-Vision's 2018 copy and every older interface mod lack them.</summary>
+        public static readonly string[] CurrentLayouts = { "acop", "fp_1", "fp_c", "fp_h", "fp_i", "hold", "itm1", "itm2", "mast", "scml", "sto1", "stor" };
+
+        /// <summary>
+        /// True for a ROM/119/51.DAT from an old client, such as XI-Vision's: it reads as a DAT but lacks a current menu
+        /// layout, so the game crashes when it opens that menu (Quests). Needs no clean copy to tell, so it is cheap at start.
+        /// </summary>
+        public static bool IsOldInterface(byte[] d)
+        {
+            var layouts = new HashSet<string>(Chunks(d).Where(c => c.Type == 48).Select(c => c.Name.TrimEnd(' ', '\0')));
+            return layouts.Count > 0 && CurrentLayouts.Any(n => !layouts.Contains(n));
+        }
+
         /// <summary>
         /// When the player's own file is missing or an old mod's copy (see HasLayoutOf), puts the clean file in its place,
         /// keeping theirs beside it as name.old-mod, and returns true: the patch then builds on the clean file. A healthy
