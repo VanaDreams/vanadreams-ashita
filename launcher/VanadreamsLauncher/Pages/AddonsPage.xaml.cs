@@ -209,7 +209,7 @@ namespace Vanadreams.Pages
                         {
                             ProgressText.Text = $"{name} ({n} of {of})";
                             Progress.IsIndeterminate = false; Progress.Value = 100.0 * n / of;
-                        }));
+                        }), state.FfxiFolder);
                     syncNote = $"{plan.Download.Count} downloaded, {plan.Keep.Count} already here" + (plan.Delete.Count > 0 ? $", {plan.Delete.Count} removed" : "");
                 }
                 // enabled, saved and applied in one motion, so Play right after Install loads it
