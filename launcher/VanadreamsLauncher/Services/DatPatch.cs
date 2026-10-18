@@ -42,15 +42,10 @@ namespace Vanadreams.Services
             return list;
         }
 
-        /// <summary>
-        /// A catalogue spec is the four-letter chunk name, a colon and the type: "anc :32". "*:32" means every chunk of that
-        /// type. Textures (type 32) are pictures and safe to carry; type 48 and 49 chunks are menu layouts and data that a
-        /// newer client may read differently, so a pack that wants to be safe on current clients names only 32.
-        /// </summary>
+        /// <summary>A catalogue spec is the four-letter chunk name, a colon and the type: "anc :32".</summary>
         public static bool TryParseSpec(string spec, out string name, out int type)
         {
             name = null; type = 0;
-            if (spec != null && spec.StartsWith("*:")) { name = "*"; return int.TryParse(spec.Substring(2), out type); }
             if (string.IsNullOrEmpty(spec) || spec.Length < 6 || spec[4] != ':') return false;
             name = spec.Substring(0, 4);
             return int.TryParse(spec.Substring(5), out type);
@@ -70,32 +65,52 @@ namespace Vanadreams.Services
             foreach (var spec in specs ?? Enumerable.Empty<string>())
             {
                 if (!TryParseSpec(spec, out var name, out var type)) { skipped.Add(spec + ": not a name:type spec"); continue; }
-                if (name == "*")
-                {
-                    // every same-type chunk both files hold under one name; a chunk of another size is left as it was
-                    var mismatched = 0;
-                    var seen = new Dictionary<string, int>();   // a name can repeat in one file: the nth of it pairs with the nth
-                    foreach (var to in t.Where(c => c.Type == type))
-                    {
-                        seen.TryGetValue(to.Name, out var nth);
-                        seen[to.Name] = nth + 1;
-                        var from = d.Where(c => c.Name == to.Name && c.Type == type).Skip(nth).FirstOrDefault();
-                        if (from == null) continue;
-                        if (from.Size != to.Size) { mismatched++; continue; }
-                        Buffer.BlockCopy(donor, from.Pos, result, to.Pos, to.Size);
-                        copied++;
-                    }
-                    if (mismatched > 0) skipped.Add(spec + ": " + mismatched + " chunk(s) of a different size");
-                    continue;
-                }
-                var one = d.FirstOrDefault(c => c.Name == name && c.Type == type);
-                var own = t.FirstOrDefault(c => c.Name == name && c.Type == type);
-                if (one == null || own == null) { skipped.Add(spec + ": not in " + (one == null ? "the pack's file" : "your file")); continue; }
-                if (one.Size != own.Size) { skipped.Add(spec + ": different size"); continue; }
-                Buffer.BlockCopy(donor, one.Pos, result, own.Pos, own.Size);
+                var from = d.FirstOrDefault(c => c.Name == name && c.Type == type);
+                var to = t.FirstOrDefault(c => c.Name == name && c.Type == type);
+                if (from == null || to == null) { skipped.Add(spec + ": not in " + (from == null ? "the pack's file" : "your file")); continue; }
+                if (from.Size != to.Size) { skipped.Add(spec + ": different size"); continue; }
+                Buffer.BlockCopy(donor, from.Pos, result, to.Pos, to.Size);
                 copied++;
             }
             return result;
+        }
+
+        /// <summary>
+        /// True when own holds every menu layout and data chunk (types 48 and 49) that reference holds, by name and count.
+        /// A current client's file has all of a clean March 2026 file's and more; an old mod's copy, such as XI-Vision's
+        /// 2018 51.DAT, lacks twelve and carries an older, smaller quest menu layout, which crashes the game on Quests.
+        /// </summary>
+        public static bool HasLayoutOf(byte[] own, byte[] reference)
+        {
+            Func<byte[], Dictionary<string, int>> layouts = d => Chunks(d).Where(c => c.Type == 48 || c.Type == 49)
+                .GroupBy(c => c.Name + ":" + c.Type).ToDictionary(g => g.Key, g => g.Count());
+            var mine = layouts(own);
+            return layouts(reference).All(r => mine.TryGetValue(r.Key, out var n) && n >= r.Value);
+        }
+
+        /// <summary>
+        /// When the player's own file is missing or an old mod's copy (see HasLayoutOf), puts the clean file in its place,
+        /// keeping theirs beside it as name.old-mod, and returns true: the patch then builds on the clean file. A healthy
+        /// file is left exactly as it is. said tells what was done, or why the game folder could not be written.
+        /// </summary>
+        public static bool RepairOwnFile(string ownFile, string cleanFile, out string said)
+        {
+            said = null;
+            if (File.Exists(ownFile) && HasLayoutOf(File.ReadAllBytes(ownFile), File.ReadAllBytes(cleanFile))) return false;
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(ownFile));
+                if (File.Exists(ownFile))
+                {
+                    var keep = ownFile + ".old-mod";
+                    if (File.Exists(keep)) File.Delete(keep);
+                    File.Move(ownFile, keep);
+                }
+                File.Copy(cleanFile, ownFile, true);
+                said = "your " + Path.GetFileName(ownFile) + " was an old mod's copy with out-of-date menu layouts; a clean current one was put back (yours is kept as " + Path.GetFileName(ownFile) + ".old-mod)";
+            }
+            catch (Exception ex) { said = "your " + Path.GetFileName(ownFile) + " is an old mod's copy and could not be replaced in the game folder (" + ex.Message + "); the overlay is built on a clean one"; }
+            return true;
         }
 
         /// <summary>

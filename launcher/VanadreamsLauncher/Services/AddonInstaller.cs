@@ -54,24 +54,44 @@ namespace Vanadreams.Services
         /// </summary>
         private static async Task PatchOwnFileAsync(Downloader downloader, List<RepoFile> listed, CatalogItem item, string target, string gameFolder)
         {
-            if (item.Patches.Count == 0 || string.IsNullOrWhiteSpace(gameFolder)) return;
-            foreach (var patch in item.Patches)
+            if (string.IsNullOrEmpty(item.PatchFile) || item.PatchChunks.Count == 0 || string.IsNullOrWhiteSpace(gameFolder)) return;
+            var temp = Path.Combine(Path.GetTempPath(), "vdl-donor-" + Guid.NewGuid().ToString("N"));
+            var clean = temp + "-clean";
+            try
             {
-                if (patch.Chunks.Count == 0) continue;
-                var temp = Path.Combine(Path.GetTempPath(), "vdl-donor-" + Guid.NewGuid().ToString("N"));
-                try
-                {
-                    var donor = listed.FirstOrDefault(f => string.Equals(f.Rel, patch.File, StringComparison.OrdinalIgnoreCase));
-                    if (donor == null || !RepoSync.IsSafeRel(patch.File)) { Log.Warn(item.Id + ": " + patch.File + " is not in the repo folder"); continue; }
-                    await downloader.DownloadFileAsync(donor.Url, temp).ConfigureAwait(false);
-                    var own = Path.Combine(gameFolder, patch.File.Replace('/', '\\'));
-                    var chunks = patch.Chunks;
-                    var said = await Task.Run(() => DatPatch.ApplyToFile(own, temp, RepoSync.LocalPath(target, patch.File), chunks)).ConfigureAwait(false);
-                    Log.Info(item.Id + " " + patch.File + ": " + said);
-                }
-                catch (Exception ex) { Log.Warn(item.Id + ": interface patch of " + patch.File + " not applied: " + ex.Message); }
-                finally { try { File.Delete(temp); } catch (Exception) { /* a temp file left behind is harmless */ } }
+                var donor = listed.FirstOrDefault(f => string.Equals(f.Rel, item.PatchFile, StringComparison.OrdinalIgnoreCase));
+                if (donor == null || !RepoSync.IsSafeRel(item.PatchFile)) { Log.Warn(item.Id + ": " + item.PatchFile + " is not in the repo folder"); return; }
+                await downloader.DownloadFileAsync(donor.Url, temp).ConfigureAwait(false);
+                var own = Path.Combine(gameFolder, item.PatchFile.Replace('/', '\\'));
+                var onto = await CleanBaseAsync(downloader, item, own, clean).ConfigureAwait(false);
+                var said = await Task.Run(() => DatPatch.ApplyToFile(onto, temp, RepoSync.LocalPath(target, item.PatchFile), item.PatchChunks)).ConfigureAwait(false);
+                Log.Info(item.Id + ": " + said);
             }
+            catch (Exception ex) { Log.Warn(item.Id + ": interface patch not applied: " + ex.Message); }
+            finally
+            {
+                try { File.Delete(temp); } catch (Exception) { /* a temp file left behind is harmless */ }
+                try { File.Delete(clean); } catch (Exception) { /* likewise */ }
+            }
+        }
+
+        /// <summary>
+        /// The file the patch builds on: the player's own, unless the item names a clean base (source.patch.base) and their
+        /// own is missing or an old mod's copy. Then the clean one is fetched to clean, put back in the game folder
+        /// (DatPatch.RepairOwnFile) and built on instead. Without a base, or offline, the player's own file is used.
+        /// </summary>
+        private static async Task<string> CleanBaseAsync(Downloader downloader, CatalogItem item, string own, string clean)
+        {
+            if (string.IsNullOrWhiteSpace(item.PatchBase)) return own;
+            try
+            {
+                await downloader.DownloadFileAsync(item.PatchBase, clean).ConfigureAwait(false);
+                string said = null;
+                var stale = await Task.Run(() => DatPatch.RepairOwnFile(own, clean, out said)).ConfigureAwait(false);
+                if (stale) Log.Info(item.Id + ": " + said);
+                return stale ? clean : own;
+            }
+            catch (Exception ex) { Log.Warn(item.Id + ": clean base not fetched, building on your own file: " + ex.Message); return own; }
         }
 
         /// <summary>
