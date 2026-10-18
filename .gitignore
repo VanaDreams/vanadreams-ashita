@@ -19,3 +19,6 @@ tools/bgw/obj/
 # Python bytecode and caches
 __pycache__/
 *.py[cod]
+
+# The bundled XIPivot plugin is shipped inside the launcher (assets\xipivot); it must be committed
+!launcher/VanadreamsLauncher/assets/xipivot/pivot.dll
