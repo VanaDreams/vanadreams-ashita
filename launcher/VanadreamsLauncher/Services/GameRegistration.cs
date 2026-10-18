@@ -116,6 +116,32 @@ namespace Vanadreams.Services
             return RootOf(reg.GameFolder);
         }
 
+        /// <summary>
+        /// The copy to hand Windows back to when the loader closes: the one it started on, when that is a whole game
+        /// and not the copy we just started. Null when there is nothing to restore.
+        /// </summary>
+        public static string RestoreTarget(string previousRoot, string startedRoot, string rememberedOther)
+        {
+            if (string.IsNullOrWhiteSpace(startedRoot)) return null;
+            foreach (var r in new[] { previousRoot, rememberedOther })
+                if (!string.IsNullOrWhiteSpace(r) && !SameFolder(r, startedRoot) && HasGame(r)) return r;
+            return null;
+        }
+
+        /// <summary>
+        /// The PowerShell script that waits for the loader to close, then runs the register script for the other copy
+        /// with one administrator prompt. It is run as a file by a hidden PowerShell that outlives the launcher, which
+        /// closes after Play. Polls by id: the loader runs elevated, and Get-Process can see an elevated process
+        /// that Wait-Process cannot open.
+        /// </summary>
+        public static string WatcherScript(IEnumerable<int> loaderIds, string registerScript)
+        {
+            var ids = string.Join(",", (loaderIds ?? Enumerable.Empty<int>()).Distinct());
+            var s = registerScript.Replace("'", "''");
+            return (ids.Length > 0 ? $"while (Get-Process -Id {ids} -ErrorAction SilentlyContinue) {{ Start-Sleep -Seconds 3 }}\r\n" : "") +
+                   $"Start-Process -FilePath cmd.exe -ArgumentList '/c','\"{s}\"' -Verb RunAs -WindowStyle Hidden -Wait\r\n";
+        }
+
         /// <summary>Read the registration as a 32-bit process sees it, which is how xiloader and the game see it.</summary>
         public static RegisteredGame Read(int lang = 1)
         {
