@@ -94,5 +94,38 @@ namespace Vanadreams.Tests
             Assert.IsNull(UserFolderBackup.Take(Path.Combine(_dir, "nowhere"), _backups, DateTime.Now));
             Assert.IsNull(UserFolderBackup.Take(null, _backups, DateTime.Now));
         }
+
+        [TestMethod]
+        public void CarrySources_LastCopyCountsEvenWhenWindowsAlreadyMoved()
+        {
+            // 18 Oct 2026: the patch pointed Windows at the new copy first, so Play saw no switch and carried nothing
+            var old = Path.Combine(_dir, "old", "FINAL FANTASY XI");
+            Directory.CreateDirectory(Path.Combine(old, "USER", "2"));
+            CollectionAssert.AreEqual(new[] { old }, UserFolderBackup.CarrySources(_game, old, _game, null).ToArray());
+            Assert.AreEqual(0, UserFolderBackup.CarrySources(_game, _game, _game, new[] { old }).Count, "a record of the last copy means no hunting");
+        }
+
+        [TestMethod]
+        public void CarrySources_FirstPlayLooksAtEveryKnownCopyOnce()
+        {
+            var old = Path.Combine(_dir, "old", "FINAL FANTASY XI");
+            Directory.CreateDirectory(Path.Combine(old, "USER", "2"));
+            var empty = Path.Combine(_dir, "empty", "FINAL FANTASY XI");
+            Directory.CreateDirectory(empty);
+            CollectionAssert.AreEqual(new[] { old }, UserFolderBackup.CarrySources(_game, "", _game, new[] { _game, empty, old, old + "\\" }).ToArray());
+        }
+
+        [TestMethod]
+        public void Expired_KeepsTheNewestAndOnePerDay()
+        {
+            var now = new DateTime(2026, 10, 18, 12, 0, 0);
+            var names = new System.Collections.Generic.List<string>();
+            for (var i = 0; i < 12; i++) names.Add("USER-20261018-" + (110000 - i * 100).ToString("000000") + ".zip");   // today, newest first
+            names.Add("USER-20261016-101100.zip");
+            names.Add("USER-20261016-050200.zip");
+            names.Add("USER-20260901-120000.zip");   // older than KeepDays
+            var gone = UserFolderBackup.Expired(names, now);
+            CollectionAssert.AreEquivalent(new[] { names[10], names[11], "USER-20261016-050200.zip", "USER-20260901-120000.zip" }, gone);
+        }
     }
 }
