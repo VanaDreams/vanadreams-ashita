@@ -48,11 +48,11 @@ package.preload['encoding'] = function() return { ShiftJIS_To_UTF8 = function(_,
 local equip = require('equip')
 
 -- the profile asks for a helm and a weapon
-local function run(picks, weaponsOn)
+local function run(picks, weaponsOn, allow)
     sent = {}
     package.loaded['equip'] = nil
     local equip = require('equip')
-    gVana = { Prefs = { Weapons = weaponsOn }, WeaponPicks = picks }
+    gVana = { Prefs = { Weapons = weaponsOn }, WeaponPicks = picks, WeaponAllow = allow }
     equip.EquipSet({ [5] = equip.MakeItemTable('Nyame Helm'), [1] = equip.MakeItemTable('Aymur') }, 'single')
     local out = {}
     for _, p in ipairs(sent) do out[#out + 1] = 'slot ' .. p.slot end
@@ -65,8 +65,8 @@ gData = { GetAugment = function() return { Type = 'Unaugmented' } end,
           Constants = { Containers = {} } }
 gSettings = { EquipBags = { 0 }, AllowSyncEquip = true, Debug = false }
 package.preload['encoding'] = function() return { ShiftJIS_To_UTF8 = function(_, s) return s end } end
-return run({}, false) .. ' | ' .. run({ aymur = true }, false) .. ' | ' .. run({}, true)
+return run({}, false) .. ' | ' .. run({ aymur = true }, false) .. ' | ' .. run({}, true) .. ' | ' .. run({}, false, { aymur = true })
 """, str(ADDON))
 print(result)
-off, picked, on = [x.strip() for x in result.split('|')]
-print('PASS' if off == 'slot 4' and 'slot 0' in picked and 'slot 0' in on else 'FAIL')
+off, picked, on, allowed = [x.strip() for x in result.split('|')]
+print('PASS' if off == 'slot 4' and 'slot 0' in picked and 'slot 0' in on and 'slot 0' in allowed else 'FAIL')

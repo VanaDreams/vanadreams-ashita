@@ -531,11 +531,12 @@ local EquipSet = function(set, style)
     end
 
     -- vanagear: with /vg weapons off nothing from any set, built, profile or imported, touches
-    -- Main, Sub or Range; only a weapon the player picked in one of their own sets goes on
+    -- Main, Sub or Range; only the weapons picked in the window, or named in a profile's gVana.WeaponAllow (its own
+    -- /fish rod and the like), go on
     if (gVana ~= nil) and (gVana.Prefs ~= nil) and (not gVana.Prefs.Weapons) then
         local picks = gVana.WeaponPicks or {};
         for i = 1,3,1 do
-            if (set[i] ~= nil) and (not picks[set[i].Name]) then
+            if (set[i] ~= nil) and (not picks[set[i].Name]) and (not (gVana.WeaponAllow and gVana.WeaponAllow[set[i].Name])) then
                 set[i] = nil;
             end
         end
