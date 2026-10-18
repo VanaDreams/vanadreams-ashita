@@ -49,6 +49,9 @@ your own sets, not a profile's sets, not an imported GearSwap file. The only way
 is the lists on the Main, Sub and Range lines of the `/vg` window (or `/vg weapon main <item>`):
 they start at "Leave it alone", and the weapon picked is worn in every set for that job.
 
+A profile of your own can still put on a weapon for a command of its own (a fishing rod for `/fish`):
+it lists the item names in `gVana.WeaponAllow` and vanagear lets those through.
+
 ## Your own sets
 
 - `/vg dress` stops the swapping. Put on what you like from the equipment menu, then
