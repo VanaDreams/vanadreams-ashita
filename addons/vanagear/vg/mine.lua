@@ -279,10 +279,25 @@ mine.FindSet = function(name)
     return nil;
 end
 
+-- Names players know from other swappers, for the built set that does that job. "Engaged" is
+-- what LuAshitacast and GearSwap profiles call the fighting set.
+mine.Aliases = { engaged = 'Tp_Default', tp = 'Tp_Default', melee = 'Tp_Default', engagedhybrid = 'Tp_Hybrid',
+    hybrid = 'Tp_Hybrid', engagedacc = 'Tp_Acc', acc = 'Tp_Acc', ws = 'Ws_Default', weaponskill = 'Ws_Default',
+    fastcast = 'Precast', midcast = 'Interim', rest = 'Resting', dt = 'Dt', pdt = 'Dt', kite = 'Movement', idledt = 'Dt' };
+
+-- The name a window list shows a built set under.
+mine.Label = function(name)
+    if (name == 'Tp_Default') then return 'Engaged'; end
+    if (name == 'Tp_Hybrid') then return 'Engaged (hybrid)'; end
+    if (name == 'Tp_Acc') then return 'Engaged (accuracy)'; end
+    return name;
+end
+
 -- A set's name as the handlers look it up: letters, digits and _ only, so "Call Beast" is the
 -- set that goes on for Call Beast, the same as the built ones.
 mine.SetName = function(name)
     name = string.gsub(name or '', '[^%w_]', '');
+    name = mine.Aliases[string.lower(name)] or name;
     for k in pairs(gVana.Built or {}) do
         if (string.lower(k) == string.lower(name)) then return k; end
     end
@@ -355,9 +370,9 @@ mine.Overlay = function(built)
     local out, own = {}, {};
     for name, set in pairs(built) do out[name] = set; end
     for name, set in pairs(loadSets()) do
-        local key = name;
+        local key = mine.Aliases[string.lower(name)] or name;
         for k in pairs(built) do
-            if (string.lower(k) == string.lower(name)) then key = k; end
+            if (string.lower(k) == string.lower(key)) then key = k; end
         end
         local merged = {};
         for slot, piece in pairs(built[key] or {}) do merged[slot] = piece; end
@@ -369,6 +384,36 @@ mine.Overlay = function(built)
         out[key] = merged;
     end
     return out, own;
+end
+
+-- Copies a LuAshitacast profile's sets into your own vanagear sets for this job, under the
+-- names vanagear wears them by (Engaged -> Tp_Default, precast.FC -> Precast; any other name
+-- stays a set of its own). Pieces the profile names with augments keep just the item name.
+-- Returns how many sets were copied.
+mine.ImportProfile = function(profileSets)
+    local gsnames = require('vg.gsnames');
+    local sets = loadSets();
+    local count = 0;
+    for name, set in pairs(profileSets or {}) do
+        if (type(name) == 'string') and (type(set) == 'table') then
+            local bare = string.gsub(name, '[^%w_]', '');
+            local key = mine.Aliases[string.lower(bare)] or gsnames.ToVanagear(name) or bare;
+            local copy = {};
+            for _, slot in ipairs(gData.Constants.EquipSlotNames) do
+                local piece = set[slot];
+                if (type(piece) == 'table') then piece = piece.Name; end
+                if (type(piece) == 'string') and (piece ~= '') then
+                    copy[slot] = (string.lower(piece) == 'displaced') and 'remove' or piece;
+                end
+            end
+            if (key ~= '') and (next(copy) ~= nil) then
+                sets[key] = copy;
+                count = count + 1;
+            end
+        end
+    end
+    changed();
+    return count;
 end
 
 mine.ReloadSets = function()

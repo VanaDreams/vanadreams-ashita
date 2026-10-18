@@ -30,6 +30,8 @@ local function mode(name, tweaks)
     return m;
 end
 
+plan.Mode = mode;
+
 local jobCache = {};
 plan.Job = function(abbr)
     if (jobCache[abbr] == nil) then

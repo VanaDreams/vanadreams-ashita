@@ -138,8 +138,10 @@ state.AutoLoadProfile = function()
     if gSettings.DefaultProfile ~= nil then
         paths:append(('%sconfig\\addons\\luashitacast\\%s'):fmt(AshitaCore:GetInstallPath(), gSettings.DefaultProfile));
     end
+    -- vanagear: a profile whose sets vanagear took over (/vg takeover) is left alone for this job
+    local forgot = gVana and gVana.Prefs and gVana.Prefs.Forgot and gVana.Prefs.Forgot[tostring(jobString)];
     for _,path in ipairs(paths) do
-        if (ashita.fs.exists(path)) then
+        if (not forgot) and (ashita.fs.exists(path)) then
             gState.LoadProfile(path);
             return;
         end
