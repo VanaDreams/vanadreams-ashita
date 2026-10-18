@@ -127,5 +127,16 @@ namespace Vanadreams.Tests
             }
             finally { Directory.Delete(dir, true); }
         }
+
+        [TestMethod]
+        public void AnOldInterfaceFileIsToldApartWithoutACleanCopy()
+        {
+            var current = Dat(DatPatch.CurrentLayouts.Select(n => Chunk(n, 48, 2, 1)).Concat(new[] { Chunk("que1", 48, 4, 1) }).ToArray());
+            var vision = Dat(Chunk("que1", 48, 3, 1), Chunk("font", 32, 2, 9));
+            var notMenus = Dat(Chunk("font", 32, 2, 9));
+            Assert.IsFalse(DatPatch.IsOldInterface(current));
+            Assert.IsTrue(DatPatch.IsOldInterface(vision));
+            Assert.IsFalse(DatPatch.IsOldInterface(notMenus), "a file with no menu layouts at all is not an interface file");
+        }
     }
 }

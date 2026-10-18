@@ -394,7 +394,9 @@ namespace Vanadreams.Pages
                 try
                 {
                     await state.RefreshCatalogAsync();
-                    if (await state.UpdateInstalledAddonsAsync("before play")) state.Settings.Save();
+                    var overruled = await state.OverruleOldVisionAsync("before play");
+                    if (await state.UpdateInstalledAddonsAsync("before play") || overruled) state.Settings.Save();
+                    if (overruled) state.ApplyEnabledAddons();
                 }
                 catch (Exception ex) { Log.Warn("addon update on play: " + ex.Message); }
             }
