@@ -77,9 +77,9 @@ namespace Vanadreams.Services
         }
 
         /// <summary>The FFXI folder the PlayOnline installer registered, or null.</summary>
-        public static string FindFfxiFolder()
+        public static string FindFfxiFolder(int lang = 1)
         {
-            foreach (var vendor in new[] { "PlayOnlineUS", "PlayOnline", "PlayOnlineEU" })
+            foreach (var vendor in ClientInstall.VendorKeys(lang))
             {
                 try
                 {
