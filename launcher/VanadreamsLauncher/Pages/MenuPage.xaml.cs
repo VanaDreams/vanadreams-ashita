@@ -258,11 +258,14 @@ namespace Vanadreams.Pages
         /// <summary>Roots whose registration did not take even after the prompt; asked once per run, not on every Play.</summary>
         private static readonly HashSet<string> _registerDidNotTake = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>Where Square Enix's own installer puts the game: the copy most players had before ours.</summary>
+        private const string RetailRoot = @"C:\Program Files (x86)\PlayOnline\SquareEnix";
+
         /// <summary>
         /// Make sure Windows starts the copy of the game in this root, fixing it in place when it does not.
         /// False only when it could not be put right and the player has been told why.
         /// </summary>
-        private bool EnsureGameIsRegistered(string root, RegisteredGame reg)
+        private bool EnsureGameIsRegistered(string root, RegisteredGame reg, int lang = 1)
         {
             var state = App.State;
             if (GameRegistration.PointsAt(reg, root) || _registerDidNotTake.Contains(root))
@@ -281,10 +284,10 @@ namespace Vanadreams.Pages
 
             try
             {
-                if (ClientInstall.RunRegister(root, state.Settings.DownloadsFolder))
+                if (ClientInstall.RunRegister(root, state.Settings.DownloadsFolder, lang))
                 {
                     Log.Info("registration pointed at " + ClientInstall.GameFolder(root));
-                    var after = GameRegistration.Read();
+                    var after = GameRegistration.Read(lang);
                     if (!GameRegistration.PointsAt(after, root))
                     {
                         _registerDidNotTake.Add(root);
@@ -365,10 +368,11 @@ namespace Vanadreams.Pages
             // prompt, and only on the launch after it drifted or when they switch between servers.
             // 26 Sept 2026: a player installed twice, to C: and then to D:, and the registration stayed on
             // the first. He spent an hour on it and nothing anywhere said why.
-            var reg = GameRegistration.Read();
+            var lang = _profile.Command.Lang;
+            var reg = GameRegistration.Read(lang);
             var root = GameRootFor(_profile, reg);
             var previousRoot = GameRegistration.CurrentRoot(reg);
-            if (root != null && !EnsureGameIsRegistered(root, reg)) return;
+            if (root != null && !EnsureGameIsRegistered(root, reg, lang)) return;
             // 12 Oct 2026: Mogsy's loader logged in and closed, because neither pol.exe nor FFXiMain.dll was where
             // Windows pointed. When no copy we know of is a whole game, the launch is all but sure to do the same.
             if (_profile.IsVanadreams && root == null &&
@@ -383,17 +387,39 @@ namespace Vanadreams.Pages
                 return;
             }
 
+            // The launcher can sit in the tray for days, and the catalogue was only read at start, so an addon update
+            // pushed after that never reached the game (16 Oct 2026). Read it again and bring installed addons up to date.
+            if (state.HasAshita)
+            {
+                try
+                {
+                    await state.RefreshCatalogAsync();
+                    if (await state.UpdateInstalledAddonsAsync("before play")) state.Settings.Save();
+                }
+                catch (Exception ex) { Log.Warn("addon update on play: " + ex.Message); }
+            }
+
             // macros and config live only in the game's USER folder; a copy before every launch lets a lost set come back
             try
             {
                 var gameFolder = root != null ? ClientInstall.GameFolder(root) : reg.GameFolder;
                 var copy = UserFolderBackup.Take(gameFolder, UserFolderBackup.BackupFolder, DateTime.Now);
                 if (copy != null) Log.Info("USER folder copied to " + copy);
-                // switching between two copies of the game: bring the newer macros and config along
-                if (root != null && previousRoot != null && !GameRegistration.SameFolder(root, previousRoot))
+                // switching between two copies of the game: bring the newer macros and config along. The switch is judged
+                // against the copy the last Play started, not only Windows' registration, which an install or patch moves too.
+                var known = new[] { state.Settings.OtherGameRoot, state.Settings.GameInstallRoot, RetailRoot }
+                    .Where(r => !string.IsNullOrWhiteSpace(r)).Select(ClientInstall.GameFolder);
+                var sources = UserFolderBackup.CarrySources(gameFolder, state.Settings.LastGameFolder,
+                    previousRoot != null ? ClientInstall.GameFolder(previousRoot) : null, known);
+                foreach (var from in sources)
                 {
-                    var carried = UserFolderBackup.CarryOver(ClientInstall.GameFolder(previousRoot), gameFolder);
-                    if (carried.Count > 0) Log.Info("macros and config carried from " + previousRoot + " for " + string.Join(", ", carried));
+                    var carried = UserFolderBackup.CarryOver(from, gameFolder);
+                    if (carried.Count > 0) Log.Info("macros and config carried from " + from + " for " + string.Join(", ", carried));
+                }
+                if (!string.IsNullOrWhiteSpace(gameFolder) && gameFolder != state.Settings.LastGameFolder)
+                {
+                    state.Settings.LastGameFolder = gameFolder;
+                    state.Settings.Save();
                 }
             }
             catch (Exception ex) { Log.Warn("USER backup on play: " + ex.Message); }

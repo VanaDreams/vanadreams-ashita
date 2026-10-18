@@ -10,7 +10,7 @@
 
 addon.name    = 'charcapture';
 addon.author  = 'Vanadreams';
-addon.version = '0.1.7';
+addon.version = '0.1.8';
 addon.desc    = 'Captures a character snapshot for porting to Vanadreams.';
 addon.link    = 'https://github.com/VanaDreams/vanadreams-ashita';
 
@@ -29,7 +29,7 @@ end
 -- and go into the next snapshot.
 --   0x08C: u16 count at 0x04, then count entries of { u16 merit id, u8 next cost, u8 upgrades }
 --   0x08D: 64 entries of { u16 index:5 | job:11, u16 next:10 | level:6 } from 0x04
-local seen = T{ merits = T{}, merits_at = nil, job_points = T{}, job_points_at = nil, logs = T{}, logs_at = nil, currencies = T{}, currencies1_at = nil, currencies2_at = nil, skills_by_job = T{}, skills_due = nil };
+local seen = T{ chocobo = nil, chocobo_at = nil, merits = T{}, merits_at = nil, job_points = T{}, job_points_at = nil, logs = T{}, logs_at = nil, currencies = T{}, currencies1_at = nil, currencies2_at = nil, skills_by_job = T{}, skills_due = nil };
 
 -- Quest and mission logs arrive as 0x056 packets when you zone: a 32-byte block at 0x04 and a
 -- 'port' at 0x24 saying which log it is (current or completed quests per area, completed
@@ -65,6 +65,28 @@ local function read_job_points(data)
         end
     end
     seen.job_points_at = os.time();
+end
+
+-- Your own chocobo (the one the Chocobo Whistle calls): its colour, beak, tail, talons, speed and riding
+-- time are one u32 the game only sends while you ride it. It comes in 0x067 for you (type 0x02 at 0x04,
+-- your id at 0x08, the u32 at 0x18) and in 0x00D for your character (your id at 0x04, ChocoboIndex 2 in
+-- bits 5-7 of 0x20, the u32 at 0x34). Riding it once with charcapture loaded is enough.
+local function own_id()
+    return AshitaCore:GetMemoryManager():GetParty():GetMemberServerId(0);
+end
+
+local function read_chocobo_sync(data)
+    if #data < 0x1C or data:byte(0x05) ~= 0x02 then return; end
+    if struct.unpack('<I', data, 0x09) ~= own_id() then return; end
+    local props = struct.unpack('<I', data, 0x19);
+    if props and props ~= 0 then seen.chocobo = props; seen.chocobo_at = os.time(); end
+end
+
+local function read_chocobo_update(data)
+    if #data < 0x38 or struct.unpack('<I', data, 0x05) ~= own_id() then return; end
+    if bit.band(bit.rshift(data:byte(0x21), 5), 0x07) ~= 2 then return; end
+    local props = struct.unpack('<I', data, 0x35);
+    if props and props ~= 0 then seen.chocobo = props; seen.chocobo_at = os.time(); end
 end
 
 -- The Currencies tabs of the Profile menu. The game sends them when the tab is opened:
@@ -300,6 +322,7 @@ local function capture()
         job_point_upgrades = seen.job_points_at and seen.job_points or nil,
         quest_mission_packets = seen.logs_at and seen.logs or nil,
         currencies = (seen.currencies1_at or seen.currencies2_at) and seen.currencies or nil,
+        personal_chocobo = seen.chocobo_at and T{ properties = seen.chocobo } or nil,
         not_captured = T{ 'fame (the game never sends the number)', 'linkshells', 'mog house layout' },
     };
     if not seen.merits_at then snap.not_captured:append('merit upgrades (open the Merit Points menu, then /capture again)'); end
@@ -307,6 +330,7 @@ local function capture()
     if not seen.logs_at then snap.not_captured:append('quests and missions (zone once with charcapture loaded, then /capture again)'); end
     if not seen.currencies1_at then snap.not_captured:append('currencies, first tab (open Profile > Currencies, then /capture again)'); end
     if not seen.currencies2_at then snap.not_captured:append('currencies, second tab (open the Currencies 2 tab of the same menu, then /capture again)'); end
+    if not seen.chocobo_at then snap.not_captured:append('your own chocobo (call it with the Chocobo Whistle and ride it, then /capture again; skip this if you have none)'); end
 
     -- jobs
     for job = 1, JOB_COUNT do
@@ -422,6 +446,8 @@ ashita.events.register('packet_in', 'charcapture_packet_in', function (e)
     elseif e.id == 0x113 then pcall(read_currencies_1, e.data);
     elseif e.id == 0x118 then pcall(read_currencies_2, e.data);
     elseif e.id == 0x056 then pcall(read_log, e.data);
+    elseif e.id == 0x067 then pcall(read_chocobo_sync, e.data);
+    elseif e.id == 0x00D then pcall(read_chocobo_update, e.data);
     elseif e.id == 0x062 then seen.skills_due = os.clock() + 2; end   -- read once the client has applied it
 end);
 

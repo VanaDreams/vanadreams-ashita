@@ -68,12 +68,15 @@ namespace Vanadreams.Pages
             foreach (var f in Graphics.FpsChoices) Rates.Children.Add(Chip(f.ToString(), p != null && (p.Fps == f || (p.Fps <= 0 && f == 30)), (o, e) => Set(x => x.Fps = f)));
         }
 
-        /// <summary>The menu follows the window while they were the same, as the Profiles page did.</summary>
+        /// <summary>
+        /// The menu keeps its scale (Profiles page, Menu scale) as the window changes size, so a bigger window never
+        /// shrinks the menus. A menu never set gets the default scale for the new window.
+        /// </summary>
         private static void Resize(Profile p, int w, int h)
         {
-            if (p.MenuWidth <= 0 || p.MenuWidth == p.Width) p.MenuWidth = w;
-            if (p.MenuHeight <= 0 || p.MenuHeight == p.Height) p.MenuHeight = h;
+            var scale = p.MenuWidth > 0 && p.Width > 0 ? p.MenuScale : Profile.DefaultMenuScale(h);
             p.Width = w; p.Height = h;
+            p.SetMenuScale(scale);
         }
 
         private Button Chip(string text, bool on, RoutedEventHandler click)

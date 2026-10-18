@@ -29,3 +29,10 @@ The HD faces, zone and gear textures are Ashenbubs' HD texture work for FINAL FA
 The post-processing runs on [ReShade](https://reshade.me) by crosire (BSD 3-Clause licence) through crosire's [d3d8to9](https://github.com/crosire/d3d8to9) wrapper (BSD 2-Clause licence). Its effects are MultiLUT by Marty McFly and Otis, AdaptiveSharpen by bacondither, Vignette from SweetFX, and MagicBloom by luluco250. Each licence ships beside them in `bootloader\reshade-licenses`.
 
 The colour grade takes its inspiration from Prabs' Prettypaws Vibrant Vana'diel.
+
+## The maps
+
+**XI-Vision maps** on the Addons page are [Drauku's FFXI-Vision](https://github.com/Drauku/FFXI-Vision), a fork of Caradog's [XI-Vision](https://github.com/Caradog/XI-Vision), the redrawn zone maps. The repo carries no licence, so we do not host or repackage it: the launcher fetches the files straight from Drauku's repo onto the player's PC and loads them through XIPivot. Its `ROM/119/51.DAT` interface file comes from an older client and can crash current ones, so the launcher does not copy it: it lays Vision's own interface textures (arrows, buttons, font, gauge, menu dots) onto the player's own current file on their PC and writes the result into the overlay (see `catalog.json`, `skip` and `patch`). Nothing of Square Enix's is hosted.
+
+**XI View interface** on the Addons page is [KenshiDRK's XiView](https://github.com/KenshiDRK/XiView) (XI View 2.0, widescreen version), the cleaner menu skins, fonts and status and menu icons. Like the maps it has no licence, so it is fetched straight from the author's repo onto the player's PC and loaded through XIPivot; we host nothing.
+
