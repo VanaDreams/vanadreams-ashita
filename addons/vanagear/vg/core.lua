@@ -29,7 +29,7 @@ gVana = {
     BuiltAt = nil,
     Toggles = { DT = false, Kite = false, TH = false, Tp = 'Default', Idle = 'auto', Nuke = 'power', Burst = false,
                 Stage = false, Pet = 'tp' },
-    Prefs = { ZoneWait = 10, Weapons = false, Locked = {}, Underlay = {}, MoteKeys = false },
+    Prefs = { ZoneWait = 10, Weapons = false, WeaponPick = {}, Locked = {}, Underlay = {}, MoteKeys = false },
     Pieces = {},
     Built = {},
     Own = {},
@@ -202,6 +202,35 @@ core.ApplyOwn = function()
     for k in pairs(gVana.Sets) do gVana.Sets[k] = nil; end
     for k, v in pairs(sets) do gVana.Sets[k] = v; end
     gVana.Own = own;
+    -- Weapons: with /vg weapons off no set, built or your own, carries a Main, Sub or Range; the
+    -- only weapons that go on are the ones picked in the window (or /vg weapon), worn in every set.
+    local picks = {};
+    if (not gVana.Prefs.Weapons) then
+        local job = gVana.Who and gVana.Who.JobName or '';
+        local chosen = (gVana.Prefs.WeaponPick or {})[job] or {};
+        for name, set in pairs(gVana.Sets) do
+            local copy = {};
+            for slot, piece in pairs(set) do copy[slot] = piece; end
+            for _, slot in ipairs({ 'Main', 'Sub', 'Range' }) do
+                copy[slot] = chosen[slot];
+                if (own[name] ~= nil) then own[name][slot] = nil; end
+                if (chosen[slot] ~= nil) then picks[string.lower(chosen[slot])] = true; end
+            end
+            gVana.Sets[name] = copy;
+        end
+    end
+    gVana.WeaponPicks = picks;
+end
+
+-- The weapon worn in a slot whatever set is on, or nil to leave the slot alone.
+core.SetWeaponPick = function(slotName, piece)
+    local job = gVana.Who and gVana.Who.JobName or '';
+    if (job == '') then return; end
+    gVana.Prefs.WeaponPick = gVana.Prefs.WeaponPick or {};
+    gVana.Prefs.WeaponPick[job] = gVana.Prefs.WeaponPick[job] or {};
+    gVana.Prefs.WeaponPick[job][slotName] = piece;
+    core.SavePrefs();
+    core.ApplyOwn();
 end
 
 -- ---------------------------------------------------------------- watching for changes
