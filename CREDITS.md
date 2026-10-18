@@ -33,3 +33,6 @@ The colour grade takes its inspiration from Prabs' Prettypaws Vibrant Vana'diel.
 ## The maps
 
 **XI-Vision maps** on the Addons page are [Drauku's FFXI-Vision](https://github.com/Drauku/FFXI-Vision), a fork of Caradog's [XI-Vision](https://github.com/Caradog/XI-Vision), the redrawn zone maps. The repo carries no licence, so we do not host or repackage it: the launcher fetches the files straight from Drauku's repo onto the player's PC and loads them through XIPivot. We leave out its `ROM/119` interface files, which come from an older client (see `catalog.json`, `skip`).
+
+**XI View interface** on the Addons page is [KenshiDRK's XiView](https://github.com/KenshiDRK/XiView) (XI View 2.0, widescreen version), the cleaner menu skins, fonts and status and menu icons. Like the maps it has no licence, so it is fetched straight from the author's repo onto the player's PC and loaded through XIPivot; we host nothing.
+
