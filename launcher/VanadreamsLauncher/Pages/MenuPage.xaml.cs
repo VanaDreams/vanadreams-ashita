@@ -258,6 +258,9 @@ namespace Vanadreams.Pages
         /// <summary>Roots whose registration did not take even after the prompt; asked once per run, not on every Play.</summary>
         private static readonly HashSet<string> _registerDidNotTake = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>Where Square Enix's own installer puts the game: the copy most players had before ours.</summary>
+        private const string RetailRoot = @"C:\Program Files (x86)\PlayOnline\SquareEnix";
+
         /// <summary>
         /// Make sure Windows starts the copy of the game in this root, fixing it in place when it does not.
         /// False only when it could not be put right and the player has been told why.
@@ -401,11 +404,21 @@ namespace Vanadreams.Pages
                 var gameFolder = root != null ? ClientInstall.GameFolder(root) : reg.GameFolder;
                 var copy = UserFolderBackup.Take(gameFolder, UserFolderBackup.BackupFolder, DateTime.Now);
                 if (copy != null) Log.Info("USER folder copied to " + copy);
-                // switching between two copies of the game: bring the newer macros and config along
-                if (root != null && previousRoot != null && !GameRegistration.SameFolder(root, previousRoot))
+                // switching between two copies of the game: bring the newer macros and config along. The switch is judged
+                // against the copy the last Play started, not only Windows' registration, which an install or patch moves too.
+                var known = new[] { state.Settings.OtherGameRoot, state.Settings.GameInstallRoot, RetailRoot }
+                    .Where(r => !string.IsNullOrWhiteSpace(r)).Select(ClientInstall.GameFolder);
+                var sources = UserFolderBackup.CarrySources(gameFolder, state.Settings.LastGameFolder,
+                    previousRoot != null ? ClientInstall.GameFolder(previousRoot) : null, known);
+                foreach (var from in sources)
                 {
-                    var carried = UserFolderBackup.CarryOver(ClientInstall.GameFolder(previousRoot), gameFolder);
-                    if (carried.Count > 0) Log.Info("macros and config carried from " + previousRoot + " for " + string.Join(", ", carried));
+                    var carried = UserFolderBackup.CarryOver(from, gameFolder);
+                    if (carried.Count > 0) Log.Info("macros and config carried from " + from + " for " + string.Join(", ", carried));
+                }
+                if (!string.IsNullOrWhiteSpace(gameFolder) && gameFolder != state.Settings.LastGameFolder)
+                {
+                    state.Settings.LastGameFolder = gameFolder;
+                    state.Settings.Save();
                 }
             }
             catch (Exception ex) { Log.Warn("USER backup on play: " + ex.Message); }

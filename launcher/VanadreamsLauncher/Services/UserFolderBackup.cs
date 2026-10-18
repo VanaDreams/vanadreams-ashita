@@ -17,6 +17,9 @@ namespace Vanadreams.Services
     public static class UserFolderBackup
     {
         public const int Keep = 10;
+        /// <summary>Beyond the newest Keep, the last copy of each of this many days is kept too. 18 Oct 2026: one evening
+        /// of switching characters took ten copies, so the ones from before Terry's macros went missing were already gone.</summary>
+        public const int KeepDays = 30;
         private const string Prefix = "USER-";
         private const string LastFile = "last.txt";
 
@@ -56,7 +59,7 @@ namespace Vanadreams.Services
             File.Move(temp, zip);
             File.WriteAllText(last, signature);
 
-            foreach (var old in Copies(backupFolder).Skip(Keep))
+            foreach (var old in Expired(Copies(backupFolder), now))
             {
                 try { File.Delete(old); }
                 catch (Exception ex) { Log.Warn("old USER backup not removed: " + ex.Message); }
@@ -95,6 +98,51 @@ namespace Vanadreams.Services
                 if (!carried.Contains(character, StringComparer.OrdinalIgnoreCase)) carried.Add(character);
             }
             return carried;
+        }
+
+        /// <summary>
+        /// The game folders whose USER folder a Play into gameFolder should carry from: the copy the last Play started,
+        /// and the copy Windows pointed at before this Play. On the first Play that has no record of the last copy, also
+        /// every other copy we know of, since a switch made before the record existed was never carried.
+        ///
+        /// 18 Oct 2026: Terry's macros went missing again. On 16 Oct her game moved from C:\Program Files (x86)\...
+        /// to D:\fancy ffxi, but the patch had already pointed Windows at D:, so Play saw no switch and carried nothing.
+        /// </summary>
+        public static List<string> CarrySources(string gameFolder, string lastGameFolder, string registeredGameFolder, IEnumerable<string> otherKnown)
+        {
+            var candidates = new List<string> { lastGameFolder, registeredGameFolder };
+            if (string.IsNullOrWhiteSpace(lastGameFolder) && otherKnown != null) candidates.AddRange(otherKnown);
+            var sources = new List<string>();
+            foreach (var c in candidates)
+            {
+                if (string.IsNullOrWhiteSpace(c) || Same(c, gameFolder) || sources.Any(x => Same(x, c))) continue;
+                if (Directory.Exists(Path.Combine(c, "USER"))) sources.Add(c);
+            }
+            return sources;
+        }
+
+        private static bool Same(string a, string b)
+        {
+            if (string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b)) return false;
+            try { return string.Equals(Path.GetFullPath(a).TrimEnd('\\', '/'), Path.GetFullPath(b).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase); }
+            catch (Exception) { return string.Equals(a.TrimEnd('\\', '/'), b.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase); }
+        }
+
+        /// <summary>The copies to remove: all but the newest Keep and the newest of each of the last KeepDays days.</summary>
+        public static List<string> Expired(List<string> newestFirst, DateTime now)
+        {
+            var keep = new HashSet<string>(newestFirst.Take(Keep), StringComparer.OrdinalIgnoreCase);
+            var days = new HashSet<string>();
+            foreach (var c in newestFirst)
+            {
+                var name = Path.GetFileNameWithoutExtension(c);
+                if (name.Length < Prefix.Length + 8) continue;
+                var day = name.Substring(Prefix.Length, 8);
+                if (!DateTime.TryParseExact(day, "yyyyMMdd", null, System.Globalization.DateTimeStyles.None, out var d)) continue;
+                if ((now.Date - d).TotalDays >= KeepDays) continue;
+                if (days.Add(day)) keep.Add(c);
+            }
+            return newestFirst.Where(c => !keep.Contains(c)).ToList();
         }
 
         /// <summary>The copies in a folder, newest first.</summary>
