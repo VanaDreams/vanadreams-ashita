@@ -628,13 +628,24 @@
         "path": "FFXI-map-dats",
         "branch": "master",
         "skip": [
-          "ROM/119/*"
-        ]
+          "ROM/119/51.DAT"
+        ],
+        "patch": {
+          "file": "ROM/119/51.DAT",
+          "chunks": [
+            "anc :32",
+            "btwa:32",
+            "butt:32",
+            "gaug:32",
+            "font:32",
+            "men1:32"
+          ]
+        }
       },
-      "version": "2022-09-20",
+      "version": "2022-09-20.2",
       "install": "pivot-overlay",
       "docs": "https://github.com/Drauku/FFXI-Vision",
-      "description": "Redrawn zone maps (Drauku's fork of Caradog's XI-Vision), loaded through XIPivot so your game files stay as they are. It needs XIPivot ticked and installed. Its ROM/119 interface files are left out on purpose: they are from an older client and can crash the game when the chat window is maximised."
+      "description": "Redrawn zone maps (Drauku's fork of Caradog's XI-Vision), loaded through XIPivot so your game files stay as they are. It needs XIPivot ticked and installed. The pack's interface file is from an older client and can crash the game when the chat window is maximised, so the launcher builds it on your PC instead: Vision's arrows, buttons, font, gauge and menu tweaks are laid onto your own current interface file. Nothing of Square Enix's is downloaded or hosted."
     },
     {
       "id": "xiview",
