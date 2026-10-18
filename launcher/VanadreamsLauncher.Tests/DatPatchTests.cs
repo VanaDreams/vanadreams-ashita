@@ -84,39 +84,48 @@ namespace Vanadreams.Tests
         public void TheCatalogueReadsAnEntrysPatch()
         {
             var cat = Catalog.Parse(@"{ ""schema"": 1, ""items"": [
-  { ""id"": ""xi-vision"", ""kind"": ""overlay"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""Drauku/FFXI-Vision"", ""path"": ""FFXI-map-dats"", ""branch"": ""master"", ""patch"": { ""file"": ""ROM/119/51.DAT"", ""chunks"": [ ""anc :32"", ""font:32"" ] } }, ""install"": ""pivot-overlay"" }
+  { ""id"": ""xi-vision"", ""kind"": ""overlay"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""Drauku/FFXI-Vision"", ""path"": ""FFXI-map-dats"", ""branch"": ""master"", ""patch"": { ""file"": ""ROM/119/51.DAT"", ""chunks"": [ ""anc :32"", ""font:32"" ], ""base"": ""https://example.org/51.DAT"" } }, ""install"": ""pivot-overlay"" }
 ] }");
-            var patches = cat.Find("xi-vision").Patches;
-            Assert.AreEqual(1, patches.Count);
-            Assert.AreEqual("ROM/119/51.DAT", patches[0].File);
-            CollectionAssert.AreEqual(new[] { "anc :32", "font:32" }, patches[0].Chunks);
+            Assert.AreEqual("ROM/119/51.DAT", cat.Find("xi-vision").PatchFile);
+            CollectionAssert.AreEqual(new[] { "anc :32", "font:32" }, cat.Find("xi-vision").PatchChunks);
+            Assert.AreEqual("https://example.org/51.DAT", cat.Find("xi-vision").PatchBase);
         }
 
         [TestMethod]
-        public void TheCatalogueReadsAListOfPatches()
+        public void AnOldModsFileLacksTheCurrentMenuLayouts()
         {
-            var cat = Catalog.Parse(@"{ ""schema"": 1, ""items"": [
-  { ""id"": ""xiview"", ""kind"": ""overlay"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""KenshiDRK/XiView"", ""path"": ""Widescreen"", ""branch"": ""master"", ""patch"": [ { ""file"": ""ROM/119/51.DAT"", ""chunks"": [ ""*:32"" ] }, { ""file"": ""ROM/280/15.DAT"", ""chunks"": [ ""*:32"" ] } ] }, ""install"": ""pivot-overlay"" },
-  { ""id"": ""crafty"", ""kind"": ""addon"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""VanaDreams/vanadreams-ashita"", ""path"": ""addons/crafty"" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load crafty"" }
-] }");
-            Assert.AreEqual(2, cat.Find("xiview").Patches.Count);
-            Assert.AreEqual("ROM/280/15.DAT", cat.Find("xiview").Patches[1].File);
-            Assert.AreEqual(0, cat.Find("crafty").Patches.Count);
+            var clean = Dat(Chunk("que1", 48, 4, 1), Chunk("itm1", 48, 2, 1), Chunk("font", 32, 2, 1));
+            var newer = Dat(Chunk("que1", 48, 4, 2), Chunk("itm1", 48, 2, 2), Chunk("acop", 48, 2, 2), Chunk("font", 32, 2, 2));
+            var old = Dat(Chunk("que1", 48, 3, 1), Chunk("font", 32, 2, 9));
+            Assert.IsTrue(DatPatch.HasLayoutOf(clean, clean));
+            Assert.IsTrue(DatPatch.HasLayoutOf(newer, clean), "a newer client's file has all a clean one's layouts and more");
+            Assert.IsFalse(DatPatch.HasLayoutOf(old, clean), "an old mod's copy is missing itm1");
         }
 
         [TestMethod]
-        public void StarSpecCarriesEveryTextureOfTheSizeButNeverALayoutChunk()
+        public void RepairPutsACleanFileBackOnlyWhenYoursIsAnOldModsCopy()
         {
-            var own = Dat(Chunk("tex1", 32, 2, 1), Chunk("tex2", 32, 2, 1), Chunk("tex2", 32, 2, 1), Chunk("big ", 32, 2, 1), Chunk("menu", 48, 2, 1));
-            var pack = Dat(Chunk("tex1", 32, 2, 9), Chunk("tex2", 32, 2, 8), Chunk("tex2", 32, 2, 7), Chunk("big ", 32, 3, 9), Chunk("menu", 48, 2, 9));
-            var r = DatPatch.Transplant(own, pack, new[] { "*:32" }, out var copied, out var skipped);
-            Assert.AreEqual(3, copied);
-            Assert.AreEqual(9, r[16]);         // tex1
-            Assert.AreEqual(8, r[32 + 16]);    // first tex2 pairs with the pack's first
-            Assert.AreEqual(7, r[64 + 16]);    // second with the second
-            Assert.AreEqual(1, r[96 + 16]);    // a different size stays yours
-            Assert.AreEqual(1, r[128 + 16]);   // type 48 is never touched by *:32
-            Assert.AreEqual(1, skipped.Count);
+            var dir = Path.Combine(Path.GetTempPath(), "dp" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            try
+            {
+                var own = Path.Combine(dir, "51.DAT"); var clean = Path.Combine(dir, "clean.dat");
+                var cleanBytes = Dat(Chunk("que1", 48, 4, 1), Chunk("itm1", 48, 2, 1));
+                File.WriteAllBytes(clean, cleanBytes);
+
+                var healthy = Dat(Chunk("que1", 48, 4, 3), Chunk("itm1", 48, 2, 3), Chunk("acop", 48, 2, 3));
+                File.WriteAllBytes(own, healthy);
+                Assert.IsFalse(DatPatch.RepairOwnFile(own, clean, out _));
+                CollectionAssert.AreEqual(healthy, File.ReadAllBytes(own), "a healthy file is left exactly as it is");
+
+                var old = Dat(Chunk("que1", 48, 3, 7));
+                File.WriteAllBytes(own, old);
+                Assert.IsTrue(DatPatch.RepairOwnFile(own, clean, out var said));
+                CollectionAssert.AreEqual(cleanBytes, File.ReadAllBytes(own));
+                CollectionAssert.AreEqual(old, File.ReadAllBytes(own + ".old-mod"));
+                StringAssert.Contains(said, "old-mod");
+            }
+            finally { Directory.Delete(dir, true); }
         }
     }
 }
