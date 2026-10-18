@@ -1,0 +1,51 @@
+# Uploads the game-file packs in client/chunks/ to the vanadreams-client R2 bucket and adds them to the live
+# client manifest (tools/clientpack/ship_chunks.py). Merging a pack into main is what ships it.
+name: Ship client packs
+
+on:
+  push:
+    branches: [main]
+    paths: ['client/chunks/**', 'tools/clientpack/ship_chunks.py']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Only report what would change
+        type: boolean
+        default: false
+
+concurrency:
+  group: client-manifest
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ship:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 5cdec9cdc6c083be33c071d3e7a2c443
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Ship
+        run: python3 tools/clientpack/ship_chunks.py ${{ inputs.dry_run && '--dry-run' || '' }}
+      - name: Check the public copy
+        if: ${{ !inputs.dry_run }}
+        run: |
+          for dir in client/chunks/*/; do
+            ver=$(basename "$dir")
+            curl -fsS "https://fairywitch.ca/download/client/$ver/manifest.json" -o live.json
+            for zip in "$dir"*.zip; do
+              name=$(basename "$zip")
+              want=$(sha256sum "$zip" | cut -d' ' -f1)
+              got=$(python3 -c "import json,sys;print(next((c['sha256'] for c in json.load(open('live.json'))['chunks'] if c['name']==sys.argv[1]),'missing'))" "$name")
+              echo "$ver/$name manifest=$got"
+              test "$got" = "$want"
+              curl -fsS "https://fairywitch.ca/download/client/$ver/$name" | sha256sum | grep -q "$want"
+              echo "$ver/$name downloads with the right hash" >> "$GITHUB_STEP_SUMMARY"
+            done
+          done
