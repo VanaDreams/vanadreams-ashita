@@ -674,7 +674,7 @@
         "path": "vanatunes",
         "branch": "main"
       },
-      "version": "0.3.5",
+      "version": "0.3.6",
       "install": "copy-to-addons",
       "load": "/addon load vanatunes",
       "onByDefault": true,
