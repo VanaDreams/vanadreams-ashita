@@ -143,27 +143,40 @@ renderSlots = function(name)
         local ranks = ex and ex.ranks[slot];
         imgui.Text(string.format('%-6s', slotName));
         imgui.SameLine(80);
-        if (gVana.Held[slot] ~= nil) and (not own[slotName]) and (slot > 3) then
+        if (slot <= 3) and (not gVana.Prefs.Weapons) then
+            -- one weapon per slot for the job, worn in every set; nothing else ever changes it
+            local core = require('vg.core');
+            local picked = ((gVana.Prefs.WeaponPick or {})[gVana.Who and gVana.Who.JobName or ''] or {})[slotName];
+            imgui.PushItemWidth(260);
+            if (imgui.BeginCombo('##vg_slot_' .. slotName, picked or '(left alone)', ImGuiComboFlags_None)) then
+                if (imgui.Selectable('Leave it alone##vg_wnone_' .. slotName, picked == nil)) then
+                    core.SetWeaponPick(slotName, nil);
+                end
+                if (imgui.Selectable('Nothing (take it off)##vg_wrem_' .. slotName, picked == 'remove')) then
+                    core.SetWeaponPick(slotName, 'remove');
+                end
+                for _, piece in ipairs(choices(slot)) do
+                    if (imgui.Selectable(piece .. '##vg_wpick_' .. slotName, picked == piece)) then
+                        core.SetWeaponPick(slotName, piece);
+                    end
+                end
+                imgui.EndCombo();
+            end
+            imgui.PopItemWidth();
+            imgui.SameLine();
+            imgui.TextDisabled('every set');
+        elseif (gVana.Held[slot] ~= nil) and (not own[slotName]) then
             imgui.TextDisabled(gVana.Held[slot]);
         else
             imgui.PushItemWidth(260);
-            -- a weapon slot with weapons off is left alone unless you pick a weapon here
-            local weaponHeld = (slot <= 3) and (gVana.Held[slot] ~= nil) and (not own[slotName]);
-            local preview = (weaponHeld and '(left alone)' or (entry or '(nothing)')) .. (own[slotName] and '  *' or '');
+            local preview = (entry or '(nothing)') .. (own[slotName] and '  *' or '');
             if (imgui.BeginCombo('##vg_slot_' .. slotName, preview, ImGuiComboFlags_None)) then
                 local builtPiece = pieceName(built[slotName]);
-                if (weaponHeld or ((slot <= 3) and (not gVana.Prefs.Weapons))) then
-                    if (imgui.Selectable('Leave it alone##vg_built_' .. slotName, not own[slotName])) then
-                        mine.SetSlot(name, slotName, nil);
-                    end
-                elseif (imgui.Selectable('Built: ' .. (builtPiece or 'nothing') .. '##vg_built_' .. slotName, not own[slotName])) then
+                if (imgui.Selectable('Built: ' .. (builtPiece or 'nothing') .. '##vg_built_' .. slotName, not own[slotName])) then
                     mine.SetSlot(name, slotName, nil);
                 end
                 if (imgui.Selectable('Nothing (take it off)##vg_none_' .. slotName, own[slotName] and entry == 'remove')) then
                     mine.SetSlot(name, slotName, 'remove');
-                end
-                if (slot <= 3) then
-                    imgui.TextDisabled('Picking a weapon here is the only way this set changes it.');
                 end
                 for _, piece in ipairs(choices(slot)) do
                     if (imgui.Selectable(piece .. '##vg_pick_' .. slotName, own[slotName] and entry == piece)) then
