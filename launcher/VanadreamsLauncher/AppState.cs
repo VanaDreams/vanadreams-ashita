@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -373,11 +374,80 @@ namespace Vanadreams
                 }
                 catch (Exception ex) { Log.Warn("default " + item.Id + " not installed, will try again: " + ex.Message); }
             }
+            if (await OverruleOldVisionAsync("at start")) changed = true;
             if (await UpdateInstalledAddonsAsync("at start")) changed = true;
             if (!changed) { ApplyFileEdits(); return; }   // ApplyEnabledAddons runs them otherwise
             Settings.Save();
             ApplyEnabledAddons();
             Notify();
+        }
+
+        /// <summary>
+        /// An old XI-Vision the player put in by hand, in the game folder or in an overlay of their own (XIPivot's
+        /// polplugins\DATs or the old Dats plugin's plugins\DATs), carries a 2018 ROM/119/51.DAT that crashes the game
+        /// on Quests. Every such copy is overruled: the game folder's is swapped for a clean current one, an overlay's is
+        /// set aside (both kept as 51.DAT.old-mod), and our own XI-Vision is installed and ticked so the player keeps
+        /// Vision's look, built safely. Run at start and on every Play. Returns whether settings changed.
+        /// </summary>
+        public async Task<bool> OverruleOldVisionAsync(string when)
+        {
+            if (!HasAshita) return false;
+            var vision = Catalog.Find("xi-vision");
+            const string rel = @"ROM\119\51.DAT";
+            var stale = new List<string>();
+            try
+            {
+                var copies = new List<string>();
+                if (!string.IsNullOrWhiteSpace(FfxiFolder)) copies.Add(Path.Combine(FfxiFolder, rel));
+                foreach (var root in new[] { PivotConfig.OverlaysRoot(AshitaRoot), Path.Combine(AshitaRoot, "plugins", "DATs") })
+                    if (Directory.Exists(root))
+                        copies.AddRange(Directory.GetDirectories(root)
+                            .Where(d => !string.Equals(Path.GetFileName(d), "xi-vision", StringComparison.OrdinalIgnoreCase))
+                            .Select(d => Path.Combine(d, rel)));
+                stale = copies.Where(f => File.Exists(f) && DatPatch.IsOldInterface(File.ReadAllBytes(f))).ToList();
+            }
+            catch (Exception ex) { Log.Warn("old Vision check " + when + ": " + ex.Message); return false; }
+            if (stale.Count == 0) return false;
+
+            var gameCopy = string.IsNullOrWhiteSpace(FfxiFolder) ? null : Path.Combine(FfxiFolder, rel);
+            foreach (var f in stale)
+            {
+                try
+                {
+                    if (string.Equals(f, gameCopy, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (string.IsNullOrWhiteSpace(vision?.PatchBase)) { Log.Warn("old interface file in the game folder, but no clean base in the catalogue"); continue; }
+                        var clean = Path.Combine(Path.GetTempPath(), "vdl-clean-" + Guid.NewGuid().ToString("N"));
+                        try
+                        {
+                            await Downloader.DownloadFileAsync(vision.PatchBase, clean);
+                            string said = null;
+                            await Task.Run(() => DatPatch.RepairOwnFile(f, clean, out said));
+                            Log.Info("old Vision overruled " + when + ": " + said);
+                        }
+                        finally { try { File.Delete(clean); } catch (Exception) { /* harmless */ } }
+                    }
+                    else
+                    {
+                        var keep = f + ".old-mod";
+                        if (File.Exists(keep)) File.Delete(keep);
+                        File.Move(f, keep);
+                        Log.Info("old Vision overruled " + when + ": " + f + " set aside as 51.DAT.old-mod");
+                    }
+                }
+                catch (Exception ex) { Log.Warn("old Vision at " + f + " not overruled: " + ex.Message); }
+            }
+
+            if (vision == null || Settings.InstalledVersions.ContainsKey(vision.Id)) return false;
+            try
+            {
+                await AddonInstaller.InstallRepoFolderAsync(Downloader, Settings, AshitaRoot, vision, null, FfxiFolder);
+                foreach (var id in new[] { "pivot", vision.Id })
+                    if (!Settings.EnabledAddons.Contains(id, StringComparer.OrdinalIgnoreCase)) Settings.EnabledAddons.Add(id);
+                Log.Info("our XI-Vision installed in place of the old one " + when);
+                return true;
+            }
+            catch (Exception ex) { Log.Warn("XI-Vision not installed " + when + ", will try again: " + ex.Message); return false; }
         }
 
         /// <summary>
