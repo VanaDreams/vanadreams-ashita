@@ -47,6 +47,13 @@ namespace Vanadreams.Services
         public string ExpectedClientVer { get; set; } = "30260805_0";
         public int VerLock { get; set; } = 2;
         public bool SetupDone { get; set; }
+        /// <summary>
+        /// Windows holds one Final Fantasy XI location for the whole PC and Play has to point it at our copy, which
+        /// takes it from any other launcher that reads it (Windower, PlayOnline: 18 Oct 2026, a player with an older
+        /// client on another drive found Windower starting ours). When on, the copy Windows had before is put back
+        /// once the loader closes. Play puts ours back again at the next launch.
+        /// </summary>
+        public bool RestoreOtherGame { get; set; } = true;
         public bool MusicOn { get; set; } = true;
         /// <summary>The menu down the left ("vertical", the default) or as tabs across the top ("horizontal"), the player's pick on Settings.</summary>
         public string MenuLayout { get; set; } = "vertical";
@@ -100,6 +107,7 @@ namespace Vanadreams.Services
                 s.VerLock = Json.Int(d, "verLock", 2);
                 s.SetupDone = Json.Bool(d, "setupDone");
                 s.MusicOn = Json.Bool(d, "musicOn", true);
+                s.RestoreOtherGame = Json.Bool(d, "restoreOtherGame", true);
                 s.MenuLayout = Json.Str(d, "menuLayout", s.MenuLayout);
                 s.NewsUrl = Json.Str(d, "newsUrl", s.NewsUrl);
                 s.LowSpec = Json.Bool(d, "lowSpec");
@@ -150,6 +158,7 @@ namespace Vanadreams.Services
                 { "verLock", VerLock },
                 { "setupDone", SetupDone },
                 { "musicOn", MusicOn },
+                { "restoreOtherGame", RestoreOtherGame },
                 { "menuLayout", MenuLayout ?? "vertical" },
                 { "newsUrl", NewsUrl },
                 { "lowSpec", LowSpec },

@@ -227,5 +227,23 @@ namespace Vanadreams.Tests
             }
             finally { try { Directory.Delete(dir, true); } catch { } }
         }
+
+        [TestMethod]
+        public void Restore_target_is_never_the_copy_just_started_and_must_be_a_game()
+        {
+            Assert.IsNull(GameRegistration.RestoreTarget(Ours, Ours, null));
+            Assert.IsNull(GameRegistration.RestoreTarget(null, null, Old));
+            Assert.IsNull(GameRegistration.RestoreTarget(@"Z:\nowhere", Ours, @"Y:\nothing"));
+        }
+
+        [TestMethod]
+        public void Watcher_script_waits_for_the_loader_then_registers_elevated()
+        {
+            var ps = GameRegistration.WatcherScript(new[] { 12, 34, 12 }, @"C:\Users\O'Neil\restore.cmd");
+            StringAssert.StartsWith(ps, "while (Get-Process -Id 12,34 ");
+            StringAssert.Contains(ps, "-Verb RunAs");
+            StringAssert.Contains(ps, "O''Neil");
+            StringAssert.StartsWith(GameRegistration.WatcherScript(new int[0], "x.cmd"), "Start-Process");
+        }
     }
 }

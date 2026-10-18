@@ -33,7 +33,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/><RowDefinition Height="Auto" MinHeight="32"/><RowDefinition Height="Auto" MinHeight="32"/><RowDefinition Height="Auto" MinHeight="32"/>
                             <RowDefinition Height="Auto" MinHeight="32"/><RowDefinition Height="Auto" MinHeight="32"/><RowDefinition Height="Auto" MinHeight="32"/>
-                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <!-- the label and what it does above the two buttons, so neither crowds the other -->
                         <StackPanel Grid.ColumnSpan="2" Margin="0,0,0,8">
@@ -64,6 +64,14 @@
                                 <TextBlock Text="Play “The Lanterns Are Lit” while the launcher is open" TextWrapping="Wrap"/>
                             </CheckBox>
                             <TextBlock x:Name="MusicCredit" Style="{StaticResource Muted}" FontSize="13.5" Margin="20,2,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="8" Text="Other game" Style="{StaticResource Label}" VerticalAlignment="Top" Margin="0,11,8,0"/>
+                        <StackPanel Grid.Row="8" Grid.Column="1" Margin="0,11,0,0">
+                            <CheckBox x:Name="RestoreBox">
+                                <TextBlock Text="Point Windows back at my other FFXI when Vanadreams closes" TextWrapping="Wrap"/>
+                            </CheckBox>
+                            <TextBlock Text="Windower and PlayOnline find the game through the one location Windows keeps. Play moves it to Vanadreams; this puts it back afterwards, with a Windows permission prompt." Style="{StaticResource Muted}" FontSize="13.5" Margin="20,2,0,0" TextWrapping="Wrap"/>
+                            <Button Content="Give my other game back now" Padding="14,3" HorizontalAlignment="Left" Margin="20,6,0,0" Click="GiveBack_Click"/>
                         </StackPanel>
                     </Grid>
                 </ScrollViewer>

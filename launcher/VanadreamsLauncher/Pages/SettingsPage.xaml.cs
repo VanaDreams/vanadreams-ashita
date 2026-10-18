@@ -22,6 +22,7 @@ namespace Vanadreams.Pages
             ExpectedBox.Text = string.IsNullOrEmpty(st.ClientVer) ? "not published by the server yet" : st.ClientVer + " · lock " + (st.Lock.HasValue ? ((int)st.Lock.Value).ToString() : "2") + " · from fairywitch.ca";
             ShowPlays();
             MusicBox.IsChecked = s.MusicOn;
+            RestoreBox.IsChecked = s.RestoreOtherGame;
             MusicCredit.Text = "made for Vanadreams with SoundBreak";
             About.Text = "Vanadreams Launcher " + typeof(App).Assembly.GetName().Version + " · github.com/VanaDreams/vanadreams-ashita · no telemetry";
             ShowLayout();
@@ -62,6 +63,7 @@ namespace Vanadreams.Pages
             var s = App.State.Settings;
             s.AshitaRoot = AshitaBox.Text.Trim(); s.FfxiFolderOverride = FfxiBox.Text.Trim(); s.CatalogUrl = CatalogBox.Text.Trim(); s.StatusUrl = StatusBox.Text.Trim();
             s.MusicOn = MusicBox.IsChecked == true;
+            s.RestoreOtherGame = RestoreBox.IsChecked == true;
             s.Save();
             if (s.MusicOn) Music.Start(); else Music.Stop();
             _win.RefreshMute();
@@ -72,6 +74,27 @@ namespace Vanadreams.Pages
                 : "Saved.";
             App.State.Notify();
             await App.State.RefreshStatusAsync();
+        }
+
+        /// <summary>Register the copy Windows had before ours, now: for a player whose Windower or PlayOnline is starting Vanadreams' game.</summary>
+        private void GiveBack_Click(object sender, RoutedEventArgs e)
+        {
+            var s = App.State.Settings;
+            var lang = 1;
+            var current = GameRegistration.CurrentRoot(GameRegistration.Read(lang));
+            var back = GameRegistration.RestoreTarget(null, current, s.OtherGameRoot);
+            if (back == null)
+            {
+                Note.Text = "No other game is remembered. Install or play the other client once, or pick its FINAL FANTASY XI folder on the Profiles page.";
+                return;
+            }
+            try
+            {
+                Note.Text = ClientInstall.RunRegister(back, s.DownloadsFolder, lang)
+                    ? "Windows now points at " + ClientInstall.GameFolder(back) + ". Play moves it back to Vanadreams when you press it."
+                    : "Windows did not get permission; nothing changed.";
+            }
+            catch (Exception ex) { Note.Text = ex.Message; }
         }
 
         private async void Catalog_Click(object sender, RoutedEventArgs e)
