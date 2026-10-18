@@ -29,6 +29,15 @@ namespace Vanadreams.Tests
         }
 
         [TestMethod]
+        public void A_profile_saved_with_the_old_Tailscale_address_is_still_Tailscale_and_goes_out_with_the_new_one()
+        {
+            var c = LoaderCommand.Parse("--server " + LoaderCommand.PreviousTailscaleServer + " --hairpin --lang 2");
+            Assert.IsTrue(c.IsTailscale);
+            Assert.IsTrue(c.IsVanadreams);
+            Assert.AreEqual("--server " + LoaderCommand.TailscaleServer + " --hairpin --lang 2", c.ToIniCommand());
+        }
+
+        [TestMethod]
         public void LoaderCommand_switches_to_Tailscale_and_back_keeping_everything_else()
         {
             var c = LoaderCommand.Parse("--server vanadreams.fairywitch.ca --lang 2");
@@ -39,7 +48,7 @@ namespace Vanadreams.Tests
             // a player's router or provider is blocking when they need this
             c.UseTailscale(true);
             Assert.IsTrue(c.IsTailscale);
-            Assert.AreEqual("--server 100.114.52.41 --hairpin --lang 2", c.ToIniCommand());
+            Assert.AreEqual("--server 100.93.179.33 --hairpin --lang 2", c.ToIniCommand());
 
             c.UseTailscale(false);
             Assert.IsFalse(c.IsTailscale);
