@@ -30,3 +30,12 @@ that teach the support job (Elder Memories / The Old Lady) said "half". The line
 lines 6870, 6872, 6876, 6877; Mhaura file id 6669 lines 7064, 7066, 7068, 7070, 7071) now say the support job is held to the main job's level.
 Isacio's closing advice (line 6878) also says a beastmaster and a summoner, in either order, keep two companions at once
 (`main.ENABLE_DUAL_PETS`, covered by `scripts/tests/systems/dual_pets.lua` in the server repo).
+
+### Item strings (Jubilee Ring becomes Skillz Ring)
+
+`fixes.json` also has an `items` list for item names, log names and descriptions. Item DATs (English: 73 general,
+74 usable, 75 weapons, 76 armor, 77 puppet, 91 currency, 55667 general2, 55668 armor2) are bit-rotated records.
+`build.py` decodes the file, proves it re-encodes to the original bytes, rewrites only the named strings (each must
+fit where the old one sat, before the icon at record offset 0x280) and checks that no other byte changed. Item 27593
+(armor2, file id 55668) shows as "Skillz Ring", "Skill-up rate +100%" / "(skill 300 or below)", with no experience
+line. The pack then carries the armor2 DAT (about 28 MB unpacked, 5 MB zipped).

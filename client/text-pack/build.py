@@ -7,6 +7,11 @@ and the exact text to replace and its replacement. The script finds each file th
 VTABLE/FTABLE, changes only those lines, and checks that every other line stays byte for byte as it was.
 A line whose old text is not there (a retail update changed it) stops the build.
 
+fixes.json may also hold an "items" list: item strings (name, the two log names, description) in an item DAT.
+Every byte of an item DAT is bit-rotated, so the build decodes the DAT, proves it re-encodes to the exact original
+bytes, rewrites only the named strings in place (they must fit where the old ones sat, before the icon), and checks
+that no other byte of the file changed.
+
 Writes <out>/vanadreams-text-NN.zip (the changed ROM files) and its manifest entry
 <out>/vanadreams-text-NN.chunk.json, whose dest is the vanadreams-text overlay folder.
 
@@ -64,11 +69,49 @@ def write_dialog(lines):
     return struct.pack("<I", len(d) ^ 0x10000000) + bytes(b ^ 0x80 for b in d)
 
 
+ITEM_ICON = 0x280  # the icon starts here in every record; strings must end before it
+ROT_DEC = bytes(((b >> 5) | (b << 3)) & 0xFF for b in range(256))
+ROT_ENC = bytes(((b << 5) | (b >> 3)) & 0xFF for b in range(256))
+
+
+def edit_item(dec, fx):
+    """Rewrite one item's strings inside the decoded item DAT (a bytearray). Returns the byte ranges it touched."""
+    # records are not on a 0xC00 grid from the start of the file, so find the id, then confirm the string table
+    sig, key = b"\x05\x00\x00\x00\x2c\x00\x00\x00", struct.pack("<I", fx["id"])
+    hits, at = [], dec.find(key)
+    while at >= 0:
+        if dec.find(sig, at, at + 0x100) >= 0:
+            hits.append(at)
+        at = dec.find(key, at + 1)
+    if len(hits) != 1:
+        sys.exit("item %d: %d records carry that id" % (fx["id"], len(hits)))
+    rec = hits[0]
+    t = dec.find(sig, rec, rec + 0x100)
+    offs = [struct.unpack_from("<I", dec, t + 4 + 8 * k)[0] for k in range(5)]
+    # strings sit 0x1c bytes into their blocks: name, article flag, log singular, log plural, description
+    starts = [t + o + 0x1C for o in offs]
+    ends = [t + offs[k + 1] for k in range(4)] + [rec + ITEM_ICON]
+    want = {0: (fx["old_name"], fx["new_name"]), 2: (fx["old_log"][0], fx["new_log"][0]),
+            3: (fx["old_log"][1], fx["new_log"][1]), 4: (fx["old_desc"], fx["new_desc"])}
+    touched = []
+    for k, (old, new) in want.items():
+        old, new = old.encode("ascii"), new.encode("ascii")
+        a, b = starts[k], ends[k]
+        if bytes(dec[a:b]).rstrip(b"\x00") != old:
+            sys.exit("item %d string %d is %r, not %r (a retail update?)" % (fx["id"], k, bytes(dec[a:b]).rstrip(b"\x00"), old))
+        if len(new) >= b - a:
+            sys.exit("item %d string %d: %r needs %d bytes, only %d fit" % (fx["id"], k, new, len(new) + 1, b - a))
+        dec[a:b] = new + b"\x00" * (b - a - len(new))
+        touched.append((a, b))
+    return touched
+
+
 def main():
     if len(sys.argv) != 3:
         sys.exit(__doc__)
     game, out = sys.argv[1], sys.argv[2]
-    fixes = json.load(open(os.path.join(HERE, "fixes.json"), encoding="utf-8"))["fixes"]
+    both = json.load(open(os.path.join(HERE, "fixes.json"), encoding="utf-8"))
+    fixes, item_fixes = both["fixes"], both.get("items", [])
     files = {}
     for fx in fixes:
         rel = rom_path(game, fx["fid"])
@@ -84,6 +127,26 @@ def main():
             sys.exit("%s line %d no longer holds %r (a retail update?)" % (rel, fx["line"], fx["old"]))
         lines[fx["line"]] = line.replace(old, new)
         print("%s line %d: %s" % (rel, fx["line"], fx["new"]))
+
+    items = {}  # rel -> bytes of the rewritten item DAT
+    for fx in item_fixes:
+        rel = rom_path(game, fx["fid"])
+        if rel not in items:
+            raw = open(os.path.join(game, *rel.split("/")), "rb").read()
+            if raw.translate(ROT_DEC).translate(ROT_ENC) != raw:
+                sys.exit(rel + " does not re-encode byte for byte; not touching it")
+            items[rel] = (raw, bytearray(raw.translate(ROT_DEC)), [])
+        raw, dec, touched = items[rel]
+        touched += edit_item(dec, fx)
+        print("%s item %d: %s" % (rel, fx["id"], fx["new_name"]))
+    for rel, (raw, dec, touched) in items.items():
+        keep = bytearray(dec)
+        orig = raw.translate(ROT_DEC)
+        for a, b in touched:
+            keep[a:b] = orig[a:b]
+        if bytes(keep) != orig:
+            sys.exit(rel + ": a byte outside the edited strings changed")
+        items[rel] = bytes(dec.translate(ROT_ENC))
 
     os.makedirs(out, exist_ok=True)
     name = "vanadreams-text-%02d.zip" % PACK
@@ -101,8 +164,13 @@ def main():
             info.compress_type = zipfile.ZIP_DEFLATED
             z.writestr(info, blob)
             unpacked += len(blob)
+        for rel in sorted(items):
+            info = zipfile.ZipInfo(rel, date_time=(2026, 10, 16, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            z.writestr(info, items[rel])
+            unpacked += len(items[rel])
     blob = open(zpath, "rb").read()
-    entry = {"name": name, "size": len(blob), "sha256": hashlib.sha256(blob).hexdigest(), "files": len(files),
+    entry = {"name": name, "size": len(blob), "sha256": hashlib.sha256(blob).hexdigest(), "files": len(files) + len(items),
              "unpacked": unpacked, "dest": DEST}
     json.dump(entry, open(os.path.join(out, name.replace(".zip", ".chunk.json")), "w"))
     print(json.dumps(entry))
