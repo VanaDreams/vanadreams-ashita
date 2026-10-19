@@ -82,8 +82,30 @@ end
 
 local zone = { Holding = true, EnteredAt = os.clock(), InZoneAt = nil };
 
+-- Slots you changed yourself from the equipment menu: vanagear leaves them as you put them
+-- until the next zone (a Job Points cape stays on). slot index -> true.
+gVana.HandHeld = {};
+
+core.HoldByHand = function(slot)
+    if (slot < 1) or (slot > 16) or (require('vg.mine').Dressing) then
+        return;
+    end
+    if (gState.Disabled[slot] ~= true) then
+        gVana.HandHeld[slot] = true;
+        gState.Disabled[slot] = true;
+    end
+end
+
+local function releaseHandHeld()
+    for slot in pairs(gVana.HandHeld) do
+        gState.Disabled[slot] = false;
+    end
+    gVana.HandHeld = {};
+end
+
 -- Called on the incoming zone packet (0x0A).
 core.ZoneIn = function()
+    releaseHandHeld();
     zone.Holding = true;
     zone.Leaving = false;
     zone.EnteredAt = os.clock();
@@ -128,9 +150,13 @@ end
 
 local queue = nil;   -- the rebuild in progress: { items = plan, i = next index, ... }
 local wanted = false;
+local loud = false;
 
-core.Request = function()
+-- loud: say in chat when the build is done (only for /vg build; every other rebuild is silent,
+-- Ferrin 18 Oct 2026: "we should make the gear sets message silent").
+core.Request = function(sayDone)
     wanted = true;
+    if (sayDone) then loud = true; end
 end
 
 local function setFor(built)
@@ -189,8 +215,11 @@ local function stepBuild(budget)
         gVana.FastCast = (q.totals.Precast and fc) and (q.totals.Precast['m' .. fc] or 0) or 0;
         local count = 0;
         for _ in pairs(q.sets) do count = count + 1; end
-        print(chat.header('vanagear') .. chat.message(string.format('Built %d sets for %s%d/%s from your bags. /vg to see them.',
-            count, q.who.JobName, q.who.Level, q.who.SubName)));
+        if (loud) then
+            loud = false;
+            print(chat.header('vanagear') .. chat.message(string.format('Built %d sets for %s%d/%s from your bags. /vg to see them.',
+                count, q.who.JobName, q.who.Level, q.who.SubName)));
+        end
         queue = nil;
     end
 end
@@ -238,7 +267,9 @@ end
 local lastLook = 0;
 local signature = nil;
 
--- A string that changes whenever the job, level, weapons or the gear in the equippable bags do.
+-- A string that changes whenever the job, level or weapons do. Gear coming into or leaving the
+-- bags (a drop off a mob, the Mog House) waits for the next zone, which rebuilds anyway
+-- (Ferrin 18 Oct 2026: "it should work on zones where it finds the best gear for the slot").
 local function look()
     local who = bags.Who();
     local parts = { who.Job, who.Level, who.Sub, who.SubLevel };
@@ -246,18 +277,6 @@ local function look()
     for _, slot in ipairs({ 'Main', 'Sub', 'Range' }) do
         local e = equipment[slot];
         parts[#parts + 1] = (e and e.Item) and e.Item.Id or 0;
-    end
-    local inventory = AshitaCore:GetMemoryManager():GetInventory();
-    local items = vdata.Items();
-    for _, container in ipairs(gSettings.EquipBags) do
-        if (gData.GetContainerAvailable(container)) then
-            for index = 1, gData.GetContainerMax(container) do
-                local item = inventory:GetContainerItem(container, index);
-                if (item ~= nil) and (item.Id > 0) and (item.Id ~= 65535) and (items[item.Id] ~= nil) then
-                    parts[#parts + 1] = item.Id;
-                end
-            end
-        end
     end
     return table.concat(parts, ',');
 end
@@ -304,6 +323,7 @@ core.Tick = function()
     if (queue ~= nil) then
         stepBuild(2);
     end
+    require('vg.trusts').Tick();
 end
 
 core.OnSettled = function()

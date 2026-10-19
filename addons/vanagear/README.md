@@ -16,8 +16,13 @@ while vanagear is ticked.
 - Builds idle, resting, damage taken, fighting (default, hybrid, accuracy), one set per
   weaponskill your weapons can use, precast, interim and midcast by skill and spell, shooting,
   and pet sets for pet jobs.
-- Rebuilds by itself on job change, level up, a weapon change, or gear moving into or out of
-  your wardrobes.
+- Rebuilds by itself, without a word in chat, on job change, level up, a weapon change, and
+  every zone (gear you picked up or moved since is counted then). `/vg build` rebuilds now and
+  says so.
+- Gear you put on yourself from the equipment menu stays on until you zone: a Job Points cape
+  isn't swapped back off.
+- The fighting set is listed as **Engaged** (a set of yours named Engaged, TP or Melee is the
+  same set).
 - Waits after every zone: nothing is equipped, loaded or sent to the game until you have been
   standing in the zone for 10 seconds (`/vg wait <seconds>` changes it).
 
@@ -27,6 +32,11 @@ Profiles in `config\addons\luashitacast\` keep working, `/lac` included. A profi
 its own wins: vanagear's sets go under it only if you turn that on with `/vg underlay on`.
 Profiles the launcher made from GearSwap files, and profiles whose sets are all empty, get the
 built sets underneath automatically, so anything they leave out is filled.
+
+To move a profile over to vanagear, press **Copy its sets into vanagear and stop using it** in
+the window, or type `/vg takeover`: its sets become your own vanagear sets for that job (Engaged,
+precast and the rest under the names vanagear wears them by), and vanagear runs the job from
+then on. The profile file is left as it was; `/vg profile on` uses it again.
 
 ## Commands
 
@@ -41,6 +51,38 @@ own sets. The game's equipment menu and the built sets only use your main job's 
 window, every slot's list of your own set also offers your support job's pieces; or use
 `/vg set <name> <slot> <item>` (for example `/vg set Axe Main Great Axe` on BLM/WAR), then
 `/vg wear <name>`. Weapon skills you get this way cap at 80% of the support job's cap.
+
+## Your trusts
+
+Every trust you have called gets its own tab in the `/vg` window, next to yours. The top of the
+tab says who the trust is: its name, its job and support job, its level, and the spells,
+abilities and weaponskills it uses (the server tells vanagear; those lines stay out of your chat).
+
+Like your own, a trust has several sets, built from your inventory and wardrobes for its job and
+level:
+
+- **Idle** while it stands around, and **Engaged** while it fights. A Paladin or Rune Fencer
+  trust's Engaged set is a tank's: damage taken down, HP, defence and enmity.
+- **Weaponskill**, and a set for each weaponskill it uses that vanagear knows (Savage Blade...).
+- A set for each kind of spell it casts: **Cure**, **Nuke**, **Enfeebling**, **Enhancing**,
+  **Dark**, **Divine**, **Song**, **Ninjutsu**, **Blue Magic**, **Geomancy**.
+- **Ability** (enmity) for a tank.
+
+Every slot of every set is a list you can change. Under the set list, **Add a set for** offers a
+set for anything the trust uses that has none yet (Flash, Sentinel, Cure IV), and **New set for**
+takes any name. An action's set goes on over Idle or Engaged while the action goes off: first a
+set with the action's own name, else one for its kind, else **Magic** for any spell. Slots it
+leaves empty keep the Idle or Engaged piece.
+
+The trust never wears anything and nothing leaves your bags: the server gives the trust the
+stats of the pieces, and a weapon's damage when it beats the trust's own, evened out to the
+trust's swing speed. A piece you drop, sell or move to storage stops counting; the trust's job
+and level must fit the piece, the same as yours (its support job's gear counts too). The server
+keeps every set, so a set is only sent again when it changes; **Send all again** sends them all.
+`/vg trusts off` stops vanagear sending anything. Without vanagear, `!trustgear <trust>` lists a
+trust's sets, `!trustgear <trust> <set>` shows one, `!trustgear <trust> <set> clear` deletes it
+and `!trustgear <trust> clear` deletes them all. Your picks are kept in
+`config\addons\vanagear\trusts.lua`.
 
 ## Weapons
 
@@ -73,7 +115,8 @@ it lists the item names in `gVana.WeaponAllow` and vanagear lets those through.
 - `/vg with <set> <command>` puts a set on, sends the command and keeps the set on until the
   action is done. Example: `/vg dress`, equip the jug, `/vg save lizard`, then
   `/vg add lizard /vg with lizard /ja "Bestial Loyalty" <me>` and type `/lizard`.
-- **Your commands** in the window adds, edits, runs and deletes them; **Open folder** opens
+- The **Your commands** tab of the window walks you through making one (a word, its lines, which
+  jobs), has examples to start from, and runs, changes and deletes the ones you have; **Open folder** opens
   `config\addons\vanagear\` to write them by hand (`/vg mine reload` after).
 
 ## Beastmaster

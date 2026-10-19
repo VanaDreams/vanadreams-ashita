@@ -12,7 +12,6 @@ local window = { Open = false, Selected = nil };
 gVana.Window = window;
 
 local isOpen = { false };
-local mineOpen = { false };
 local newWord = { '' };
 local newLines = { '' };
 local everyJob = { false };
@@ -23,79 +22,114 @@ local setNote = nil;
 local function sayNote(text) mineNote = text; end
 local renderSlots;
 
--- Your own commands: what /vg <word> runs, a form to add one, and the folder they are kept in.
+-- The "Your commands" tab: one word that runs several game commands in order. Laid out as
+-- numbered steps with examples to fill the form from (Ferrin, 18 Oct 2026: "the write your own
+-- lines is confusing", "a tab of the whole screen with instructions and examples").
+local examples = {
+    { word = 'pull', lines = '/ja "Provoke" <t>', every = false,
+      what = 'Provoke whatever you have targeted.' },
+    { word = 'buffs', lines = '/ma "Haste" <me>\nwait 4\n/ma "Refresh" <me>', every = false,
+      what = 'Cast Haste on yourself, wait 4 seconds, then Refresh.' },
+    { word = 'warpout', lines = '/vg warp', every = true,
+      what = 'Put on your Warp Ring, use it and give the slot back (any job).' },
+    { word = 'lizard', lines = '/vg with lizard /ja "Bestial Loyalty" <me>', every = false,
+      what = 'BST: wear your set called lizard (the jug) and use Bestial Loyalty.' },
+};
+
 local function renderMine()
     local mine = require('vg.mine');
-    mineOpen[1] = true;
-    imgui.SetNextWindowSize({ 560, 380 }, ImGuiCond_FirstUseEver);
-    if (vd.Begin('vanagear: your commands', mineOpen)) then
-        imgui.TextWrapped('/vg <word> runs the lines in order. A line is any game command; "wait 2" pauses two seconds. '
-            .. 'Put several lines in one box by ending each with ;');
-        imgui.Separator();
-        local list = mine.List();
-        local words = {};
-        for word in pairs(list) do words[#words + 1] = word; end
-        table.sort(words);
-        if (#words == 0) then
-            imgui.TextDisabled('None yet. Example: word debuff, lines /vg reward debuff');
-        end
-        for _, word in ipairs(words) do
-            local entry = list[word];
-            if (vd.SmallButton('Run##run_' .. word)) then
-                mine.Run(word);
-            end
-            imgui.SameLine();
-            if (vd.SmallButton('Edit##edit_' .. word)) then
-                newWord[1] = word;
-                newLines[1] = table.concat(entry.lines, '; ');
-                everyJob[1] = (entry.file == 'ALL');
-            end
-            imgui.SameLine();
-            if (vd.SmallButton('Delete##del_' .. word)) then
-                mine.Remove(word);
-            end
-            imgui.SameLine();
-            imgui.Text('/vg ' .. word);
-            imgui.SameLine();
-            imgui.TextDisabled(table.concat(entry.lines, '; ') .. ((entry.file == 'ALL') and '  (every job)' or ''));
-        end
-        imgui.Separator();
-        imgui.PushItemWidth(140);
-        imgui.InputText('word##vg_mine_word', newWord, 32);
-        imgui.PopItemWidth();
-        imgui.SameLine();
-        imgui.Checkbox('every job##vg_mine_all', everyJob);
-        imgui.PushItemWidth(-1);
-        imgui.InputText('##vg_mine_lines', newLines, 512);
-        imgui.PopItemWidth();
-        if (vd.Button('Save', nil, true)) then
-            local ok, word, file = mine.Add(newWord[1], mine.Split(newLines[1]), everyJob[1]);
-            if (ok) then
-                sayNote(string.format('/vg %s saved in %s.lua.', word, file));
-                newWord[1] = '';
-                newLines[1] = '';
-            else
-                sayNote('Give it a word and at least one line.');
-            end
-        end
-        imgui.SameLine();
-        if (vd.Button('Open folder')) then
-            mine.OpenFolder();
-        end
-        imgui.SameLine();
-        if (vd.Button('Reload')) then
-            mine.Reload();
-            sayNote('Read the files again.');
-        end
+    vd.Eyebrow('Your commands: one word that runs several game commands, in order');
+    imgui.TextWrapped('Make your own short command. You pick a word, then write the game commands it runs, one per line. '
+        .. 'Afterwards typing /vg <word> (or just /<word>) runs them for you.');
+    imgui.Separator();
 
-        if (mineNote ~= nil) then
-            imgui.TextDisabled(mineNote);
+    imgui.Text('1. The word you will type');
+    imgui.SameLine(260);
+    imgui.PushItemWidth(160);
+    imgui.InputText('##vg_mine_word', newWord, 32);
+    imgui.PopItemWidth();
+    imgui.SameLine();
+    imgui.TextDisabled(newWord[1] ~= '' and ('you will type /vg ' .. newWord[1]) or 'for example: pull');
+
+    imgui.Text('2. The commands it runs, one per line');
+    imgui.InputTextMultiline('##vg_mine_lines', newLines, 1024, { -1, 90 });
+    imgui.TextDisabled('Any game command works: /ja "Provoke" <t>, /ma "Cure IV" <stpc>, /vg wear Idle. '
+        .. 'A line "wait 3" waits 3 seconds before the next line. <t> is your target, <me> is you.');
+
+    imgui.Text('3. Which jobs can use it');
+    imgui.SameLine(260);
+    imgui.Checkbox('every job (leave it off for ' .. ((gVana.Who and gVana.Who.JobName) or 'this job') .. ' only)##vg_mine_all', everyJob);
+
+    if (vd.Button('4. Save it', nil, true)) then
+        local ok, word, file = mine.Add(newWord[1], mine.Split(newLines[1]), everyJob[1]);
+        if (ok) then
+            sayNote(string.format('Saved. Type /vg %s to run it (kept in %s.lua).', word, file));
+            newWord[1] = '';
+            newLines[1] = '';
+        else
+            sayNote('Give it a word (step 1) and at least one command (step 2).');
         end
     end
-    vd.End();
-    if (not mineOpen[1]) then
-        window.Mine = false;
+    if (mineNote ~= nil) then
+        imgui.SameLine();
+        imgui.TextDisabled(mineNote);
     end
+
+    imgui.Separator();
+    vd.Eyebrow('Examples');
+    imgui.TextDisabled('Press Use to put an example in the boxes above, change it if you like, then Save.');
+    for i, ex in ipairs(examples) do
+        if (vd.SmallButton('Use##vg_ex_' .. i)) then
+            newWord[1] = ex.word;
+            newLines[1] = ex.lines;
+            everyJob[1] = ex.every;
+        end
+        imgui.SameLine();
+        imgui.Text('/vg ' .. ex.word);
+        imgui.SameLine(170);
+        imgui.TextDisabled(ex.what);
+    end
+
+    imgui.Separator();
+    vd.Eyebrow('Your saved commands');
+    local list = mine.List();
+    local words = {};
+    for word in pairs(list) do words[#words + 1] = word; end
+    table.sort(words);
+    if (#words == 0) then
+        imgui.TextDisabled('None yet.');
+    end
+    for _, word in ipairs(words) do
+        local entry = list[word];
+        if (vd.SmallButton('Run##run_' .. word)) then
+            mine.Run(word);
+        end
+        imgui.SameLine();
+        if (vd.SmallButton('Change##edit_' .. word)) then
+            newWord[1] = word;
+            newLines[1] = table.concat(entry.lines, '\n');
+            everyJob[1] = (entry.file == 'ALL');
+        end
+        imgui.SameLine();
+        if (vd.SmallButton('Delete##del_' .. word)) then
+            mine.Remove(word);
+        end
+        imgui.SameLine();
+        imgui.Text('/vg ' .. word);
+        imgui.SameLine();
+        imgui.TextDisabled(table.concat(entry.lines, '  then  ') .. ((entry.file == 'ALL') and '   (every job)' or ''));
+    end
+    imgui.Separator();
+    if (vd.Button('Open the folder')) then
+        mine.OpenFolder();
+    end
+    imgui.SameLine();
+    if (vd.Button('Read the files again')) then
+        mine.Reload();
+        sayNote('Read the files again.');
+    end
+    imgui.SameLine();
+    imgui.TextDisabled('The files are config\\addons\\vanagear\\commands\\<JOB>.lua, if you would rather write them by hand.');
 end
 
 local function sortedNames()
@@ -133,7 +167,7 @@ renderSlots = function(name)
     local own = gVana.Own[name] or {};
     local built = gVana.Built[name] or {};
     local yours = next(own) ~= nil;
-    vd.Eyebrow(name .. ((ex and ex.weaponskill) and ('  (' .. ex.weaponskill .. ')') or ''));
+    vd.Eyebrow(require('vg.mine').Label(name) .. ((ex and ex.weaponskill) and ('  (' .. ex.weaponskill .. ')') or ''));
     imgui.SameLine();
     imgui.TextDisabled(yours and (gVana.Built[name] and '  built, with your changes' or '  your own set') or '  built');
     imgui.Separator();
@@ -222,6 +256,171 @@ renderSlots = function(name)
     end
 end
 
+
+-- A trust's tab: who it is and what it uses, its sets from your bags (Idle, Engaged and a set for
+-- each kind of action), every slot a list like yours. Nothing is worn: the trust gets the stats
+-- of these pieces while you carry them, and the server swaps sets as the trust acts (vg\trusts.lua).
+local trustNote = nil;
+local trustSel = {};
+local trustNewSet = { '' };
+local onTrust = nil;
+local overlaySets = { idle = false, engaged = false };
+
+local function jobName(id)
+    local s = AshitaCore:GetResourceManager():GetString('jobs.names', id);
+    return (type(s) == 'string') and s:trimend('\x00') or '';
+end
+
+local function useLabel(trusts, use)
+    if (use.Name == 'magic') then return 'other spells'; end
+    if (use.Name == 'ability') then return 'other abilities'; end
+    return trusts.Pretty(use.Name);
+end
+
+local function renderTrust(t)
+    local trusts = require('vg.trusts');
+    local bags = require('vg.bags');
+    local who = trusts.Who(t);
+    local i = trusts.Info(t);
+
+    -- who the trust is, its jobs and what it uses
+    vd.Eyebrow(t.Name);
+    imgui.SameLine();
+    imgui.TextDisabled('  stats only: your gear stays in your bags');
+    local sub = (t.Sub ~= nil) and (t.Sub > 0) and string.format(', support job %s (%s)', jobName(t.Sub), t.SubName) or '';
+    imgui.Text(string.format('Job: %s (%s) level %d%s', jobName(t.Job), t.JobName, t.Level or 0, sub));
+    local sets = trusts.Sets(t);
+    local hasSet = {};
+    for _, s in ipairs(sets) do hasSet[s.Key] = true; end
+    if (i == nil) then
+        imgui.TextDisabled('Asking the server what ' .. t.Name .. ' uses...');
+    elseif (#i.Uses == 0) then
+        imgui.TextDisabled('Uses: only its weapon.');
+    else
+        local names = {};
+        for _, use in ipairs(i.Uses) do names[#names + 1] = useLabel(trusts, use); end
+        imgui.TextWrapped('Uses: ' .. table.concat(names, ', '));
+    end
+    imgui.Separator();
+
+    local sel = trustSel[t.Name];
+    local selected = nil;
+    for _, s in ipairs(sets) do
+        if (s.Name == sel) then selected = s; end
+    end
+    if (selected == nil) then
+        selected = sets[2] or sets[1];
+        trustSel[t.Name] = selected and selected.Name or nil;
+    end
+
+    -- the set list, and a set to add for each thing it uses that has none
+    imgui.BeginChild('trust_sets', { 190, -60 }, ImGuiChildFlags_Borders);
+    for _, s in ipairs(sets) do
+        local picked = next(trusts.Own(t, s.Name)) ~= nil;
+        if (vd.Selectable(s.Name .. (picked and '  *' or '') .. '##vg_ts_' .. s.Key, selected == s)) then
+            trustSel[t.Name] = s.Name;
+        end
+    end
+    if (i ~= nil) then
+        local first = true;
+        for _, use in ipairs(i.Uses) do
+            local name = (use.Name == 'magic') and 'Magic' or (use.Name == 'ability') and 'Ability' or trusts.Pretty(use.Name);
+            if (not hasSet[trusts.Key(name)]) then
+                if (first) then
+                    imgui.Separator();
+                    imgui.TextDisabled('Add a set for:');
+                    first = false;
+                end
+                hasSet[trusts.Key(name)] = true;
+                if (imgui.Selectable('+ ' .. name .. '##vg_tu_' .. use.Name, false)) then
+                    trustSel[t.Name] = trusts.AddSet(t, name);
+                end
+            end
+        end
+    end
+    imgui.EndChild();
+    imgui.SameLine();
+
+    imgui.BeginChild('trust_set_slots', { 0, -60 }, ImGuiChildFlags_Borders);
+    if (selected ~= nil) then
+        local overlay = overlaySets[selected.Key] == nil;
+        imgui.Text(selected.Name);
+        imgui.SameLine();
+        imgui.TextDisabled(selected.Built and ('  goes on for ' .. selected.For) or
+            ('  goes on when ' .. t.Name .. ' uses ' .. selected.Name .. ' (or anything of that kind)'));
+        if (overlay) then
+            imgui.TextDisabled('Slots left empty keep the Idle or Engaged piece.');
+        end
+        local mine = trusts.Own(t, selected.Name);
+        local set = trusts.Built(t)[selected.Name] or {};
+        for slot = 1, 16 do
+            local slotName = gData.Constants.EquipSlotNames[slot];
+            local pick = mine[slotName];
+            local builtPiece = set[slot] and set[slot].Name or nil;
+            local shown = (pick == 'remove') and nil or (pick or builtPiece);
+            imgui.Text(string.format('%-6s', slotName));
+            imgui.SameLine(80);
+            imgui.PushItemWidth(260);
+            local empty = overlay and '(keeps Idle/Engaged)' or '(nothing)';
+            local preview = (shown or empty) .. ((pick ~= nil) and '  *' or '');
+            if (imgui.BeginCombo('##vg_t_' .. t.Name .. selected.Key .. slotName, preview, ImGuiComboFlags_None)) then
+                if (selected.Built) and (imgui.Selectable('Built: ' .. (builtPiece or 'nothing') .. '##vg_tb_' .. slotName, pick == nil)) then
+                    trusts.SetSlot(t, selected.Name, slotName, nil);
+                end
+                if (imgui.Selectable((overlay and 'Nothing: keep the Idle/Engaged piece' or 'Nothing') .. '##vg_tn_' .. slotName, pick == 'remove')) then
+                    trusts.SetSlot(t, selected.Name, slotName, 'remove');
+                end
+                local seen = {};
+                local list = {};
+                for _, p in ipairs(gVana.Pieces or {}) do
+                    if (not seen[p.Name]) and (bags.CanWear(p, slot, who, true)) then
+                        seen[p.Name] = true;
+                        list[#list + 1] = p.Name;
+                    end
+                end
+                table.sort(list);
+                for _, piece in ipairs(list) do
+                    if (imgui.Selectable(piece .. '##vg_tp_' .. slotName, pick == piece)) then
+                        trusts.SetSlot(t, selected.Name, slotName, piece);
+                    end
+                end
+                imgui.EndCombo();
+            end
+            imgui.PopItemWidth();
+        end
+        if (next(mine) ~= nil) or (not selected.Built) then
+            if (vd.Button(selected.Built and 'Undo my changes' or 'Delete this set')) then
+                trusts.Reset(t, selected.Name);
+                trustNote = selected.Built and (selected.Name .. ' is back to the built set.') or (selected.Name .. ' deleted.');
+            end
+        end
+    end
+    imgui.EndChild();
+end
+
+-- The bar under a trust's tab, in place of the one for your own sets.
+local function renderTrustBar(t)
+    local trusts = require('vg.trusts');
+    imgui.PushItemWidth(160);
+    imgui.InputText('##vg_t_new_set', trustNewSet, 64);
+    imgui.PopItemWidth();
+    imgui.SameLine();
+    if (vd.Button('New set for ' .. t.Name)) then
+        local name = trusts.AddSet(t, trustNewSet[1]);
+        if (name ~= nil) then
+            trustSel[t.Name] = name;
+            trustNewSet[1] = '';
+            trustNote = name .. ' goes on when ' .. t.Name .. ' uses it. Name it after a spell, weaponskill or ability.';
+        end
+    end
+    imgui.SameLine();
+    if (vd.Button('Send all again', nil, true)) then
+        trusts.Send(t, true);
+        trustNote = 'Sent every set. Changes go by themselves; the server keeps them for the next call.';
+    end
+    imgui.TextDisabled(trustNote or '* = your pick. Changes are sent by themselves; the trust keeps them for the next call.');
+end
+
 window.Render = function()
     if (not window.Open) then
         return;
@@ -239,28 +438,65 @@ window.Render = function()
             if (gProfile ~= nil) and (not gProfile.IsVanagearStock) then
                 imgui.TextDisabled(string.format('Your profile %s runs; its own sets win. Built sets under it: %s.',
                     tostring(gProfile.FileName), require('vg.core').Underlay() and 'on' or 'off'));
+                imgui.SameLine();
+                if (vd.SmallButton('Copy its sets into vanagear and stop using it')) then
+                    require('vg.commands').Vg({ 'takeover' });
+                end
             end
             imgui.Separator();
 
-            local names = sortedNames();
-            if (window.Selected == nil) or (gVana.Sets[window.Selected] == nil) then
-                window.Selected = gVana.Sets.Idle and 'Idle' or names[1];
-            end
-
-            imgui.BeginChild('sets', { 180, -60 }, ImGuiChildFlags_Borders);
-            for _, name in ipairs(names) do
-                if (vd.Selectable(name, window.Selected == name)) then
-                    window.Selected = name;
+            -- tabs: your sets, your commands, and one for every trust you have called
+            local called = require('vg.trusts').Called();
+            onTrust = nil;
+            local tabs = imgui.BeginTabBar('##vg_tabs', ImGuiTabBarFlags_None);
+            if (not tabs) or (imgui.BeginTabItem('Your sets##vg_tab_you')) then
+                local names = sortedNames();
+                if (window.Selected == nil) or (gVana.Sets[window.Selected] == nil) then
+                    window.Selected = gVana.Sets.Idle and 'Idle' or names[1];
                 end
-            end
-            imgui.EndChild();
-            imgui.SameLine();
 
-            imgui.BeginChild('slots', { 0, -60 }, ImGuiChildFlags_Borders);
-            renderSlots(window.Selected);
-            imgui.EndChild();
+                imgui.BeginChild('sets', { 180, -60 }, ImGuiChildFlags_Borders);
+                for _, name in ipairs(names) do
+                    if (vd.Selectable(require('vg.mine').Label(name) .. '##vg_set_' .. name, window.Selected == name)) then
+                        window.Selected = name;
+                    end
+                end
+                imgui.EndChild();
+                imgui.SameLine();
+
+                imgui.BeginChild('slots', { 0, -60 }, ImGuiChildFlags_Borders);
+                renderSlots(window.Selected);
+                imgui.EndChild();
+                if (tabs) then imgui.EndTabItem(); end
+            end
+            -- /vg mine opens straight on this tab
+            local mineFlags = window.Mine and ImGuiTabItemFlags_SetSelected or ImGuiTabItemFlags_None;
+            window.Mine = false;
+            if (tabs) and (imgui.BeginTabItem('Your commands##vg_tab_mine', nil, mineFlags)) then
+                imgui.BeginChild('mine', { 0, -60 }, ImGuiChildFlags_Borders);
+                renderMine();
+                imgui.EndChild();
+                imgui.EndTabItem();
+            end
+            if (tabs) then
+                for _, t in ipairs(called) do
+                    -- only your own trusts: the server says which they are
+                    if (require('vg.trusts').Ours(t)) and (imgui.BeginTabItem(t.Name .. '##vg_tab_' .. t.Id)) then
+                        onTrust = t;
+                        renderTrust(t);
+                        imgui.EndTabItem();
+                    end
+                end
+                imgui.EndTabBar();
+            end
         end
         imgui.Separator();
+        if (onTrust ~= nil) then
+            renderTrustBar(onTrust);
+            vd.End();
+            if (not isOpen[1]) then window.Open = false; end
+            return;
+        end
         imgui.PushItemWidth(160);
         imgui.InputText('##vg_new_set', newSet, 64);
         imgui.PopItemWidth();
@@ -287,18 +523,11 @@ window.Render = function()
             setNote = mine.Dressing and 'Swapping paused: put gear on, type a name and press New set (or /vg save <name>).' or nil;
         end
         imgui.SameLine();
-        if (vd.Button('Your commands')) then
-            window.Mine = not window.Mine;
-        end
-        imgui.SameLine();
         imgui.TextDisabled('/vg help lists the commands for this job.  vanagear is built on LuAshitacast by ThornyFFXI (MIT).');
     end
     vd.End();
     if (not isOpen[1]) then
         window.Open = false;
-    end
-    if (window.Mine) and (window.Open) then
-        renderMine();
     end
 end
 
