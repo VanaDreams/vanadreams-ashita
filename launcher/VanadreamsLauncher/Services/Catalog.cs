@@ -128,6 +128,9 @@ namespace Vanadreams.Services
         public int Schema { get; set; }
         public string Interface { get; set; }
         public List<CatalogItem> Items { get; } = new List<CatalogItem>();
+        /// <summary>"servers": the server's Tailscale address now, and old address -> new one for every move (LoaderCommand.UseServers). Null: none given.</summary>
+        public string TailscaleServer { get; set; }
+        public Dictionary<string, string> MovedServers { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         public CatalogItem Find(string id) => Items.FirstOrDefault(i => string.Equals(i.Id, id, StringComparison.OrdinalIgnoreCase));
 
@@ -161,6 +164,12 @@ namespace Vanadreams.Services
             var root = Json.ParseObject(json);
             if (root == null) throw new FormatException("The catalogue is not a JSON object.");
             var cat = new Catalog { Schema = Json.Int(root, "schema", 1), Interface = Json.Str(root, "interface", "") };
+            var servers = Json.Obj(root.ContainsKey("servers") ? root["servers"] : null);
+            cat.TailscaleServer = Json.Str(servers, "tailscale");
+            var moved = Json.Obj(servers != null && servers.ContainsKey("moved") ? servers["moved"] : null);
+            if (moved != null)
+                foreach (var kv in moved)
+                    if (kv.Value is string to) cat.MovedServers[kv.Key] = to;
             foreach (var o in Json.List(root.ContainsKey("items") ? root["items"] : null))
             {
                 var d = Json.Obj(o);

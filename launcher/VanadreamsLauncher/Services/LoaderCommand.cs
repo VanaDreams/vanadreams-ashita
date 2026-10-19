@@ -24,14 +24,86 @@ namespace Vanadreams.Services
         /// </summary>
         public const string PreviousTailscaleServer = "100.114.52.41";
 
+        /// <summary>
+        /// The server's Tailscale address now: the one built in, until the catalogue names another
+        /// (UseServers). The Profiles page's Tailscale box writes this one.
+        /// </summary>
+        public static string Tailscale { get; private set; } = TailscaleServer;
+
+        private static Dictionary<string, string> _moved = BuiltInMoves();
+
+        private static Dictionary<string, string> BuiltInMoves() => new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase)
+        {
+            // only addresses no other server could be at: a home-network address like 192.168.0.19 is somebody
+            // else's server on somebody else's network
+            { PreviousTailscaleServer, TailscaleServer },
+        };
+
+        /// <summary>
+        /// The server addresses from the catalogue's "servers" block, so a future move needs a catalogue edit and no
+        /// new launcher: its Tailscale address, and old address -> new address for every place the server has been.
+        /// The built-in moves stay; the catalogue's are added over them. Blank or missing keeps what is built in.
+        /// </summary>
+        public static void UseServers(string tailscale, IDictionary<string, string> moved)
+        {
+            var map = BuiltInMoves();
+            if (moved != null)
+                foreach (var kv in moved)
+                    if (!string.IsNullOrWhiteSpace(kv.Key) && !string.IsNullOrWhiteSpace(kv.Value) && !Same(kv.Key, kv.Value))
+                        map[kv.Key.Trim()] = kv.Value.Trim();
+            var ts = string.IsNullOrWhiteSpace(tailscale) ? TailscaleServer : tailscale.Trim();
+            // the built-in address is an old one once the catalogue names another
+            if (!Same(ts, TailscaleServer) && !map.ContainsKey(TailscaleServer)) map[TailscaleServer] = ts;
+            map.Remove(ts);   // the current address has not moved, whatever an old list says
+            _moved = map;
+            Tailscale = ts;
+        }
+
+        /// <summary>Back to the addresses built in (tests).</summary>
+        public static void ResetServers() { _moved = BuiltInMoves(); Tailscale = TailscaleServer; }
+
+        /// <summary>
+        /// Where the server is now, for an address it was once at, following a chain of moves (A -> B -> C gives C);
+        /// null when the address never moved.
+        /// </summary>
+        public static string MovedTo(string server)
+        {
+            if (string.IsNullOrWhiteSpace(server)) return null;
+            string to = null, at = server.Trim();
+            string next;
+            for (var hops = 0; hops < 8 && _moved.TryGetValue(at, out next); hops++) { to = next; at = next; }
+            return to;
+        }
+
+        /// <summary>The address to connect to: the server's new one when it moved, else as written.</summary>
+        public static string Current(string server) => MovedTo(server) ?? server;
+
+        private static bool Same(string a, string b) => string.Equals((a ?? "").Trim(), (b ?? "").Trim(), System.StringComparison.OrdinalIgnoreCase);
+
+        private static readonly Regex ServerArg = new Regex("(?<flag>--server\\s+)(?<value>\"[^\"]*\"|\\S+)", RegexOptions.IgnoreCase);
+
+        /// <summary>
+        /// A boot command with its --server pointed at where the server is now, every other character left as it
+        /// was (--hairpin, --lang, a login written into the file by hand). Null when it does not name an old address.
+        /// </summary>
+        public static string Repoint(string command)
+        {
+            if (string.IsNullOrWhiteSpace(command)) return null;
+            var m = ServerArg.Match(command);
+            if (!m.Success) return null;
+            var to = MovedTo(m.Groups["value"].Value.Trim('"'));
+            if (to == null) return null;
+            return command.Substring(0, m.Groups["value"].Index) + Quote(to) + command.Substring(m.Groups["value"].Index + m.Groups["value"].Length);
+        }
+
         public string Server { get; set; } = "";
         public bool Hairpin { get; set; }
 
-        public bool IsTailscale => string.Equals(Server, TailscaleServer, System.StringComparison.OrdinalIgnoreCase)
-                                   || string.Equals(Server, PreviousTailscaleServer, System.StringComparison.OrdinalIgnoreCase);
+        public bool IsTailscale => Same(Current(Server), Tailscale);
 
-        /// <summary>The command logs in to Vanadreams: its public name, any other fairywitch name with vanadreams in it, or its Tailscale address.</summary>
-        public bool IsVanadreams => IsTailscale || (Server ?? "").IndexOf("vanadreams", System.StringComparison.OrdinalIgnoreCase) >= 0;
+        /// <summary>The command logs in to Vanadreams: its public name, any other fairywitch name with vanadreams in it, its Tailscale address, or any address it has moved from.</summary>
+        public bool IsVanadreams => IsTailscale || MovedTo(Server) != null
+                                    || (Server ?? "").IndexOf("vanadreams", System.StringComparison.OrdinalIgnoreCase) >= 0;
 
         /// <summary>
         /// Point this command at the server over Tailscale, or back at its public name. Over Tailscale
@@ -40,7 +112,7 @@ namespace Vanadreams.Services
         /// </summary>
         public void UseTailscale(bool on)
         {
-            Server = on ? TailscaleServer : VanadreamsServer;
+            Server = on ? Tailscale : VanadreamsServer;
             Hairpin = on;
         }
         public string User { get; set; } = "";
@@ -98,8 +170,7 @@ namespace Vanadreams.Services
             var parts = new List<string>();
             if (!string.IsNullOrWhiteSpace(Server))
             {
-                var server = string.Equals(Server, PreviousTailscaleServer, System.StringComparison.OrdinalIgnoreCase) ? TailscaleServer : Server;
-                parts.Add("--server"); parts.Add(Quote(server));
+                parts.Add("--server"); parts.Add(Quote(Current(Server)));
             }
             if (Hairpin) parts.Add("--hairpin");
             if (!string.IsNullOrWhiteSpace(Extra)) parts.Add(Extra.Trim());
