@@ -34,18 +34,6 @@ namespace Vanadreams.Pages
             PresetList.ToolTip = string.Join("\n", WindowerPreset.Items.Select(l => l.Windower + " → " + (App.State.Catalog.Find(l.CatalogId)?.Name ?? l.CatalogId) + ": " + l.Note));
         }
 
-        /// <summary>The Windower folder, where one of the usual places has it; null otherwise.</summary>
-        private static string WindowerFolder()
-        {
-            var x86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
-            var pf = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-            var candidates = new List<string>();
-            foreach (var root in new[] { x86, pf, @"C:\", @"D:\" }.Where(r => !string.IsNullOrEmpty(r)))
-                foreach (var name in new[] { "Windower4", "Windower", "Windower 4" })
-                    candidates.Add(Path.Combine(root, name));
-            return candidates.FirstOrDefault(c => File.Exists(Path.Combine(c, "Windower.exe")) || Directory.Exists(Path.Combine(c, "addons")));
-        }
-
         private void Say(string text, string brush = null, string folder = null)
         {
             Result.Text = text;
@@ -134,7 +122,7 @@ namespace Vanadreams.Pages
         private void Init_Click(object sender, RoutedEventArgs e)
         {
             if (!Ready()) return;
-            var windower = WindowerFolder();
+            var windower = WindowerInstall.Find(App.State.Settings);
             var scripts = windower == null ? null : Path.Combine(windower, "scripts");
             var d = new OpenFileDialog
             {
@@ -182,7 +170,7 @@ namespace Vanadreams.Pages
         private void GearSwap_Click(object sender, RoutedEventArgs e)
         {
             if (!Ready()) return;
-            var windower = WindowerFolder();
+            var windower = WindowerInstall.Find(App.State.Settings);
             var data = windower == null ? null : Path.Combine(windower, "addons", "GearSwap", "data");
             var d = new OpenFileDialog
             {

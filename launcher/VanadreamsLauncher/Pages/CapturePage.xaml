@@ -42,7 +42,7 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
-                <TextBlock Grid.Row="2" Style="{StaticResource Muted}" FontSize="13.5" TextWrapping="Wrap" Margin="0,6,0,0" Text="Snapshots come from the charcapture addon: load it on the character you want to bring and type /capture. Files live in config\charcapture."/>
+                <TextBlock Grid.Row="2" Style="{StaticResource Muted}" FontSize="13.5" TextWrapping="Wrap" Margin="0,6,0,0" Text="Snapshots come from the charcapture addon: load it on the character you want to bring and type /capture (on Windower, //capture). Files live in config\charcapture, or in Windower's addons\charcapture\data."/>
             </Grid>
         </Border>
         <Border Grid.Column="2" Style="{StaticResource Box}">
@@ -60,7 +60,9 @@
                 <StackPanel Grid.Row="2" Margin="0,8,0,0">
                     <WrapPanel>
                         <Button x:Name="SendButton" Style="{StaticResource GoldButton}" Content="Send to Vanadreams" Click="Send_Click" Margin="0,0,7,7"/>
-                        <Button Style="{StaticResource GhostButton}" Content="Open snapshot folder" Click="Folder_Click" Margin="0,0,0,7"/>
+                        <Button Style="{StaticResource GhostButton}" Content="Open snapshot folder" Click="Folder_Click" Margin="0,0,7,7"/>
+                        <Button x:Name="WindowerButton" Style="{StaticResource GhostButton}" Content="Put charcapture into Windower" Click="Windower_Click" Margin="0,0,0,7"
+                                ToolTip="For Windower players: copies charcapture into Windower's addons folder. Nothing else in Windower changes."/>
                     </WrapPanel>
                     <local:CrewGuide Who="moogle" BubbleWidth="140"
                                      Tip="Kupo! Type&#160;/&#x2060;capture in game, then send it here."/>
