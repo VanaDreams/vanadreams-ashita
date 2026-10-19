@@ -314,6 +314,9 @@ namespace Vanadreams.Pages
             if (_profile == null) return;
             var state = App.State;
             var login = TakeLogin();
+            // Ashita reads the profile's file itself, so one still on an address the server moved from is put right on disk
+            state.RepointMovedProfiles();
+            if (LoaderCommand.MovedTo(_profile.Command.Server) != null && File.Exists(_profile.Path)) _profile = Profile.Load(_profile.Path);
             // what the facts panel used to show beside Play is said when Play is pressed
             PlayNote.Visibility = login == null ? Visibility.Visible : Visibility.Collapsed;
             PlayNote.Text = login == null ? "No login typed: the loader's window will ask for your username and password." : "";

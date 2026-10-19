@@ -43,6 +43,26 @@ namespace Vanadreams
             Status.FromCache = true;
             LoadCatalogFromCache();
             if (Catalog.Items.Count == 0) LoadBundledCatalog();
+            UseCatalogServers();
+        }
+
+        /// <summary>The catalogue's server addresses become the ones profiles are pointed at (LoaderCommand.UseServers).</summary>
+        private void UseCatalogServers() => LoaderCommand.UseServers(Catalog.TailscaleServer, Catalog.MovedServers);
+
+        /// <summary>
+        /// Every profile still pointing at an address the server moved away from is pointed at the new one, so a
+        /// player never has to edit a boot ini after a move. Quiet: a file that cannot be written is logged and left.
+        /// </summary>
+        public int RepointMovedProfiles()
+        {
+            if (!HasAshita) return 0;
+            try
+            {
+                var n = Profiles.RepointMoved().Count;
+                if (n > 0) Notify();
+                return n;
+            }
+            catch (Exception ex) { Log.Warn("profiles not repointed: " + ex.Message); return 0; }
         }
 
         public ProfileStore Profiles => new ProfileStore(Settings.AshitaRoot);
@@ -304,12 +324,15 @@ namespace Vanadreams
                 CatalogFromCache = false;
                 Directory.CreateDirectory(Path.GetDirectoryName(Settings.CatalogCachePath));
                 File.WriteAllText(Settings.CatalogCachePath, text, new UTF8Encoding(false));
+                UseCatalogServers();
+                RepointMovedProfiles();
             }
             catch (Exception ex)
             {
                 Log.Warn("catalogue fetch failed, using cache: " + ex.Message);
                 CatalogFromCache = true;
-                if (Catalog.Items.Count == 0) LoadBundledCatalog();
+                if (Catalog.Items.Count == 0) { LoadBundledCatalog(); UseCatalogServers(); }
+                RepointMovedProfiles();
             }
             Notify();
         }
