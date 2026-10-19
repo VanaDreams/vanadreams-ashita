@@ -14,8 +14,9 @@ while vanagear is ticked.
   against that job's weights (`jobs\<JOB>.lua`, built on `vg\roles.lua`). Caps count: once gear
   haste is at 25% or damage taken at -50%, a slot goes to something else.
 - Builds idle, resting, damage taken, fighting (default, hybrid, accuracy), one set per
-  weaponskill your weapons can use, precast, interim and midcast by skill and spell, shooting,
-  and pet sets for pet jobs.
+  weaponskill your weapons can use, precast, interim and midcast by skill, one set per spell you
+  have learned and can cast now (main or support job: Utsusemi, elemental and debuff ninjutsu,
+  cures, nukes...; listed under "Your spells" in /vg), shooting, and pet sets for pet jobs.
 - Rebuilds by itself, without a word in chat, on job change, level up, a weapon change, and
   every zone (gear you picked up or moved since is counted then). `/vg build` rebuilds now and
   says so.
