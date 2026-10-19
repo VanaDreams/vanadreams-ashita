@@ -1,6 +1,12 @@
 {
   "schema": 1,
   "interface": "4.30",
+  "servers": {
+    "tailscale": "100.93.179.33",
+    "moved": {
+      "100.114.52.41": "100.93.179.33"
+    }
+  },
   "items": [
     {
       "id": "meritfix",

@@ -193,6 +193,36 @@ namespace Vanadreams.Services
                 .ToList();
         }
 
+        /// <summary>
+        /// Every profile in config\boot whose --server is an address the server has moved from is pointed at where
+        /// it is now (LoaderCommand.Repoint): only the command line's server changes, --hairpin and the rest stay.
+        /// 19 Oct 2026: after the move to the new server PC, players stuck at "mbedtls_net_connect failed" had to edit
+        /// vanadreams.ini (and Hogdog.ini, Peepa.ini...) by hand. Run at start, when the catalogue arrives, and on Play.
+        /// Returns the files changed.
+        /// </summary>
+        public IList<string> RepointMoved()
+        {
+            var changed = new List<string>();
+            if (!Directory.Exists(BootDir)) return changed;
+            foreach (var f in Directory.GetFiles(BootDir, "*.ini"))
+            {
+                if (System.IO.Path.GetFileName(f).StartsWith(".launch-", StringComparison.OrdinalIgnoreCase)) continue;   // gone within the minute, and they carry a login
+                try
+                {
+                    var ini = IniFile.Load(f);
+                    var was = ini.Get("ashita.boot", "command");
+                    var now = LoaderCommand.Repoint(was);
+                    if (now == null) continue;
+                    ini.Set("ashita.boot", "command", now);
+                    ini.Save();
+                    changed.Add(f);
+                    Log.Info("profile " + System.IO.Path.GetFileName(f) + ": server moved, " + LoaderCommand.Parse(was).Server + " -> " + LoaderCommand.Parse(now).Server);
+                }
+                catch (Exception ex) { Log.Warn("profile " + System.IO.Path.GetFileName(f) + " not repointed: " + ex.Message); }
+            }
+            return changed;
+        }
+
         public string PathFor(string id) => System.IO.Path.Combine(BootDir, id + ".ini");
 
         public bool Exists(string id) => File.Exists(PathFor(id));

@@ -186,6 +186,7 @@ namespace Vanadreams
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
             if (State.HasAshita) GameLauncher.Sweep(State.AshitaRoot);
+            State.RepointMovedProfiles();   // a profile still on the server's old address, before the menu reads it
             State.CheckVersion();
             RefreshStrip();
             RefreshMute();
