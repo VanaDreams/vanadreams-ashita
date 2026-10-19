@@ -62,57 +62,10 @@ namespace Vanadreams.Tests
         }
 
         [TestMethod]
-        public void CarryOver_TakesNewerAndMissingFilesOnly()
-        {
-            var other = Path.Combine(_dir, "other", "FINAL FANTASY XI");
-            Directory.CreateDirectory(Path.Combine(other, "USER", "1a2b"));
-            var mine = Path.Combine(_game, "USER", "1a2b", "mcr.dat");
-            File.SetLastWriteTimeUtc(mine, new DateTime(2026, 10, 13));
-            var older = Path.Combine(other, "USER", "1a2b", "mcr.dat");
-            File.WriteAllText(older, "old macros");
-            File.SetLastWriteTimeUtc(older, new DateTime(2026, 10, 12));
-            var extra = Path.Combine(other, "USER", "1a2b", "mcr10.dat");
-            File.WriteAllText(extra, "book 10");
-            File.SetLastWriteTimeUtc(extra, new DateTime(2026, 10, 15));
-
-            CollectionAssert.AreEqual(new[] { "1a2b" }, UserFolderBackup.CarryOver(other, _game).ToArray());
-            Assert.AreEqual("macros", File.ReadAllText(mine));   // the newer copy here is kept
-            Assert.AreEqual("book 10", File.ReadAllText(Path.Combine(_game, "USER", "1a2b", "mcr10.dat")));
-            Assert.AreEqual(0, UserFolderBackup.CarryOver(other, _game).Count);   // nothing left to bring
-        }
-
-        [TestMethod]
-        public void CarryOver_SameGameOrNoUser()
-        {
-            Assert.AreEqual(0, UserFolderBackup.CarryOver(_game, _game).Count);
-            Assert.AreEqual(0, UserFolderBackup.CarryOver(Path.Combine(_dir, "nowhere"), _game).Count);
-        }
-
-        [TestMethod]
         public void Take_NothingToCopy()
         {
             Assert.IsNull(UserFolderBackup.Take(Path.Combine(_dir, "nowhere"), _backups, DateTime.Now));
             Assert.IsNull(UserFolderBackup.Take(null, _backups, DateTime.Now));
-        }
-
-        [TestMethod]
-        public void CarrySources_LastCopyCountsEvenWhenWindowsAlreadyMoved()
-        {
-            // 18 Oct 2026: the patch pointed Windows at the new copy first, so Play saw no switch and carried nothing
-            var old = Path.Combine(_dir, "old", "FINAL FANTASY XI");
-            Directory.CreateDirectory(Path.Combine(old, "USER", "2"));
-            CollectionAssert.AreEqual(new[] { old }, UserFolderBackup.CarrySources(_game, old, _game, null).ToArray());
-            Assert.AreEqual(0, UserFolderBackup.CarrySources(_game, _game, _game, new[] { old }).Count, "a record of the last copy means no hunting");
-        }
-
-        [TestMethod]
-        public void CarrySources_FirstPlayLooksAtEveryKnownCopyOnce()
-        {
-            var old = Path.Combine(_dir, "old", "FINAL FANTASY XI");
-            Directory.CreateDirectory(Path.Combine(old, "USER", "2"));
-            var empty = Path.Combine(_dir, "empty", "FINAL FANTASY XI");
-            Directory.CreateDirectory(empty);
-            CollectionAssert.AreEqual(new[] { old }, UserFolderBackup.CarrySources(_game, "", _game, new[] { _game, empty, old, old + "\\" }).ToArray());
         }
 
         [TestMethod]

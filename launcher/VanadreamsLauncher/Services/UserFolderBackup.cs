@@ -67,67 +67,6 @@ namespace Vanadreams.Services
             return zip;
         }
 
-        /// <summary>
-        /// Brings toGameFolder\USER up to date from fromGameFolder\USER, file by file: a macro book or config file is
-        /// copied when it is missing here or was written more recently there. Nothing is deleted. Returns the character
-        /// folders that received at least one file.
-        ///
-        /// 15 Oct 2026: Terry's PC had two games, C:\Program Files (x86)\...\FINAL FANTASY XI and D:\fancy ffxi. Each
-        /// keeps its own USER folder, so whichever one a launch started showed that copy's macros, and the other set
-        /// looked wiped. Play takes the backup of toGameFolder first, so this can always be undone.
-        /// </summary>
-        public static List<string> CarryOver(string fromGameFolder, string toGameFolder)
-        {
-            var carried = new List<string>();
-            if (string.IsNullOrWhiteSpace(fromGameFolder) || string.IsNullOrWhiteSpace(toGameFolder)) return carried;
-            var from = Path.Combine(fromGameFolder, "USER");
-            var to = Path.Combine(toGameFolder, "USER");
-            if (!Directory.Exists(from) || string.Equals(Path.GetFullPath(from).TrimEnd('\\', '/'), Path.GetFullPath(to).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase))
-                return carried;
-
-            foreach (var f in Directory.GetFiles(from, "*", SearchOption.AllDirectories))
-            {
-                var rel = f.Substring(from.Length).TrimStart('\\', '/');
-                var dest = Path.Combine(to, rel);
-                var when = File.GetLastWriteTimeUtc(f);
-                if (File.Exists(dest) && File.GetLastWriteTimeUtc(dest) >= when) continue;
-                Directory.CreateDirectory(Path.GetDirectoryName(dest));
-                File.Copy(f, dest, true);
-                File.SetLastWriteTimeUtc(dest, when);
-                var character = rel.Split('\\', '/')[0];
-                if (!carried.Contains(character, StringComparer.OrdinalIgnoreCase)) carried.Add(character);
-            }
-            return carried;
-        }
-
-        /// <summary>
-        /// The game folders whose USER folder a Play into gameFolder should carry from: the copy the last Play started,
-        /// and the copy Windows pointed at before this Play. On the first Play that has no record of the last copy, also
-        /// every other copy we know of, since a switch made before the record existed was never carried.
-        ///
-        /// 18 Oct 2026: Terry's macros went missing again. On 16 Oct her game moved from C:\Program Files (x86)\...
-        /// to D:\fancy ffxi, but the patch had already pointed Windows at D:, so Play saw no switch and carried nothing.
-        /// </summary>
-        public static List<string> CarrySources(string gameFolder, string lastGameFolder, string registeredGameFolder, IEnumerable<string> otherKnown)
-        {
-            var candidates = new List<string> { lastGameFolder, registeredGameFolder };
-            if (string.IsNullOrWhiteSpace(lastGameFolder) && otherKnown != null) candidates.AddRange(otherKnown);
-            var sources = new List<string>();
-            foreach (var c in candidates)
-            {
-                if (string.IsNullOrWhiteSpace(c) || Same(c, gameFolder) || sources.Any(x => Same(x, c))) continue;
-                if (Directory.Exists(Path.Combine(c, "USER"))) sources.Add(c);
-            }
-            return sources;
-        }
-
-        private static bool Same(string a, string b)
-        {
-            if (string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b)) return false;
-            try { return string.Equals(Path.GetFullPath(a).TrimEnd('\\', '/'), Path.GetFullPath(b).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase); }
-            catch (Exception) { return string.Equals(a.TrimEnd('\\', '/'), b.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase); }
-        }
-
         /// <summary>The copies to remove: all but the newest Keep and the newest of each of the last KeepDays days.</summary>
         public static List<string> Expired(List<string> newestFirst, DateTime now)
         {
