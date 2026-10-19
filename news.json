@@ -3,6 +3,12 @@
   "items": [
     {
       "date": "2026-10-18",
+      "by": "Ferrin",
+      "title": "Gear your trusts",
+      "body": "VanaGear 0.1.10 gives each trust you call its own tab in /vg, with Idle, Engaged and per-ability sets from your bags. Your trusts use those sets' stats. No trust tabs? Quit the launcher from the tray, open it again and press Play. Also new: capacity points at 50x, and no more waits between endgame entries."
+    },
+    {
+      "date": "2026-10-18",
       "by": "Terry",
       "title": "Sunday update",
       "body": "Einherjar opens, Nyzul Isle bosses arrive and limit breaks get their rework."
