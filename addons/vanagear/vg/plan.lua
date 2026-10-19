@@ -209,7 +209,98 @@ plan.For = function(who, equipment, opts)
         end
     end
 
+    -- a set for every spell the player knows and can cast at this level, main job and support
+    -- job (Ferrin 19 Oct 2026: "it also needs to detect spells on ninja, and the other spelled
+    -- jobs"). Each values what its kind of spell needs; a spell whose set name is already a
+    -- set (Cure, Stoneskin) keeps that one.
+    local have = {};
+    for _, o in ipairs(out) do have[string.lower(o.Name)] = true; end
+    local okSpells, known = pcall(plan.Spells, who);
+    for _, s in ipairs(okSpells and known or {}) do
+        local setName = plan.WsSetName(s.Name);
+        local kind = plan.SpellMode(s.Skill, s.Name);
+        if (kind ~= nil) and (not have[string.lower(setName)]) then
+            have[string.lower(setName)] = true;
+            local m = mode(kind, tweaks);
+            m.Name = setName;
+            out[#out + 1] = { Name = setName, Mode = m, Slots = slots, Spell = s.Name, SameAs = kind };
+        end
+    end
+
     return out, held;
+end
+
+local skillIds = { [33] = 'Divine Magic', [34] = 'Healing Magic', [35] = 'Enhancing Magic', [36] = 'Enfeebling Magic',
+    [37] = 'Elemental Magic', [38] = 'Dark Magic', [40] = 'Ninjutsu', [41] = 'Singing', [44] = 'Blue Magic',
+    [45] = 'Geomancy' };
+
+-- The spells the player has learned and can cast now: { Name, Skill (LuAshitacast's name) }.
+plan.Spells = function(who)
+    local resources = AshitaCore:GetResourceManager();
+    local player = AshitaCore:GetMemoryManager():GetPlayer();
+    if (resources.GetSpellById == nil) or (player.HasSpell == nil) then
+        return {};
+    end
+    local list, seen = {}, {};
+    for id = 1, 1023 do
+        local s = resources:GetSpellById(id);
+        if (s ~= nil) and (skillIds[s.Skill] ~= nil) and (player:HasSpell(id)) then
+            local needMain = s.LevelRequired and s.LevelRequired[who.Job + 1] or -1;
+            local needSub = (who.Sub ~= nil) and (who.Sub > 0) and s.LevelRequired and s.LevelRequired[who.Sub + 1] or -1;
+            -- LevelRequired is by job id, 1-based in Lua (the job id + 1); -1 where the job has none
+            local ok = ((needMain ~= nil) and (needMain > 0) and (needMain <= who.Level))
+                or ((needSub ~= nil) and (needSub > 0) and (needSub <= (who.SubLevel or 0)));
+            local name = s.Name and s.Name[1] or nil;
+            if (ok) and (name ~= nil) and (name ~= '') and (not seen[name]) then
+                seen[name] = true;
+                list[#list + 1] = { Name = name, Skill = skillIds[s.Skill] };
+            end
+        end
+    end
+    table.sort(list, function(a, b) return a.Name < b.Name; end);
+    return list;
+end
+
+-- Ninjutsu by what it does (Kincard's NIN guide: magic attack for the elemental ones, magic
+-- accuracy for the debuffs, fast cast and haste for Utsusemi's recast).
+local ninDebuff = { kurayami = true, hojo = true, jubaku = true, dokumori = true, aisha = true, yurin = true, sayonara = true };
+local ninNuke = { katon = true, hyoton = true, huton = true, doton = true, raiton = true, suiton = true };
+
+-- The mode a spell's own set is built from, or nil for a spell that gets no set of its own.
+plan.SpellMode = function(skill, name)
+    local first = string.lower(string.match(name, '^[%a]+') or '');
+    if (skill == 'Ninjutsu') then
+        if (first == 'utsusemi') then return 'Utsusemi'; end
+        if (ninNuke[first]) then return 'Ninjutsu'; end
+        if (ninDebuff[first]) then return 'NinjutsuDebuff'; end
+        return 'NinjutsuBuff';
+    elseif (skill == 'Healing Magic') then
+        if (first == 'cure') or (first == 'cura') or (first == 'curaga') then return 'Cure'; end
+        if (name == 'Cursna') then return 'Cursna'; end
+        return nil;
+    elseif (skill == 'Enhancing Magic') then
+        if (first == 'stoneskin') then return 'Stoneskin'; end
+        if (first == 'phalanx') then return 'Phalanx'; end
+        if (first == 'regen') then return 'Regen'; end
+        if (first == 'refresh') then return 'Refresh'; end
+        return 'Enhancing';
+    elseif (skill == 'Enfeebling Magic') then
+        return 'Enfeebling';
+    elseif (skill == 'Elemental Magic') then
+        return 'Nuke';
+    elseif (skill == 'Dark Magic') then
+        if (first == 'drain') or (first == 'aspir') then return 'Drain'; end
+        return 'Dark';
+    elseif (skill == 'Divine Magic') then
+        return 'Divine';
+    elseif (skill == 'Singing') then
+        return 'Song';
+    elseif (skill == 'Blue Magic') then
+        return require('vg.lists').BluePhysical[name] and 'BluePhysical' or 'BlueMagical';
+    elseif (skill == 'Geomancy') then
+        return 'Geomancy';
+    end
+    return nil;
 end
 
 return plan;
