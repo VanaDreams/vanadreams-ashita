@@ -160,6 +160,11 @@ stock.HandleMidcast = function()
     elseif (skillSet[spell.Skill] ~= nil) then
         wear(skillSet[spell.Skill]);
     end
+    -- the set built for this very spell, under the toggles (burst, accuracy, obi) laid on next;
+    -- a set of your own for it goes on last, over everything
+    local spellSet = (string.gsub(spell.Name or '', '[^%w]', ''));
+    local yours = (gVana.Own ~= nil) and (gVana.Own[spellSet] ~= nil) and (next(gVana.Own[spellSet]) ~= nil);
+    if (not yours) then wear(spellSet); end
     if (spell.Skill == 'Elemental Magic') then
         if (t.Nuke == 'acc') then wear('NukeACC'); end
         if (t.Burst) then wear('Burst'); end
@@ -171,8 +176,8 @@ stock.HandleMidcast = function()
         wear('Macc');
     end
     family(spell);
-    -- a set named for this very spell (one of the player's own, as Cure IV or CureIV)
-    wear((string.gsub(spell.Name or '', '[^%w]', '')));
+    -- a set of your own named for this very spell (as Cure IV or CureIV)
+    if (yours) then wear(spellSet); end
     if (t.TH) then wear('TH'); end
 end
 

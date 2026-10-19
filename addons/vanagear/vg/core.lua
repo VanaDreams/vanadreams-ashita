@@ -192,12 +192,20 @@ local function stepBuild(budget)
     local stop = q.i + budget - 1;
     while (q.i <= #q.items) and (q.i <= stop) do
         local item = q.items[q.i];
-        local mode = score.Compile(item.Mode);
-        local built, ranks, total, totals = score.Build(mode, q.pieces, q.who, item.Slots, q.petTypes);
-        if (next(built) ~= nil) then
-            q.sets[item.Name] = setFor(built);
-            q.explain[item.Name] = { ranks = ranks, total = total, mode = mode, weaponskill = item.Weaponskill };
-            q.totals[item.Name] = totals;
+        -- spells of one kind share one build (every Cure is the Cure set until you change it)
+        q.same = q.same or {};
+        local done = item.SameAs and q.same[item.SameAs];
+        if (done == nil) then
+            local mode = score.Compile(item.Mode);
+            local built, ranks, total, totals = score.Build(mode, q.pieces, q.who, item.Slots, q.petTypes);
+            done = { built = built, ranks = ranks, total = total, totals = totals, mode = mode };
+            if (item.SameAs) then q.same[item.SameAs] = done; end
+        end
+        if (next(done.built) ~= nil) then
+            q.sets[item.Name] = setFor(done.built);
+            q.explain[item.Name] = { ranks = done.ranks, total = done.total, mode = done.mode, weaponskill = item.Weaponskill,
+                spell = item.Spell };
+            q.totals[item.Name] = done.totals;
         end
         q.i = q.i + 1;
     end
