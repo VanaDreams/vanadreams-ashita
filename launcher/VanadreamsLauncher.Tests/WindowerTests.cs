@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Vanadreams.Services;
@@ -214,6 +215,28 @@ local function f() return sets.engaged end
             StringAssert.Contains(lua, "profile.HandleWeaponskill = function()");
             Assert.IsTrue(lua.TrimEnd().EndsWith("return profile;"));
             Assert.AreEqual("Ferrin_WHM.lua", GearSwapImport.ProfileFileName(job));
+        }
+    }
+
+    [TestClass]
+    public class WindowerInstallTests
+    {
+        [TestMethod]
+        public void A_picked_folder_counts_only_when_a_windower_is_in_it_and_snapshots_go_under_charcapture()
+        {
+            var root = Path.Combine(Path.GetTempPath(), "vdl-windower-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                Directory.CreateDirectory(root);
+                Assert.IsFalse(WindowerInstall.IsWindower(root));
+                Assert.AreNotEqual(root, WindowerInstall.Find(new LauncherSettings { WindowerRoot = root }));
+                File.WriteAllText(Path.Combine(root, "Windower.exe"), "");
+                Assert.IsTrue(WindowerInstall.IsWindower(root));
+                Assert.AreEqual(root, WindowerInstall.Find(new LauncherSettings { WindowerRoot = root }));
+                Assert.AreEqual(Path.Combine(root, "addons", "charcapture", "data"), WindowerInstall.SnapshotFolder(root));
+                Assert.AreEqual("windower/addons/charcapture", WindowerInstall.AddonRepoPath("charcapture"));
+            }
+            finally { Directory.Delete(root, true); }
         }
     }
 }

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Microsoft.Win32;
 using Vanadreams.Services;
 
 namespace Vanadreams.Pages
@@ -26,7 +27,8 @@ namespace Vanadreams.Pages
     {
         private readonly MainWindow _win;
         private readonly List<CaptureRow> _rows = new List<CaptureRow>();
-        private string Folder => Path.Combine(App.State.AshitaRoot, "config", "charcapture");
+        private string Folder => string.IsNullOrEmpty(App.State.AshitaRoot) ? null : Path.Combine(App.State.AshitaRoot, "config", "charcapture");
+        private string WindowerFolder => WindowerInstall.Find(App.State.Settings) is string w ? WindowerInstall.SnapshotFolder(w) : null;
         private CaptureRow Current => List.SelectedItem as CaptureRow;
 
         public CapturePage(MainWindow win)
@@ -39,12 +41,15 @@ namespace Vanadreams.Pages
         private void Load()
         {
             _rows.Clear();
-            if (Directory.Exists(Folder))
-                foreach (var f in Directory.GetFiles(Folder, "*.json").OrderByDescending(File.GetLastWriteTime))
-                {
-                    try { var s = CaptureSummary.Read(f); if (s != null) _rows.Add(new CaptureRow { Summary = s }); }
-                    catch (Exception ex) { Log.Warn("snapshot unreadable " + f + ": " + ex.Message); }
-                }
+            // snapshots from the Ashita charcapture and from the Windower one, newest first
+            var files = new[] { Folder, WindowerFolder }.Where(d => d != null && Directory.Exists(d))
+                                                        .SelectMany(d => Directory.GetFiles(d, "*.json"))
+                                                        .OrderByDescending(File.GetLastWriteTime);
+            foreach (var f in files)
+            {
+                try { var s = CaptureSummary.Read(f); if (s != null) _rows.Add(new CaptureRow { Summary = s }); }
+                catch (Exception ex) { Log.Warn("snapshot unreadable " + f + ": " + ex.Message); }
+            }
             List.ItemsSource = null; List.ItemsSource = _rows;
             Heading.Text = _rows.Count == 0 ? "✦ Snapshots · none yet" : "✦ Snapshots · " + _rows.Count;
             if (_rows.Count > 0) List.SelectedIndex = 0; else Show(null);
@@ -95,7 +100,45 @@ namespace Vanadreams.Pages
 
         private void Folder_Click(object sender, RoutedEventArgs e)
         {
-            try { Directory.CreateDirectory(Folder); Process.Start(new ProcessStartInfo("explorer.exe", "\"" + Folder + "\"") { UseShellExecute = true }); } catch (Exception ex) { Log.Warn(ex.Message); }
+            // the folder the picked snapshot is in; else Ashita's, else Windower's
+            var folder = Current != null ? Path.GetDirectoryName(Current.Summary.Path) : Folder ?? WindowerFolder;
+            if (folder == null) { Result.Text = "Run Setup for Ashita, or put charcapture into Windower, first."; Result.Foreground = (Brush)FindResource("Warn"); return; }
+            try { Directory.CreateDirectory(folder); Process.Start(new ProcessStartInfo("explorer.exe", "\"" + folder + "\"") { UseShellExecute = true }); } catch (Exception ex) { Log.Warn(ex.Message); }
+        }
+
+        /// <summary>
+        /// For a player on Windower (most retail players are): charcapture for Windower into Windower's addons folder.
+        /// Nothing else in Windower is touched; the player loads it with //lua load charcapture.
+        /// </summary>
+        private async void Windower_Click(object sender, RoutedEventArgs e)
+        {
+            var state = App.State;
+            var root = WindowerInstall.Find(state.Settings);
+            if (root == null)
+            {
+                var d = new OpenFileDialog { Title = "Where is your Windower? Pick Windower.exe", Filter = "Windower.exe|Windower.exe|Programs (*.exe)|*.exe" };
+                if (d.ShowDialog() != true) return;
+                root = Path.GetDirectoryName(d.FileName);
+                if (!WindowerInstall.IsWindower(root)) { Result.Text = "That folder has no Windower in it."; Result.Foreground = (Brush)FindResource("Bad"); return; }
+                state.Settings.WindowerRoot = root;
+                state.Settings.Save();
+            }
+            WindowerButton.IsEnabled = false;
+            Result.Text = "Putting charcapture into " + root + "…"; Result.Foreground = (Brush)FindResource("Mist");
+            try
+            {
+                await WindowerInstall.InstallAddonAsync(state.Downloader, root, "charcapture");
+                Log.Info("charcapture for Windower installed into " + root);
+                Result.Text = "charcapture is in Windower now. In game type //lua load charcapture, zone once, open the Merit Points, Job Points and both Currencies menus, then //capture. The snapshot shows up here.";
+                Result.Foreground = (Brush)FindResource("Ok");
+            }
+            catch (Exception ex)
+            {
+                Log.Error("charcapture for Windower", ex);
+                Result.Text = "Could not put charcapture into Windower: " + ex.Message;
+                Result.Foreground = (Brush)FindResource("Bad");
+            }
+            finally { WindowerButton.IsEnabled = true; }
         }
     }
 }
