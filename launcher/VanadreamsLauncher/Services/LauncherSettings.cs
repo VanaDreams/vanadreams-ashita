@@ -34,6 +34,8 @@ namespace Vanadreams.Services
         /// own plays this one, so taking the registration for Vanadreams never strands the player's other game.
         /// </summary>
         public string OtherGameRoot { get; set; } = "";
+        /// <summary>The Windower folder the player picked, when it is not in one of the usual places (WindowerInstall.Find).</summary>
+        public string WindowerRoot { get; set; } = "";
         /// <summary>
         /// The game folder (…\FINAL FANTASY XI) the last Play started. Macros and config live in that copy's USER
         /// folder, so when the next Play starts a different copy they are carried across (UserFolderBackup.CarryOver).
@@ -98,6 +100,7 @@ namespace Vanadreams.Services
                 s.FfxiFolderOverride = Json.Str(d, "ffxiFolderOverride", "");
                 s.GameInstallRoot = Json.Str(d, "gameInstallRoot", "");
                 s.OtherGameRoot = Json.Str(d, "otherGameRoot", "");
+                s.WindowerRoot = Json.Str(d, "windowerRoot", "");
                 s.LastGameFolder = Json.Str(d, "lastGameFolder", "");
                 s.LastProfile = Json.Str(d, "lastProfile", "");
                 s.CatalogUrl = Json.Str(d, "catalogUrl", s.CatalogUrl);
@@ -149,6 +152,7 @@ namespace Vanadreams.Services
                 { "ffxiFolderOverride", FfxiFolderOverride ?? "" },
                 { "gameInstallRoot", GameInstallRoot ?? "" },
                 { "otherGameRoot", OtherGameRoot ?? "" },
+                { "windowerRoot", WindowerRoot ?? "" },
                 { "lastGameFolder", LastGameFolder ?? "" },
                 { "lastProfile", LastProfile ?? "" },
                 { "catalogUrl", CatalogUrl },
