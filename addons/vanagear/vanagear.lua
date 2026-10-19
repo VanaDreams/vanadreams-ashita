@@ -9,7 +9,7 @@
 
 addon.name      = 'vanagear';
 addon.author    = 'Vanadreams, on LuAshitacast by Thorny';
-addon.version   = '0.1.9';
+addon.version   = '0.1.10';
 addon.desc      = 'Gear sets built from your own bags for your job and level, on LuAshitacast.';
 addon.link      = 'https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/vanagear';
 
@@ -99,6 +99,13 @@ end);
 
 ashita.events.register('packet_out', 'vanagear_packet_out_cb', function (e)
     guard('outgoing packet', gPacketHandlers.HandleOutgoingPacket, e);
+end);
+
+-- the server's answers about your trusts, for their tabs (hidden from chat)
+ashita.events.register('text_in', 'vanagear_text_in_cb', function (e)
+    if (string.find(e.message or '', '[VG ', 1, true) ~= nil) then
+        guard('trust info', require('vg.trusts').TextIn, e);
+    end
 end);
 
 ashita.events.register('command', 'vanagear_command_cb', function (e)

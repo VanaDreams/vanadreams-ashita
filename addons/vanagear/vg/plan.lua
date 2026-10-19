@@ -30,6 +30,8 @@ local function mode(name, tweaks)
     return m;
 end
 
+plan.Mode = mode;
+
 local jobCache = {};
 plan.Job = function(abbr)
     if (jobCache[abbr] == nil) then
@@ -74,6 +76,8 @@ local function wsMode(ws, displayName)
     end
     return m;
 end
+
+plan.WsMode = wsMode;
 
 -- The set name a weaponskill's set goes by: its name with spaces and punctuation taken out,
 -- as the starter profiles already name them (Savage Blade -> SavageBlade).

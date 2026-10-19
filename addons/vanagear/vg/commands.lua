@@ -64,6 +64,9 @@ commands.Lines = function()
     line('/vg why <set> <slot>', 'the piece that won and the three behind it');
     line('/vg upgrades', 'pieces in storage that would win a slot');
     line('/vg underlay on | off', 'built sets under your own profile\'s sets for this job');
+    line('/vg takeover', 'copy your LuAshitacast profile\'s sets for this job into vanagear\'s own and stop using the profile');
+    line('/vg profile on | off', 'use your LuAshitacast profile for this job again, or leave it alone');
+    line('/vg trusts on | off', 'give your called trusts the stats of a set from your bags (a tab each in /vg); off stops sending');
     for word, p in pairs(use.Words()) do
         line('/vg ' .. word, 'equip ' .. p.Name .. ', wait it out, use it, give the slot back');
     end
@@ -269,7 +272,7 @@ commands.Vg = function(args)
     elseif (cmd == 'status') then
         commands.Status();
     elseif (cmd == 'build') or (cmd == 'reload') then
-        core.Request();
+        core.Request(true);
         say('Rebuilding.');
     elseif (cmd == 'dt') then
         t.DT = onOff(arg, t.DT); say('Damage taken gear ' .. (t.DT and 'on' or 'off') .. '.');
@@ -303,6 +306,28 @@ commands.Vg = function(args)
     elseif (cmd == 'weapons') then
         p.Weapons = onOff(arg, p.Weapons); save(); core.Request();
         say('vanagear ' .. (p.Weapons and 'chooses your weapons' or 'leaves your weapons alone') .. '.');
+    elseif (cmd == 'takeover') then
+        if (gProfile == nil) or (gProfile.IsVanagearStock) or (type(gProfile.Sets) ~= 'table') then
+            say('No LuAshitacast profile of yours is running for this job.');
+        else
+            local name = tostring(gProfile.FileName);
+            local count = mine.ImportProfile(gProfile.Sets);
+            p.Forgot = p.Forgot or {};
+            p.Forgot[job()] = true;
+            save();
+            gState.PendingAutoLoad = true;
+            say(string.format('Copied %d sets from %s into your vanagear sets; vanagear runs %s now. %s is untouched: /vg profile on uses it again.',
+                count, name, job(), name));
+        end
+    elseif (cmd == 'profile') then
+        p.Forgot = p.Forgot or {};
+        p.Forgot[job()] = (arg == 'off') or nil;
+        save();
+        gState.PendingAutoLoad = true;
+        say((arg == 'off') and ('Your profile is left alone for ' .. job() .. '.') or ('Your own profile runs again for ' .. job() .. ' if you have one.'));
+    elseif (cmd == 'trusts') then
+        p.TrustGear = onOff(arg, p.TrustGear ~= false); save();
+        say('Trust gear: ' .. (p.TrustGear and 'your called trusts get their sets' or 'nothing is sent to your trusts') .. '.');
     elseif (cmd == 'weapon') then
         local slotName = ({ main = 'Main', sub = 'Sub', range = 'Range' })[arg];
         local piece = table.concat(args, ' ', 3);

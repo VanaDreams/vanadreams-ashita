@@ -365,6 +365,17 @@ packethandlers.HandleOutgoingPacket = function(e)
         return;
     end
 
+    -- vanagear: gear you equip yourself from the menu (0x50 one piece, 0x51 an equipset) stays
+    -- as you put it until the next zone.
+    if (e.id == 0x50) then
+        gVanaCore.HoldByHand(struct.unpack('B', e.data, 0x05 + 1) + 1);
+    elseif (e.id == 0x51) then
+        local count = struct.unpack('B', e.data, 0x04 + 1);
+        for i = 0, math.min(count, 16) - 1 do
+            gVanaCore.HoldByHand(struct.unpack('B', e.data, 0x08 + (i * 4) + 0x01 + 1) + 1);
+        end
+    end
+
     --Manual lockstyle packet
     if (e.id == 0x53) and (e.injected == false) then
         local type = struct.unpack('B', e.data, 0x05 + 1);
