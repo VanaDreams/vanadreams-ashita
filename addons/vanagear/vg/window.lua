@@ -132,11 +132,16 @@ local function renderMine()
     imgui.TextDisabled('The files are config\\addons\\vanagear\\commands\\<JOB>.lua, if you would rather write them by hand.');
 end
 
+-- The set names in the order the list shows them: everything else, then the spell sets.
 local function sortedNames()
-    local names = {};
-    for name in pairs(gVana.Sets) do names[#names + 1] = name; end
+    local names, spells = {}, {};
+    for name in pairs(gVana.Sets) do
+        local ex = gVana.Explain[name];
+        if (ex ~= nil) and (ex.spell ~= nil) then spells[#spells + 1] = name; else names[#names + 1] = name; end
+    end
     table.sort(names);
-    return names;
+    table.sort(spells);
+    return names, spells;
 end
 
 -- The pieces the player carries that can go in this slot now, one per name. The support job's
@@ -167,7 +172,8 @@ renderSlots = function(name)
     local own = gVana.Own[name] or {};
     local built = gVana.Built[name] or {};
     local yours = next(own) ~= nil;
-    vd.Eyebrow(require('vg.mine').Label(name) .. ((ex and ex.weaponskill) and ('  (' .. ex.weaponskill .. ')') or ''));
+    vd.Eyebrow(require('vg.mine').Label(name) .. ((ex and ex.weaponskill) and ('  (' .. ex.weaponskill .. ')') or '')
+        .. ((ex and ex.spell) and '  (goes on as you cast it)' or ''));
     imgui.SameLine();
     imgui.TextDisabled(yours and (gVana.Built[name] and '  built, with your changes' or '  your own set') or '  built');
     imgui.Separator();
@@ -450,15 +456,24 @@ window.Render = function()
             onTrust = nil;
             local tabs = imgui.BeginTabBar('##vg_tabs', ImGuiTabBarFlags_None);
             if (not tabs) or (imgui.BeginTabItem('Your sets##vg_tab_you')) then
-                local names = sortedNames();
+                local names, spells = sortedNames();
                 if (window.Selected == nil) or (gVana.Sets[window.Selected] == nil) then
-                    window.Selected = gVana.Sets.Idle and 'Idle' or names[1];
+                    window.Selected = gVana.Sets.Idle and 'Idle' or names[1] or spells[1];
                 end
 
                 imgui.BeginChild('sets', { 180, -60 }, ImGuiChildFlags_Borders);
                 for _, name in ipairs(names) do
                     if (vd.Selectable(require('vg.mine').Label(name) .. '##vg_set_' .. name, window.Selected == name)) then
                         window.Selected = name;
+                    end
+                end
+                if (#spells > 0) then
+                    imgui.Separator();
+                    imgui.TextDisabled('Your spells');
+                    for _, name in ipairs(spells) do
+                        if (vd.Selectable(gVana.Explain[name].spell .. '##vg_set_' .. name, window.Selected == name)) then
+                            window.Selected = name;
+                        end
                     end
                 end
                 imgui.EndChild();
