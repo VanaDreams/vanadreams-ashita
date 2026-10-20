@@ -10,7 +10,7 @@
 
 addon.name    = 'charcapture';
 addon.author  = 'Vanadreams';
-addon.version = '0.1.8';
+addon.version = '0.1.9';
 addon.desc    = 'Captures a character snapshot for porting to Vanadreams.';
 addon.link    = 'https://github.com/VanaDreams/vanadreams-ashita';
 
@@ -264,6 +264,24 @@ local function safe(f, default)
     return default;
 end
 
+-- Reads one bag slot by slot. A bag the game has locked (a Mog Wardrobe that has lapsed shows its
+-- gear but will not let it be touched) can report a size of 0 while its slots are still filled, so
+-- every slot a bag can hold is read whatever size the game reports; an empty slot reads as id 0 and
+-- is skipped. Returns the items found and the reported size.
+local CONTAINER_SLOTS = 80;
+
+local function read_container(inv, c)
+    local max = safe(function() return inv:GetContainerCountMax(c); end, 0) or 0;
+    local list = T{};
+    for slot = 1, math.max(max, CONTAINER_SLOTS) do
+        local it = safe(function() return inv:GetContainerItem(c, slot); end, nil);
+        if it and it.Id ~= 0 and it.Id ~= 65535 and it.Count > 0 then
+            list:append(T{ slot = slot, id = it.Id, count = it.Count, flags = it.Flags, price = it.Price, extra = hex(it.Extra) });
+        end
+    end
+    return list, max;
+end
+
 local function capture()
     local mm = AshitaCore:GetMemoryManager();
     local player = mm:GetPlayer();
@@ -364,24 +382,24 @@ local function capture()
 
     -- bags
     local item_count = 0;
-    local container_unsynced = T{};    -- containers whose size Ashita hasn't loaded this session
+    local container_unsynced = T{};    -- bags the game gave nothing for (not opened this session, or locked)
+    local container_locked = T{};      -- bags the game reports as size 0 but whose items were read anyway
     for _, c in ipairs(CONTAINERS) do
-        local max = safe(function() return inv:GetContainerCountMax(c); end, 0);
-        if (not max or max == 0) and c ~= 0 then container_unsynced[c] = true; end
-        local list = T{};
-        if max and max > 0 then
+        local list, max = read_container(inv, c);
+        if c == 0 then
             -- slot 0 of the inventory is gil
             local g = safe(function() return inv:GetContainerItem(0, 0); end, nil);
-            if c == 0 and g and g.Id == 65535 then snap.gil = g.Count; end
-            for slot = 1, max do
-                local it = safe(function() return inv:GetContainerItem(c, slot); end, nil);
-                if it and it.Id ~= 0 and it.Id ~= 65535 and it.Count > 0 then
-                    list:append(T{ slot = slot, id = it.Id, count = it.Count, flags = it.Flags, price = it.Price, extra = hex(it.Extra) });
-                    item_count = item_count + 1;
-                end
-            end
+            if g and g.Id == 65535 then snap.gil = g.Count; end
+        elseif max == 0 then
+            if #list == 0 then container_unsynced[c] = true; else container_locked:append(c); end
         end
+        item_count = item_count + #list;
         snap.inventory[tostring(c)] = list;
+    end
+    if #container_locked > 0 then
+        local names = T{};
+        for _, c in ipairs(container_locked) do names:append(STORAGE_NAME[c] or ('storage ' .. c)); end
+        snap.not_captured:append(('%s reads as locked by the game (size 0) but its items were captured: check they are all there'):format(table.concat(names, ', ')));
     end
 
     -- equipment
@@ -403,7 +421,7 @@ local function capture()
     if #unsynced_worn > 0 then
         local names = T{};
         for _, c in ipairs(unsynced_worn) do names:append(STORAGE_NAME[c] or ('storage ' .. c)); end
-        snap.not_captured:append(('gear worn from %s (open it in your menu once, then /capture again)'):format(table.concat(names, ', ')));
+        snap.not_captured:append(('gear worn from %s (open it from the main menu once, even if the wardrobe is unpaid: it still shows its gear; then /capture again)'):format(table.concat(names, ', ')));
     end
 
     -- write
@@ -422,7 +440,7 @@ local function capture()
     if #unsynced_worn > 0 then
         local names = T{};
         for _, c in ipairs(unsynced_worn) do names:append(STORAGE_NAME[c] or ('storage ' .. c)); end
-        say(('Open %s once (Ashita has not loaded it this session, so the gear you have worn from it came out blank), then /capture again.'):format(table.concat(names, ', ')));
+        say(('Open %s once from the main menu (Ashita has not loaded it this session, so the gear you have worn from it came out blank; a wardrobe that is not paid for this month still shows its gear there), then /capture again.'):format(table.concat(names, ', ')));
     end
     say('now send it from the launcher: Capture > Send to Vanadreams.');
     return path;

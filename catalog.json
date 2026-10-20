@@ -72,7 +72,7 @@
         "path": "addons/charcapture",
         "branch": "main"
       },
-      "version": "0.1.8",
+      "version": "0.1.9",
       "install": "copy-to-addons",
       "load": "/addon load charcapture",
       "config": "config\\charcapture\\",
