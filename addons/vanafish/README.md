@@ -32,7 +32,13 @@ Stand at a fishing spot with a rod in the ranged slot and bait in the ammo slot,
 
 ## It stops itself when
 
-Inventory is down to your chosen free slots, the rod or bait is gone, the rod breaks, you zone, you move, a tell arrives, a cast or minute limit is reached, your skill reaches a target, or nothing has bitten for a run of casts. It can run a command of your choice when it stops, for example `/echo fishing stopped`.
+Inventory is down to your chosen free slots, there is no usable replacement rod or bait, you zone, you move, a tell arrives, a cast or minute limit is reached, your skill reaches a target, or nothing has bitten for a run of casts. It can run a command of your choice when it stops, for example `/echo fishing stopped`.
+
+## Rod and bait recovery
+
+**Auto-equip next rod or bait** is on by default. If a rod breaks or bait runs out, VanaFish looks in inventory and Wardrobes 1–4 for fishing gear that can be equipped in the missing slot, equips the preferred replacement, waits for the client to confirm it, then continues. It does not use Satchel, Sack, Case, or Storage because the game cannot equip directly from them.
+
+If there are several choices, add their exact in-game names—best first—to `PREFERENCE` near the top of `vanafish.lua`. Unlisted choices are used after listed ones. Turn the setting off in **Stop when** if you want VanaFish to stop rather than change gear.
 
 ## Catch log
 

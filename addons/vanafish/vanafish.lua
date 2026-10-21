@@ -55,6 +55,8 @@ local defaults = T{
     stop_max_minutes   = T{ 0 },
     stop_at_skill      = T{ 0 },      -- 0 = no target (skill in whole points, 0-100+)
     stop_nothing_streak = T{ 15 },    -- consecutive 'didn't catch anything' before stopping
+    -- gear
+    auto_swap          = T{ true },   -- when the rod breaks or the bait runs out, equip the next best from your bags and carry on
     -- extra
     alert_command      = T{ '' },     -- e.g. "/echo done" - run when the bot stops itself
     log_catches        = T{ true },
@@ -87,6 +89,7 @@ local bot = {
     nothing_streak = 0,
     start_pos      = nil,
     last_result    = '',
+    gear_retry_at  = 0,          -- let the client apply an auto-equipped rod/bait before checking again
     counters       = T{ casts = 0, bites = 0, catches = 0, releases = 0, lost = 0, breaks = 0, nothing = 0, skillups = 0 },
     log            = T{},
     allowed        = false,
@@ -133,6 +136,92 @@ end
 local function item_name(id)
     local r = AshitaCore:GetResourceManager():GetItemById(id);
     return r and r.Name[1] or ('item ' .. tostring(id));
+end
+
+-- ---------------------------------------------------------------------------
+-- fishing gear in your bags
+-- ---------------------------------------------------------------------------
+-- Rods, bait and lures are all items with fishing skill 48 (the server's item_weapon table). A rod goes in the
+-- range slot, bait and lures in the ammo slot. Only the bags a piece can be equipped from are searched: the bag
+-- itself and the four wardrobes (a satchel, sack or case has to be emptied into one of those first).
+local GEAR_BAGS   = { 0, 8, 10, 11, 12 };
+local BAG_NAMES   = { [0] = 'bag', [8] = 'wardrobe', [10] = 'wardrobe 2', [11] = 'wardrobe 3', [12] = 'wardrobe 4' };
+local SKILL_FISHING = 48;
+local SLOTBIT_RANGE, SLOTBIT_AMMO = 4, 8;
+
+-- Which gear you like best, best first, by the name the game shows. Anything not listed comes after, newest item first.
+-- TODO(human): fill this in with your server's rods, baits and lures in the order you want them picked.
+local PREFERENCE = T{
+};
+
+local function preference_rank(entry)
+    for i, name in ipairs(PREFERENCE) do
+        if name:lower() == entry.name:lower() then return i; end
+    end
+    return 1000 + (100000 - entry.id);
+end
+
+-- Every rod and every bait or lure you own, best first. Each entry remembers its exact bag and
+-- slot: an equipment packet needs the physical item, not just its item id.
+local function scan_gear()
+    local inv = AshitaCore:GetMemoryManager():GetInventory();
+    local res = AshitaCore:GetResourceManager();
+    local rods, baits = T{}, T{};
+    for _, bag in ipairs(GEAR_BAGS) do
+        local max = inv:GetContainerCountMax(bag);
+        for slot = 1, max do
+            local it = inv:GetContainerItem(bag, slot);
+            if it ~= nil and it.Id ~= 0 and it.Id ~= 65535 then
+                local r = res:GetItemById(it.Id);
+                if r ~= nil then
+                    local okSkill, skill = pcall(function() return r.Skill; end);
+                    local okSlots, slots = pcall(function() return r.Slots; end);
+                    local name = r.Name[1] or ('item ' .. tostring(it.Id));
+                    slots = okSlots and slots or 0;
+                    local isFishing = (okSkill and skill == SKILL_FISHING);
+                    if isFishing and (bit.band(slots, SLOTBIT_RANGE) ~= 0 or bit.band(slots, SLOTBIT_AMMO) ~= 0) then
+                        local e = { id = it.Id, name = name, count = math.max(1, it.Count or 1), bag = bag, slot = slot,
+                                    where = BAG_NAMES[bag] or ('bag ' .. bag), equipped = false };
+                        if bit.band(slots, SLOTBIT_RANGE) ~= 0 then rods:append(e); else baits:append(e); end
+                    end
+                end
+            end
+        end
+    end
+    local function by_pref(a, b) return preference_rank(a) < preference_rank(b); end
+    table.sort(rods, by_pref);
+    table.sort(baits, by_pref);
+    return rods, baits;
+end
+
+-- 0x050 is the ordinary equipment packet: inventory index, zero-based equipment slot, bag.
+-- Using it here lets a rod or bait in a wardrobe work just as it does when the player equips it.
+local function equip_gear(entry, slot)
+    local packet = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    packet[5], packet[6], packet[7] = entry.slot, slot, entry.bag;
+    AshitaCore:GetPacketManager():AddOutgoingPacket(0x50, packet);
+end
+
+-- Equip every missing fishing slot that can be replaced. Returns whether at least one packet was sent.
+local function replace_missing_gear(missingRod, missingBait)
+    local rods, baits = scan_gear();
+    local changed, what = false, {};
+    if missingRod and rods[1] then
+        equip_gear(rods[1], SLOT_RANGE);
+        what[#what + 1] = 'rod ' .. rods[1].name;
+        changed = true;
+    end
+    if missingBait and baits[1] then
+        equip_gear(baits[1], SLOT_AMMO);
+        what[#what + 1] = 'bait ' .. baits[1].name;
+        changed = true;
+    end
+    if changed then
+        bot.gear_retry_at = now() + 2;
+        bot.last_result = 'Equipping next ' .. table.concat(what, ', ');
+        say(bot.last_result .. '.');
+    end
+    return changed;
 end
 
 local function free_slots()
@@ -247,8 +336,12 @@ local function safety()
     if not logged_in() then stop('not logged in'); return false; end
     if AshitaCore:GetMemoryManager():GetPlayer():GetIsZoning() ~= 0 then stop('zoning'); return false; end
     if free_slots() <= cfg.stop_free_slots[1] then stop('inventory is full'); return false; end
-    if equipped_item(SLOT_RANGE) == nil then stop('no rod equipped'); return false; end
-    if equipped_item(SLOT_AMMO) == nil then stop('out of bait'); return false; end
+    if now() < bot.gear_retry_at then return false; end
+    local missingRod, missingBait = equipped_item(SLOT_RANGE) == nil, equipped_item(SLOT_AMMO) == nil;
+    if missingRod or missingBait then
+        if cfg.auto_swap[1] and replace_missing_gear(missingRod, missingBait) then return false; end
+        stop(missingRod and 'no rod equipped' or 'out of bait'); return false;
+    end
     if cfg.stop_on_move[1] and moved_far(bot.start_pos) then stop('you moved'); return false; end
     if cfg.stop_max_casts[1] > 0 and bot.counters.casts >= cfg.stop_max_casts[1] then stop('cast limit reached'); return false; end
     if cfg.stop_max_minutes[1] > 0 and (now() - bot.started_at) / 60 >= cfg.stop_max_minutes[1] then stop('time limit reached'); return false; end
@@ -345,7 +438,8 @@ ashita.events.register('text_in', 'vanafish_text', function (e)
     elseif m:find('your line breaks', 1, true) or m:find('your rod breaks', 1, true) then
         bot.counters.breaks = bot.counters.breaks + 1;
         record('break', e.message);
-        if m:find('rod breaks', 1, true) then stop('rod broke'); return; end
+        -- Inventory updates just after this text. The next safety pass equips a replacement when one
+        -- is available; otherwise it stops with the usual no-rod/out-of-bait reason.
         enter(S.COOLDOWN, rnd(cfg.cast_delay_min[1], cfg.cast_delay_max[1]));
     elseif m:find('you lost your catch', 1, true) or m:find('lack of skill', 1, true) or m:find('you give up', 1, true) or m:find('too small', 1, true) or m:find('too big', 1, true) then
         if bot.decision == 'catch' then bot.counters.lost = bot.counters.lost + 1; record('lost', e.message); else record('released'); end
@@ -445,6 +539,7 @@ ashita.events.register('d3d_present', 'vanafish_present', function ()
         end
         if imgui.CollapsingHeader('Stop when') then
             local changed = false;
+            changed = imgui.Checkbox('Auto-equip next rod or bait', cfg.auto_swap) or changed;
             changed = imgui.SliderInt('Free slots at or below', cfg.stop_free_slots, 0, 10) or changed;
             changed = imgui.Checkbox('A tell arrives', cfg.stop_on_tell) or changed;
             changed = imgui.Checkbox('You move', cfg.stop_on_move) or changed;
