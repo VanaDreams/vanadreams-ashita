@@ -164,6 +164,16 @@ local function moved_far(from)
     return (dx * dx + dy * dy + dz * dz) > 4.0;
 end
 
+-- The server announces a catch with a zone text message, which the client prints with the angler's
+-- name ("Iroh caught a moat carp!"), never "You caught". Other anglers in range print the same
+-- line, so only our own name counts.
+local function caught_by_me(m)
+    local ok, name = pcall(function() return AshitaCore:GetMemoryManager():GetParty():GetMemberName(0); end);
+    if not ok or name == nil or name == '' then return false; end
+    m = m:gsub('[\30\31].', '');   -- colour codes the client puts in front of the line
+    return m:find('^' .. name:lower():gsub('%p', '%%%0') .. ' caught ') ~= nil;
+end
+
 local function logged_in()
     return AshitaCore:GetMemoryManager():GetPlayer():GetLoginStatus() == 2;
 end
@@ -333,9 +343,10 @@ ashita.events.register('text_in', 'vanafish_text', function (e)
     elseif m:find('positive you have the skill', 1, true) then bot.feeling = 'noskill_positive';
     elseif m:find("angler's sense", 1, true) then bot.feeling = 'keen';
     -- results
-    elseif m:find('you caught', 1, true) then
+    elseif m:find('you caught', 1, true) or caught_by_me(m) then
         bot.counters.catches = bot.counters.catches + 1;
-        record('catch', e.message:gsub('^.-you caught an? ', ''):gsub('[!%.]+$', ''));
+        local what = e.message:gsub('^.- caught an? ', ''):gsub('[!%.]+$', '');
+        record('catch', what);
         enter(S.COOLDOWN, rnd(cfg.cast_delay_min[1], cfg.cast_delay_max[1]));
     elseif m:find("didn't catch anything", 1, true) or m:find('you didn\'t catch anything', 1, true) then
         bot.counters.nothing = bot.counters.nothing + 1;
