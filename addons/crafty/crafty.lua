@@ -27,7 +27,7 @@
 
 addon.name    = 'crafty';
 addon.author  = 'Vanadreams';
-addon.version = '0.1.3';
+addon.version = '0.1.4';
 addon.desc    = 'Repeat a synthesis, built for the Vanadreams server.';
 addon.link    = 'https://github.com/VanaDreams/vanadreams-ashita';
 
@@ -281,8 +281,8 @@ local function rgba(c, a) return { c[1], c[2], c[3], a }; end
 -- The server decides the outcome when the synth starts and sends it in the animation packet,
 -- so this knows the result while the crystal is still spinning.
 local OUTCOME = {
-    [0] = { 'FAIL',          C.fail },
-    [1] = { 'Success',       C.soft },
+    [0] = { 'Success',       C.soft },   -- the server's RESULT_SUCCESS is 0 and RESULT_FAIL is 1 (synthutils.cpp)
+    [1] = { 'FAIL',          C.fail },
     [2] = { 'HQ',            C.cream },
     [3] = { 'HQ +2',         C.cream },
     [4] = { 'HQ +3',         C.cream },
