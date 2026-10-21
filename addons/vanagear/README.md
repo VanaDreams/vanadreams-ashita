@@ -85,6 +85,16 @@ trust's sets, `!trustgear <trust> <set>` shows one, `!trustgear <trust> <set> cl
 and `!trustgear <trust> clear` deletes them all. Your picks are kept in
 `config\addons\vanagear\trusts.lua`.
 
+**Choosing what a trust uses.** Each spell, ability and weaponskill in a trust's "Uses" list has a
+checkbox. Untick one and that trust never casts or uses it: the server skips it for as long as the
+trust is out and remembers the choice for the next time you call it. "other spells" and "other
+abilities" switch off the ones a trust picks in the fight (bursts, storms, Indi spells...). Without
+vanagear, `!trustuse <trust>` lists what is switched off, `!trustuse <trust> off <action>` and
+`on <action>` change it (a name like `Cure IV` or `Flash`, or a kind: `cure`, `nuke`, `enfeebling`,
+`enhancing`, `dark`, `divine`, `song`, `ninjutsu`, `ability`, `weaponskill`) and
+`!trustuse <trust> reset` puts everything back. The server answers `!trustuse <trust> info` with a
+`[VG off]` line that vanagear reads and hides, as it does the `[VG uses]` line.
+
 ## Weapons
 
 With `/vg weapons off` (the default) nothing changes Main, Sub or Range: not the built sets, not
