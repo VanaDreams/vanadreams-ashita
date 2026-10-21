@@ -27,8 +27,8 @@
 
 addon.name    = 'crafty';
 addon.author  = 'Vanadreams';
-addon.version = '0.1.2';
-addon.desc    = 'Repeat a synthesis on the Vanadreams server.';
+addon.version = '0.1.3';
+addon.desc    = 'Repeat a synthesis, built for the Vanadreams server.';
 addon.link    = 'https://github.com/VanaDreams/vanadreams-ashita';
 
 require('common');
@@ -101,8 +101,11 @@ local function check_server()
         local mine, ours = resolve(server), resolve(VANADREAMS_HOST);
         if mine and ours and mine == ours then bot.allowed = true; bot.allowed_reason = 'server: ' .. server; return true; end
     end
-    bot.allowed = false; bot.allowed_reason = 'this addon runs on Vanadreams only (boot command does not name it)';
-    return false;
+    -- Not recognised as Vanadreams. Repeating a synth is the same packet on any server, so this no
+    -- longer refuses (vanafish came out of the lock the same way in 0.1.1); the window just says
+    -- the server is not one it knows.
+    bot.allowed = true; bot.allowed_reason = 'any server';
+    return true;
 end
 
 -- ---------------------------------------------------------------------------
