@@ -262,7 +262,7 @@ local function safety()
     if cfg.stop_on_move[1] and moved_far(bot.start_pos) then stop('you moved'); return false; end
     if cfg.stop_max_casts[1] > 0 and bot.counters.casts >= cfg.stop_max_casts[1] then stop('cast limit reached'); return false; end
     if cfg.stop_max_minutes[1] > 0 and (now() - bot.started_at) / 60 >= cfg.stop_max_minutes[1] then stop('time limit reached'); return false; end
-    if cfg.stop_at_skill[1] > 0 and fishing_skill() >= cfg.stop_at_skill[1] * 10 then stop('skill target reached'); return false; end
+    if cfg.stop_at_skill[1] > 0 and fishing_skill() >= cfg.stop_at_skill[1] then stop('skill target reached'); return false; end
     if cfg.stop_nothing_streak[1] > 0 and bot.nothing_streak >= cfg.stop_nothing_streak[1] then stop('nothing biting here any more'); return false; end
     return true;
 end
@@ -428,7 +428,9 @@ ashita.events.register('d3d_present', 'vanafish_present', function ()
         imgui.Separator();
         local rod, bait = equipped_item(SLOT_RANGE), equipped_item(SLOT_AMMO);
         imgui.Text(('Rod: %s   Bait: %s%s'):format(rod and item_name(rod.Id) or 'none', bait and item_name(bait.Id) or 'none', bait and (' x' .. bait.Count) or ''));
-        imgui.Text(('Skill: %.1f   Free slots: %d'):format(fishing_skill() / 10, free_slots()));
+        -- the client only ever holds whole points (the server sends skill/10 in 1/32 steps), so the
+        -- 0.1 gains in chat do not move this number until a whole point is reached
+        imgui.Text(('Skill: %d   Free slots: %d'):format(fishing_skill(), free_slots()));
         imgui.Text(('Casts %d  Bites %d  Catches %d  Releases %d'):format(c.casts, c.bites, c.catches, c.releases));
         imgui.Text(('Lost %d  Breaks %d  Nothing %d  Skill-ups %d'):format(c.lost, c.breaks, c.nothing, c.skillups));
         if bot.fish then
