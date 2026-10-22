@@ -149,16 +149,30 @@ local BAG_NAMES   = { [0] = 'bag', [8] = 'wardrobe', [10] = 'wardrobe 2', [11] =
 local SKILL_FISHING = 48;
 local SLOTBIT_RANGE, SLOTBIT_AMMO = 4, 8;
 
--- Which gear you like best, best first, by the name the game shows. Anything not listed comes after, newest item first.
--- TODO(human): fill this in with your server's rods, baits and lures in the order you want them picked.
-local PREFERENCE = T{
+-- How good each rod is: the server's own fishing_rod table, its `rating` column (16 best). A +1 sits just above its
+-- plain rod. The Maze Monger rod and the Goldfish Basket only work for their own games, so they are left off and
+-- come after every rated rod.
+local ROD_RATING = T{
+    [17012] = 16,   [19321] = 15.5, [17011] = 15,   [19320] = 14.5, [17386] = 14,   -- Judges, Ebisu +1, Ebisu, Lu Shang's +1, Lu Shang's
+    [17381] = 13,   [17380] = 12,   [17382] = 11,   [17383] = 10,   [17015] = 9,    -- Composite, Mithran, Single Hook, Clothespole, Halcyon
+    [17385] = 8,    [17384] = 7,    [17014] = 6,    [17387] = 5,    [17388] = 4,    -- Glass Fiber, Carbon, Hume, Tarutaru, Fastwater
+    [17389] = 3,    [17390] = 2,    [17391] = 1,                                    -- Bamboo, Yew, Willow
 };
 
+-- Lures and rigs: the server's fishing_bait table, type 1 or 2. They are not used up by a cast.
+local LURES = T{
+    [17002] = true, [17004] = true, [17008] = true, [17009] = true, [17398] = true, [17399] = true, [17400] = true,
+    [17401] = true, [17402] = true, [17403] = true, [17404] = true, [17405] = true, [17406] = true, [17407] = true,
+    [19323] = true, [19324] = true, [19325] = true,
+};
+
+-- Lower is better. Rods by rating. Bait has no rating (the best bait depends on the fish), so bait that is used up
+-- comes first, biggest stack first, and lures after it.
 local function preference_rank(entry)
-    for i, name in ipairs(PREFERENCE) do
-        if name:lower() == entry.name:lower() then return i; end
-    end
-    return 1000 + (100000 - entry.id);
+    local rating = ROD_RATING[entry.id];
+    if rating ~= nil then return 100 - rating; end
+    if LURES[entry.id] then return 200; end
+    return 100 - math.min(entry.count or 1, 99) / 100;
 end
 
 -- Every rod and every bait or lure you own, best first. Each entry remembers its exact bag and
@@ -494,6 +508,34 @@ end);
 -- ---------------------------------------------------------------------------
 -- window
 -- ---------------------------------------------------------------------------
+-- The window's drop-downs read the bags at most once a second, not every frame.
+local gear_cache = { at = 0, rods = T{}, baits = T{} };
+local function cached_gear()
+    if now() - gear_cache.at > 1 then
+        gear_cache.rods, gear_cache.baits = scan_gear();
+        gear_cache.at = now();
+    end
+    return gear_cache.rods, gear_cache.baits;
+end
+
+-- One drop-down for a gear slot: what is equipped now is the preview, every other piece you carry is a choice,
+-- best first (the first one is what auto-equip would pick). Choosing one equips it.
+local function gear_combo(label, list, slot, equipped)
+    local preview = equipped and item_name(equipped.Id) or 'none';
+    if imgui.BeginCombo(label, preview) then
+        for i, entry in ipairs(list) do
+            local isCurrent = equipped ~= nil and equipped.Id == entry.id;
+            local text = ('%s%s  (%s%s)'):format(entry.name, i == 1 and '  [best]' or '', entry.where, entry.count > 1 and (', x' .. entry.count) or '');
+            if imgui.Selectable(text, isCurrent) and not isCurrent then
+                equip_gear(entry, slot);
+                gear_cache.at = 0;
+            end
+        end
+        if #list == 0 then imgui.TextDisabled('nothing else in your bag or wardrobes'); end
+        imgui.EndCombo();
+    end
+end
+
 ashita.events.register('d3d_present', 'vanafish_present', function ()
     tick();
     if not cfg.window_open[1] then return; end
@@ -511,6 +553,11 @@ ashita.events.register('d3d_present', 'vanafish_present', function ()
         imgui.Separator();
         local rod, bait = equipped_item(SLOT_RANGE), equipped_item(SLOT_AMMO);
         imgui.Text(('Rod: %s   Bait: %s%s'):format(rod and item_name(rod.Id) or 'none', bait and item_name(bait.Id) or 'none', bait and (' x' .. bait.Count) or ''));
+        local rods, baits = cached_gear();
+        imgui.PushItemWidth(260);
+        gear_combo('Rod', rods, SLOT_RANGE, rod);
+        gear_combo('Bait / lure', baits, SLOT_AMMO, bait);
+        imgui.PopItemWidth();
         imgui.Text(('Skill: %.1f   Free slots: %d'):format(fishing_skill() / 10, free_slots()));
         imgui.Text(('Casts %d  Bites %d  Catches %d  Releases %d'):format(c.casts, c.bites, c.catches, c.releases));
         imgui.Text(('Lost %d  Breaks %d  Nothing %d  Skill-ups %d'):format(c.lost, c.breaks, c.nothing, c.skillups));
