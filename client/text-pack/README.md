@@ -34,8 +34,13 @@ Isacio's closing advice (line 6878) also says a beastmaster and a summoner, in e
 ### Item strings (Jubilee Ring becomes Skillz Ring)
 
 `fixes.json` also has an `items` list for item names, log names and descriptions. Item DATs (English: 73 general,
-74 usable, 75 weapons, 76 armor, 77 puppet, 91 currency, 55667 general2, 55668 armor2) are bit-rotated records.
+74 usable, 75 weapons, 76 armor, 77 puppet, 91 currency, 55671 general2, 55668 armor2; 55667 is a general2 file of
+blank "." records, not the English strings) are bit-rotated records.
 `build.py` decodes the file, proves it re-encodes to the original bytes, rewrites only the named strings (each must
 fit where the old one sat, before the icon at record offset 0x280) and checks that no other byte changed. Item 27593
 (armor2, file id 55668) shows as "Skillz Ring", "Skill-up rate +100%" / "(skill 300 or below)", with no experience
 line. The pack then carries the armor2 DAT (about 28 MB unpacked, 5 MB zipped).
+
+Item 9025 (general2, file id 55671, "??? Box +1" on retail) is Clan Centurio's Mark Trophy on the server: a mark's
+killer gets one, and Montblanc takes it with the mark's own drop. It shows as "Mark Trophy" / "mark trophies" with a
+three-line description. The pack then carries the general2 DAT as well.

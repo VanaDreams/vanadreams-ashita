@@ -112,6 +112,18 @@
       "old_desc": "Experience point bonus: +50%\nSkill gains increased by 100% when under 400 skill.",
       "new_desc": "Skill-up rate +100%\n(skill 300 or below)",
       "why": "The ring is now the Skillz Ring: skill-up rate +100% up to skill 300, and no experience bonus."
+    },
+    {
+      "fid": 55671,
+      "what": "General 2 English item strings, ??? Box +1 (item 9025)",
+      "id": 9025,
+      "old_name": "??? Box +1",
+      "new_name": "Mark Trophy",
+      "old_log": ["??? box +1", "??? boxes +1"],
+      "new_log": ["mark trophy", "mark trophies"],
+      "old_desc": "This box looks just like any other old box to you.",
+      "new_desc": "Proof of a mark brought down for\nClan Centurio. Montblanc confirms\nthe hunt with the mark's own drop.",
+      "why": "Item 9025 is Clan Centurio's Mark Trophy on the server (EX, no stack): a mark's killer gets one, and Montblanc takes it with the mark's own drop."
     }
   ]
 }
