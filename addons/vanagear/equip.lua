@@ -410,6 +410,7 @@ local ProcessEquip = function(equipInfo, set)
         packet[5] = equipEntry.Index;
         packet[6] = equipEntry.Slot;
         packet[7] = equipEntry.Container;
+        if (gVanaCore ~= nil) then gVanaCore.MarkOwnEquip(); end -- vanagear: ours, not another swapper's
         AshitaCore:GetPacketManager():AddOutgoingPacket(0x50, packet);
         local internalEntry = {};
         if (equipEntry.Index == 0) then
@@ -476,6 +477,7 @@ local ProcessEquipSet = function(equipInfo, set)
             end
         end
     end
+    if (gVanaCore ~= nil) then gVanaCore.MarkOwnEquip(); end -- vanagear: ours, not another swapper's
     AshitaCore:GetPacketManager():AddOutgoingPacket(0x51, packet);
 end
 
@@ -486,6 +488,7 @@ local Unequip = function(slot, container)
     packet[5] = 0;
     packet[6] = slot - 1;
     packet[7] = container;
+    if (gVanaCore ~= nil) then gVanaCore.MarkOwnEquip(); end -- vanagear: ours, not another swapper's
     AshitaCore:GetPacketManager():AddOutgoingPacket(0x50, packet);
     if (gSettings.Debug) then
         print(chat.header('LuAshitacast:' .. gState.CurrentCall) .. chat.message('Unequipping item from ' .. gData.ResolveString(gData.Constants.EquipSlotNames, slot - 1) .. '.'));
@@ -532,8 +535,9 @@ local EquipSet = function(set, style)
 
     -- vanagear: with /vg weapons off nothing from any set, built, profile or imported, touches
     -- Main, Sub or Range; only the weapons picked in the window, or named in a profile's gVana.WeaponAllow (its own
-    -- /fish rod and the like), go on
-    if (gVana ~= nil) and (gVana.Prefs ~= nil) and (not gVana.Prefs.Weapons) then
+    -- /fish rod and the like), go on. In LuAshitacast mode (a profile of the player's own) the profile's weapons go on
+    -- as written, the same as LuAshitacast.
+    if (gVana ~= nil) and (gVana.Prefs ~= nil) and (not gVana.Prefs.Weapons) and ((gVanaCore == nil) or (not gVanaCore.PureLac())) then
         local picks = gVana.WeaponPicks or {};
         for i = 1,3,1 do
             if (set[i] ~= nil) and (not picks[set[i].Name]) and (not (gVana.WeaponAllow and gVana.WeaponAllow[set[i].Name])) then

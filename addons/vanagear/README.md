@@ -30,7 +30,14 @@ while vanagear is ticked.
 ## Your own profiles
 
 Profiles in `config\addons\luashitacast\` keep working, `/lac` included. A profile with sets of
-its own wins: vanagear's sets go under it only if you turn that on with `/vg underlay on`.
+its own runs exactly as LuAshitacast runs it: its weapons swap as written, nothing vanagear built
+fills a slot it leaves out, and a piece you put on from the menu is swapped off as usual. The one
+difference is the wait after every zone (below), which protects the server. vanagear's sets go
+under your profile only if you turn that on with `/vg underlay on`.
+
+Don't load the luashitacast addon as well: vanagear is LuAshitacast, and two of them swap every slot
+against each other. If it is loaded, vanagear notices, stops swapping and says so in chat; type
+`/addon unload luashitacast` and your profile and `/lac` commands carry on in vanagear.
 Profiles the launcher made from GearSwap files, and profiles whose sets are all empty, get the
 built sets underneath automatically, so anything they leave out is filled.
 
@@ -98,7 +105,8 @@ vanagear, `!trustuse <trust>` lists what is switched off, `!trustuse <trust> off
 ## Weapons
 
 With `/vg weapons off` (the default) nothing changes Main, Sub or Range: not the built sets, not
-your own sets, not a profile's sets, not an imported GearSwap file. The only way a weapon changes
+your own vanagear sets, not an imported GearSwap file. (A LuAshitacast profile of your own with sets
+of its own is the exception: it swaps weapons as it always did.) The only way a weapon changes
 is the lists on the Main, Sub and Range lines of the `/vg` window (or `/vg weapon main <item>`):
 they start at "Leave it alone", and the weapon picked is worn in every set for that job.
 

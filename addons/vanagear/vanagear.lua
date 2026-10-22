@@ -9,7 +9,7 @@
 
 addon.name      = 'vanagear';
 addon.author    = 'Vanadreams, on LuAshitacast by Thorny';
-addon.version   = '0.1.13';
+addon.version   = '0.1.14';
 addon.desc      = 'Gear sets built from your own bags for your job and level, on LuAshitacast.';
 addon.link      = 'https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/vanagear';
 
@@ -112,6 +112,13 @@ ashita.events.register('command', 'vanagear_command_cb', function (e)
     guard('command', function ()
         if (gVanaCommands.Handle(e)) then
             return;
+        end
+        -- another LuAshitacast is loaded and swapping: its /lac commands are its own, not run a second time here
+        if (gVanaCore.StandingDown()) then
+            local word = string.lower((e.command or ''):match('^%S+') or '');
+            if (word == '/lac') or (word == '/luashitacast') then
+                return;
+            end
         end
         gCommandHandlers.HandleCommand(e);
     end);

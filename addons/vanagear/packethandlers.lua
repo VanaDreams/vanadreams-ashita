@@ -328,6 +328,17 @@ local handledCategories = T{0x03, 0x07, 0x09, 0x10};
 packethandlers.HandleOutgoingPacket = function(e)
     --Handle packets that are being injected by anything else in real time.
     if (e.injected == true) then
+        -- vanagear: an equip packet another addon sent? (vg\core.lua, SawInjectedEquip)
+        if (e.id == 0x50) then
+            gVanaCore.SawInjectedEquip({ struct.unpack('B', e.data, 0x05 + 1) });
+        elseif (e.id == 0x51) then
+            local slots = {};
+            local count = struct.unpack('B', e.data, 0x04 + 1);
+            for i = 0, math.min(count, 16) - 1 do
+                slots[#slots + 1] = struct.unpack('B', e.data, 0x08 + (i * 4) + 0x01 + 1);
+            end
+            gVanaCore.SawInjectedEquip(slots);
+        end
         if (gState.Injecting == false) then
             if (e.id == 0x1A) then
                 local category = struct.unpack('H', e.data, 0x0A + 0x01);

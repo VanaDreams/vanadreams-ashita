@@ -192,6 +192,10 @@ end
 
 local defaultParsed = false;
 state.HandleEquipEvent = function(eventName, equipStyle)
+    -- vanagear: another LuAshitacast is swapping too; two engines on every slot fight, so this one stays out
+    if (gVanaCore.StandingDown()) then
+        return;
+    end
     if (gProfile ~= nil) then
         if (eventName == 'HandleDefault') then
             if (gSettings.HorizonMode) and (defaultParsed) then
@@ -206,9 +210,10 @@ state.HandleEquipEvent = function(eventName, equipStyle)
             -- vanagear: the built sets go on first. With the underlay on they stay under the
             -- profile's own sets; with it off they are kept aside, and only used for a slot
             -- whose piece the profile names but the player does not carry. Then the profile's
-            -- rules, then a ring being used holds its slot over both.
+            -- rules, then a ring being used holds its slot over both. In LuAshitacast mode (a profile of the
+            -- player's own) the built sets stay out entirely, so the profile runs as LuAshitacast runs it.
             local fallback = nil;
-            if (gVanaStock[eventName] ~= nil) and (next(gVana.Sets) ~= nil) then
+            if (gVanaStock[eventName] ~= nil) and (next(gVana.Sets) ~= nil) and (not gVanaCore.PureLac()) then
                 local ok, err = pcall(gVanaStock[eventName]);
                 if (not ok) then
                     print(chat.header('vanagear') .. chat.error('Error in ' .. eventName .. ': ' .. tostring(err)));
