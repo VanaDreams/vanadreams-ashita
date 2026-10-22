@@ -21,7 +21,7 @@
 
 addon.name    = 'vanafish';
 addon.author  = 'Vanadreams';
-addon.version = '0.1.2';
+addon.version = '0.1.3';
 addon.desc    = 'Fishing bot for the Vanadreams server.';
 addon.link    = 'https://github.com/VanaDreams/vanadreams-ashita';
 
