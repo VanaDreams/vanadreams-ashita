@@ -58,7 +58,7 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                         <TextBlock x:Name="NoNews" Style="{StaticResource Muted}" TextWrapping="Wrap" Visibility="Collapsed"
-                                   Text="No news yet. Rates, rules and status are on fairywitch.ca."/>
+                                   Text="No news yet. Rates, rules and status are on vanadreams.org."/>
                     </StackPanel>
                 </ScrollViewer>
                 <!-- its own row under a gold hairline: the news scrolls above it and never runs into it -->

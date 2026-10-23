@@ -207,7 +207,7 @@ namespace Vanadreams.Pages
             Play();
         }
 
-        /// <summary>The Vanadreams Discord's permanent invite, the same one fairywitch.ca carries.</summary>
+        /// <summary>The Vanadreams Discord's permanent invite, the same one vanadreams.org carries.</summary>
         public const string DiscordInvite = "https://discord.gg/tBpNVBwKqT";
 
         public static void OpenUrl(string url)

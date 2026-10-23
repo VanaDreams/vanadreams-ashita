@@ -203,6 +203,6 @@ namespace Vanadreams
             if (i >= _steps.Count - 1) Close(); else Show(_steps[i + 1]);
         }
 
-        private void Wrong_Click(object sender, RoutedEventArgs e) => MenuPage.OpenUrl("https://fairywitch.ca/");
+        private void Wrong_Click(object sender, RoutedEventArgs e) => MenuPage.OpenUrl("https://vanadreams.org/");
     }
 }

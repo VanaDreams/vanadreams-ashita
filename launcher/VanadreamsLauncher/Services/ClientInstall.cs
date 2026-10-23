@@ -72,7 +72,7 @@ namespace Vanadreams.Services
     /// </summary>
     public static class ClientInstall
     {
-        public const string BaseUrl = "https://fairywitch.ca/download/client/";
+        public const string BaseUrl = "https://vanadreams.org/download/client/";
         public const string GameFolderName = "FINAL FANTASY XI";
         public const string ViewerFolderName = "PlayOnlineViewer";
         public const string RecordName = ".vanadreams-client.txt";

@@ -69,7 +69,7 @@ namespace Vanadreams.Pages
                     var template = store.TemplatePath();
                     if (template == null) throw new InvalidOperationException("No example profile in " + store.BootDir + " to copy from.");
                     var p = Profile.Load(template).DuplicateTo(vdPath, "Vanadreams");
-                    p.Command = new LoaderCommand { Server = "vanadreams.fairywitch.ca" };
+                    p.Command = new LoaderCommand { Server = LoaderCommand.VanadreamsServer };
                     var loader = Path.Combine(root, "bootloader", "xiloader.exe");
                     p.BootFile = File.Exists(loader) ? loader : p.BootFile;
                     p.Script = "vanadreams.txt";
@@ -140,7 +140,7 @@ namespace Vanadreams.Pages
                     var template = store.TemplatePath();
                     if (template == null) throw new InvalidOperationException("Ashita's example profiles are missing from " + store.BootDir + ".");
                     var p = Profile.Load(template).DuplicateTo(vdPath, "Vanadreams");
-                    p.Command = new LoaderCommand { Server = "vanadreams.fairywitch.ca" };
+                    p.Command = new LoaderCommand { Server = LoaderCommand.VanadreamsServer };
                     p.BootFile = Path.Combine(root, "bootloader", "xiloader.exe");
                     p.Script = "vanadreams.txt";
                     p.AutoClose = true;

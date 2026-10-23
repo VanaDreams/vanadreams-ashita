@@ -66,10 +66,10 @@ namespace Vanadreams.Services
         }
     }
 
-    /// <summary>The fairywitch.ca status route, with the last good answer kept on disk.</summary>
+    /// <summary>The vanadreams.org status route, with the last good answer kept on disk.</summary>
     public sealed class ServerStatusClient
     {
-        public const string DefaultUrl = "https://fairywitch.ca/api/public/vanadreams/status";
+        public const string DefaultUrl = "https://vanadreams.org/api/public/vanadreams/status";
         private readonly string _cachePath;
         private readonly HttpClient _http;
 

@@ -19,7 +19,7 @@ namespace Vanadreams.Pages
             AshitaBox.Text = s.AshitaRoot; FfxiBox.Text = s.FfxiFolderOverride; CatalogBox.Text = s.CatalogUrl; StatusBox.Text = s.StatusUrl;
             // read-only: it comes from the status route, never typed here
             var st = App.State.Status;
-            ExpectedBox.Text = string.IsNullOrEmpty(st.ClientVer) ? "not published by the server yet" : st.ClientVer + " · lock " + (st.Lock.HasValue ? ((int)st.Lock.Value).ToString() : "2") + " · from fairywitch.ca";
+            ExpectedBox.Text = string.IsNullOrEmpty(st.ClientVer) ? "not published by the server yet" : st.ClientVer + " · lock " + (st.Lock.HasValue ? ((int)st.Lock.Value).ToString() : "2") + " · from vanadreams.org";
             ShowPlays();
             MusicBox.IsChecked = s.MusicOn;
             RestoreBox.IsChecked = s.RestoreOtherGame;

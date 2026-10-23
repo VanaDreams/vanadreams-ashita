@@ -37,7 +37,7 @@ namespace Vanadreams.Services
         public string LastProfile { get; set; } = "";
         public string CatalogUrl { get; set; } = "https://raw.githubusercontent.com/VanaDreams/vanadreams-ashita/main/catalog.json";
         public string StatusUrl { get; set; } = ServerStatusClient.DefaultUrl;
-        public string CaptureUrl { get; set; } = "https://fairywitch.ca/api/public/vanadreams/capture";
+        public string CaptureUrl { get; set; } = "https://vanadreams.org/api/public/vanadreams/capture";
         public string ExpectedClientVer { get; set; } = "30260805_0";
         public int VerLock { get; set; } = 2;
         public bool SetupDone { get; set; }

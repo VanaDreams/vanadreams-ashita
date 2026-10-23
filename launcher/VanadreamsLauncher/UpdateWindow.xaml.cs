@@ -44,7 +44,7 @@ namespace Vanadreams
             if (exe == null)
             {
                 Bar.Visibility = Visibility.Collapsed;
-                BarLine.Text = "Launcher " + tag + " couldn't be downloaded. It is on fairywitch.ca.";
+                BarLine.Text = "Launcher " + tag + " couldn't be downloaded. It is on vanadreams.org.";
                 UpdateButton.Visibility = Visibility.Collapsed;
                 LaterButton.Content = "Close";
                 return;

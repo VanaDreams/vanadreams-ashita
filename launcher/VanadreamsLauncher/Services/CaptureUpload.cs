@@ -54,7 +54,7 @@ namespace Vanadreams.Services
     public sealed class CaptureUploader
     {
         private readonly HttpClient _http;
-        public string Url { get; set; } = "https://fairywitch.ca/api/public/vanadreams/capture";
+        public string Url { get; set; } = "https://vanadreams.org/api/public/vanadreams/capture";
         public CaptureUploader(HttpClient http = null) { _http = http ?? Http.Shared; }
 
         public async Task<UploadResult> SendAsync(string snapshotPath, string username)
@@ -76,7 +76,7 @@ namespace Vanadreams.Services
                 }
                 catch (Exception ex)
                 {
-                    return new UploadResult { Ok = false, Message = "Couldn't reach fairywitch.ca: " + ex.Message };
+                    return new UploadResult { Ok = false, Message = "Couldn't reach vanadreams.org: " + ex.Message };
                 }
             }
         }

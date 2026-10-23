@@ -239,7 +239,7 @@ namespace Vanadreams
                 var box = new UpdateWindow(asset.Tag, Updater.Normalise(Updater.Current), ready, progress) { Owner = this };
                 if (box.ShowDialog() == true && _updatedExe != null) { Updater.Restart(_updatedExe); return; }
                 await ready;
-                if (_updatedExe == null) { NewsLine.Text = "·  Launcher " + asset.Tag + " is on fairywitch.ca"; return; }
+                if (_updatedExe == null) { NewsLine.Text = "·  Launcher " + asset.Tag + " is on vanadreams.org"; return; }
                 NewsLine.Text = "";   // the button says it, and the footer has room for one of them
                 UpdateButton.Content = "Restart into " + asset.Tag;
                 UpdateButton.Visibility = Visibility.Visible;
@@ -373,7 +373,7 @@ namespace Vanadreams
             var s = State.Status;
             StatusWord.Text = s.StateWord;
             StatusWhen.Text = s.Online.HasValue && !s.FromCache ? " · " + s.Online.Value + " online" : s.FromCache && s.CheckedAt.HasValue ? " · " + s.CheckedWord + " (last seen)" : "";
-            var note = string.IsNullOrWhiteSpace(s.Note) ? (s.Error != null ? "Couldn't reach fairywitch.ca." : null) : s.Note;
+            var note = string.IsNullOrWhiteSpace(s.Note) ? (s.Error != null ? "Couldn't reach vanadreams.org." : null) : s.Note;
             StatusWord.ToolTip = note == null ? s.CheckedWord : note + "\n" + s.CheckedWord;   // the server's whole note, however long
             Brush dot;
             switch (s.State)
