@@ -34,7 +34,68 @@ local examples = {
       what = 'Put on your Warp Ring, use it and give the slot back (any job).' },
     { word = 'lizard', lines = '/vg with lizard /ja "Bestial Loyalty" <me>', every = false,
       what = 'BST: wear your set called lizard (the jug) and use Bestial Loyalty.' },
+    { word = 'chain', lines = '/pet "Brain Crush" <t>\nthen /pet "Tail Blow" <t>\nthen /ws "Cloudsplitter" <t>\nburst /pet "Fireball" <t>', every = false,
+      what = 'BST skillchain: each step goes when the one before has landed; the burst goes at once.' },
+    { word = 'sc', lines = '/ws "Savage Blade" <t>\nthen /ws "Savage Blade" <t>', every = true,
+      what = 'Two weaponskills, the second as soon as the first has finished and the link gap has passed.' },
 };
+
+-- The "How to" tab (M402): what a command word's lines can do, chains, and for people who want
+-- Lua, what a LuAshitacast profile can do on top. Plain text, no form.
+local function renderHowTo()
+    vd.Eyebrow('How to: your commands, chains and going further');
+    imgui.TextWrapped('Everything here is done in the Your commands tab or in the files it writes '
+        .. '(config\\addons\\vanagear\\commands\\<JOB>.lua, ALL.lua for every job). You never need Lua for a chain.');
+    imgui.Separator();
+
+    vd.Eyebrow('1. A command word');
+    imgui.TextWrapped('A word you choose runs its lines in order. Any game command is a line: /ja "Provoke" <t>, '
+        .. '/ma "Cure IV" <stpc>, /ws "Savage Blade" <t>, /pet "Tail Blow" <t>, /vg wear Idle. Type /vg <word> or just /<word>.');
+    imgui.BulletText('wait 3          pause three seconds before the next line');
+    imgui.BulletText('/vg with <set> <command>   put one of your sets on, send the command, keep the set on until it lands');
+    imgui.BulletText('/vg wear <set>  put one of your sets on and leave it on (/vg wear off)');
+    imgui.Separator();
+
+    vd.Eyebrow('2. A chain: steps that wait for each other');
+    imgui.TextWrapped('A line that starts with "then" does not go until the action on the line before it has been seen to '
+        .. 'start and then finish, plus the gap the server wants between links (3.3 seconds). A line that starts with '
+        .. '"burst" goes the moment it finishes, with no gap. That is how a skillchain is timed without guessing waits.');
+    imgui.Text('    /pet "Brain Crush" <t>');
+    imgui.Text('    then /pet "Tail Blow" <t>');
+    imgui.Text('    then /ws "Cloudsplitter" <t>');
+    imgui.Text('    burst /pet "Fireball" <t>');
+    imgui.TextWrapped('Brain Crush, then Tail Blow once it has landed (Fusion), then Cloudsplitter once that has landed '
+        .. '(Light), then Fireball the moment Cloudsplitter finishes (the burst). The lines "then" can wait on are '
+        .. '/ws, /ja, /ma and /pet. If a step never starts (no TP, no charges, out of range) or the target dies or '
+        .. 'changes, the command stops and says why. /vg stop stops one by hand.');
+    imgui.TextWrapped('What it does not do: it does not check TP, Ready charges or finishing moves before it starts. '
+        .. 'Start it when you have them.');
+    imgui.Separator();
+
+    vd.Eyebrow('3. Your own sets in a command');
+    imgui.TextWrapped('Make a set in the Your sets tab (or /vg save <name> from what you wear), then "/vg with <name> <command>" '
+        .. 'wears it for that one action. For Beastmaster: /vg call <jug> and /vg loyal <jug> put the jug in the ammo '
+        .. 'slot and call it; /vg jugs lists the ones you carry.');
+    imgui.Separator();
+
+    vd.Eyebrow('4. Going further: a LuAshitacast profile in Lua');
+    imgui.TextWrapped('vanagear is LuAshitacast underneath, so a profile of your own at '
+        .. 'config\\addons\\LuAshitacast\\<Name>_<id>\\<JOB>.lua runs as it always did, and its sets win over the built ones. '
+        .. 'A profile is a Lua file returning a table with these functions; LuAshitacast calls each one at that moment:');
+    imgui.BulletText('OnLoad / OnUnload          when the profile starts and stops');
+    imgui.BulletText('HandleDefault              every time nothing is in flight: idle, engaged, resting; chains tick here');
+    imgui.BulletText('HandleCommand(args)        /lac <word> ... reaches here: your own commands in Lua');
+    imgui.BulletText('HandlePrecast / HandleMidcast   a spell: gear before it starts, gear while it casts');
+    imgui.BulletText('HandleWeaponskill / HandleAbility / HandleItem   a weaponskill, job ability or item, as it goes off');
+    imgui.BulletText('HandlePreshot / HandleMidshot   a ranged attack, before and during');
+    imgui.TextWrapped('Inside them: gFunc.Equip(slot, item), gFunc.EquipSet(set), gFunc.ForceEquip, gFunc.LockSet, '
+        .. 'gFunc.Disable/Enable(slot), gFunc.Message(text); and gData.GetPlayer() (job, level, TP, HPP), '
+        .. 'gData.GetTarget(), gData.GetPet(), gData.GetAction() and gData.GetPetAction() (what is going off right now, '
+        .. 'nil when nothing is), gData.GetBuffCount(id), gData.GetEquipment(), gData.GetAugment(). '
+        .. 'A chain in Lua is a step list, a send, then watching GetAction until it comes back nil before the next send; '
+        .. 'the "then" line above is exactly that, done for you.');
+    imgui.TextWrapped('AshitaCore:GetChatManager():QueueCommand(1, "/ws \\"Savage Blade\\" <t>") sends any command from Lua.');
+end
 
 local function renderMine()
     local mine = require('vg.mine');
@@ -55,6 +116,8 @@ local function renderMine()
     imgui.InputTextMultiline('##vg_mine_lines', newLines, 1024, { -1, 90 });
     imgui.TextDisabled('Any game command works: /ja "Provoke" <t>, /ma "Cure IV" <stpc>, /vg wear Idle. '
         .. 'A line "wait 3" waits 3 seconds before the next line. <t> is your target, <me> is you.');
+    imgui.TextDisabled('A line "then /ws ..." goes once the action before it has finished (plus the link gap); '
+        .. '"burst /pet ..." goes the moment it finishes. The How to tab explains chains.');
 
     imgui.Text('3. Which jobs can use it');
     imgui.SameLine(260);
@@ -497,6 +560,12 @@ window.Render = function()
             if (tabs) and (imgui.BeginTabItem('Your commands##vg_tab_mine', nil, mineFlags)) then
                 imgui.BeginChild('mine', { 0, -60 }, ImGuiChildFlags_Borders);
                 renderMine();
+                imgui.EndChild();
+                imgui.EndTabItem();
+            end
+            if (tabs) and (imgui.BeginTabItem('How to##vg_tab_howto')) then
+                imgui.BeginChild('howto', { 0, -60 }, ImGuiChildFlags_Borders);
+                renderHowTo();
                 imgui.EndChild();
                 imgui.EndTabItem();
             end

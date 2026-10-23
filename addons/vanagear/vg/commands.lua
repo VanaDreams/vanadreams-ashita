@@ -78,6 +78,7 @@ commands.Lines = function()
         line('/vg ' .. word, 'yours: ' .. table.concat(own[word].lines, '; '));
     end
     line('/vg add <word> <command>; <command>', 'make your own command for this job, run with /vg <word> or just /<word> (add "all" before the word for every job); "wait 2" pauses');
+    line('then <command> / burst <command>', 'in a command: goes once the action before it has finished, plus the link gap / at once (a chain); /vg stop stops a running command');
     line('/vg with <set> <command>', 'put a set on, then the command (/ja, /ma, /pet, /ws), and keep the set on until it is done');
     line('/vg dress', 'stop swapping so you can put on what you like from the equipment menu');
     line('/vg save <name>', 'save what you are wearing as a set (swapping comes back on). Named like a built set (Idle, Tp_Default, Reward, a weaponskill) it replaces those slots there');
@@ -358,6 +359,8 @@ commands.Vg = function(args)
         save();
         core.QueueKeys(p.MoteKeys);
         say('Motenten\'s F9-F12 keys ' .. (p.MoteKeys and 'bound' or 'unbound') .. '.');
+    elseif (cmd == 'stop') then
+        require('vg.mine').Stop();
     elseif (cmd == 'wait') then
         local n = tonumber(args[2]);
         if (n ~= nil) and (n >= 0) then p.ZoneWait = n; save(); end

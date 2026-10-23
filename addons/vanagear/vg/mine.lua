@@ -168,8 +168,73 @@ mine.Run = function(word)
         say('Your command ' .. running.word .. ' is still going.');
         return true;
     end
-    running = { word = string.lower(word), lines = entry.lines, index = 1, at = 0 };
+    local lines = {};
+    for i, l in ipairs(entry.lines) do lines[i] = l; end
+    running = { word = string.lower(word), lines = lines, index = 1, at = 0 };
     return true;
+end
+
+mine.Stop = function()
+    if (running ~= nil) then
+        say('Your command ' .. running.word .. ' stopped.');
+        running = nil;
+    end
+end
+
+-- Chains (M402): a line "then <command>" goes once the action the line before it sent has
+-- finished, plus the gap the server wants between links; "burst <command>" goes the moment it
+-- finishes. The watching is what Lee's BST profile does by hand (chainTick): see the step start
+-- in gData.GetAction (or GetPetAction for a /pet line), see it end, then send. A step that never
+-- starts, or a target that dies or changes, stops the whole command.
+mine.LinkGap = 3.3;        -- seconds after a link finishes before the next may land (battleutils, 3 s rule)
+mine.StepTimeout = 8;      -- seconds to see a step start before giving up
+
+-- the action a line sends, if it is one 'then' can wait on: /ws, /ja, /ma or /pet "Name" ...
+local function actionOf(line)
+    local cmd, name = string.match(line, '^/(%a+)%s+"([^"]+)"');
+    if (cmd == 'ws') or (cmd == 'ja') or (cmd == 'ma') or (cmd == 'pet') then
+        return { kind = cmd, name = string.lower(name) };
+    end
+    return nil;
+end
+
+local function currentAction(kind)
+    local ok, a = pcall(function()
+        return (kind == 'pet') and gData.GetPetAction() or gData.GetAction();
+    end);
+    return ok and a or nil;
+end
+
+local function targetGone(w)
+    local ok, t = pcall(gData.GetTarget);
+    if (not ok) then return false; end
+    return (t == nil) or (t.Id ~= w.targetId) or ((t.HPP or 1) <= 0);
+end
+
+-- One look at the action a 'then' or 'burst' line is waiting on. Looked at the moment the watch
+-- is set as well as every frame after, so a quick ability is not missed between two frames.
+local function watch(r, now)
+    local w = r.watch;
+    if (targetGone(w)) then
+        say('Your command ' .. r.word .. ': target lost, stopped.');
+        running = nil;
+        return;
+    end
+    local a = currentAction(w.kind);
+    if (w.phase == 'starting') then
+        if (a ~= nil) and (string.lower(a.Name or '') == w.name) then
+            w.phase = 'running';
+        elseif (now - w.sentAt > mine.StepTimeout) then
+            say('Your command ' .. r.word .. ': ' .. w.name .. ' never started, stopped.');
+            running = nil;
+        end
+        return;
+    end
+    if (a ~= nil) then
+        return;
+    end
+    r.watch = nil;
+    r.at = now + w.gap;
 end
 
 -- Called every frame: send the next line once any wait is over.
@@ -178,10 +243,31 @@ mine.Tick = function()
     if (r == nil) or (os.clock() < r.at) then
         return;
     end
+    local now = os.clock();
+    -- a 'then' or 'burst' line is waiting for the action before it
+    if (r.watch ~= nil) then
+        watch(r, now);
+        return;
+    end
     local line = r.lines[r.index];
     if (line == nil) then
         running = nil;
         return;
+    end
+    local rest, gap = string.match(line, '^[Tt][Hh][Ee][Nn]%s+(.+)$'), mine.LinkGap;
+    if (rest == nil) then
+        rest, gap = string.match(line, '^[Bb][Uu][Rr][Ss][Tt]%s+(.+)$'), 0;
+    end
+    if (rest ~= nil) then
+        if (r.last ~= nil) then
+            -- wait for the last action, then come back to this line without its prefix
+            r.watch = { kind = r.last.kind, name = r.last.name, sentAt = r.last.sentAt, targetId = r.last.targetId, phase = 'starting', gap = gap };
+            r.last = nil;
+            r.lines[r.index] = rest;
+            watch(r, now);
+            return;
+        end
+        line = rest;   -- nothing before it to wait for: it just goes
     end
     r.index = r.index + 1;
     local secs = tonumber(string.match(line, '^[Ww][Aa][Ii][Tt]%s+([%d%.]+)$'));
@@ -189,6 +275,14 @@ mine.Tick = function()
         r.at = os.clock() + secs;
         return;
     end
+    -- remember an action line so a 'then' after it has something to wait for
+    local a = actionOf(line);
+    if (a ~= nil) then
+        local ok, t = pcall(gData.GetTarget);
+        a.sentAt = now;
+        a.targetId = (ok and t ~= nil) and t.Id or nil;
+    end
+    r.last = a;
     local first = string.lower(string.match(line, '^(%S+)') or '');
     if (first == '/vg') or (first == '/vanagear') or (first == '/gs') or (first == '/gearswap') then
         -- vanagear's own commands run straight away, never back through the chat queue

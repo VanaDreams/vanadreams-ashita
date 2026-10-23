@@ -131,6 +131,14 @@ it lists the item names in `gVana.WeaponAllow` and vanagear lets those through.
 
 - `/vg add <word> <command>; <command>` makes `/<word>` (and `/vg <word>`) run those lines in
   order; `wait 2` pauses. `/vg add all <word> ...` makes it for every job.
+- **Chains.** A line `then <command>` goes once the action on the line before it has been seen
+  to start and finish, plus the 3.3 s gap the server wants between links; `burst <command>` goes
+  the moment it finishes. The lines it can wait on are `/ws`, `/ja`, `/ma` and `/pet`. A step
+  that never starts, or a target that dies or changes, stops the command and says why; `/vg stop`
+  stops one by hand. It does not check TP, Ready charges or finishing moves first.
+  `/vg add chain /pet "Brain Crush" <t>; then /pet "Tail Blow" <t>; then /ws "Cloudsplitter" <t>; burst /pet "Fireball" <t>`
+- The **How to** tab of the window explains the lines, chains, your own sets in a command, and
+  what a LuAshitacast profile in Lua can do on top (the hooks, `gFunc`, `gData`).
 - `/vg with <set> <command>` puts a set on, sends the command and keeps the set on until the
   action is done. Example: `/vg dress`, equip the jug, `/vg save lizard`, then
   `/vg add lizard /vg with lizard /ja "Bestial Loyalty" <me>` and type `/lizard`.
