@@ -239,8 +239,12 @@ plan.For = function(who, equipment, opts)
             local res = resources:GetAbilityById(id);
             local display = (res ~= nil) and res.Name[1] or ws.key;
             local m = wsMode(ws, display);
-            -- the job file's Weaponskills (and the band's) lay the wiki guide's priorities over the
-            -- script-derived ones, stat by stat (M401)
+            -- what the wiki weaponskill pages add (vg\wsguide.lua), then the job file's Weaponskills
+            -- and the band's, each laid over the script-derived stats, stat by stat (M401, M402)
+            local wiki = require('vg.wsguide')[display];
+            if (wiki ~= nil) then
+                for k, v in pairs(wiki) do m.Stats[k] = v; end
+            end
             for _, from in ipairs({ job.Weaponskills, band and band.Weaponskills }) do
                 local extra = from and from[display];
                 if (extra ~= nil) then

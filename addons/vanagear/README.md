@@ -18,6 +18,10 @@ while vanagear is ticked.
   not by what a 99 wants. Each job file names its guides. The support jobs (WHM, BLM, RDM,
   SCH, GEO, SMN, BRD) get no fighting set unless their guide gives one at that level; NIN, PLD
   and RUN are built as tanks.
+- Each weaponskill's set starts from the server's own script for it (its stat modifiers, hits
+  and kind) and adds what the wiki weaponskill pages say about gear (`vg\wsguide.lua`): crit
+  rate on the ones that crit with TP, attack on Fudo, Kaiten, Iron Tempest and Sturmwind,
+  accuracy on the ones whose accuracy drops with TP, and so on.
 - Builds idle, resting, damage taken, fighting (default, hybrid, accuracy), one set per
   weaponskill your weapons can use, precast, interim and midcast by skill, one set per spell you
   have learned and can cast now (main or support job: Utsusemi, elemental and debuff ninjutsu,

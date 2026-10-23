@@ -14,7 +14,7 @@ names |= {'PDT', 'MDT'}
 names |= {'WAR', 'MNK', 'WHM', 'BLM', 'RDM', 'THF', 'PLD', 'DRK', 'BST', 'BRD', 'RNG', 'SAM', 'NIN', 'DRG', 'SMN',
           'BLU', 'COR', 'PUP', 'DNC', 'SCH', 'GEO', 'RUN'}
 bad = 0
-for f in [ADDON / 'vg' / 'roles.lua', *sorted((ADDON / 'jobs').glob('*.lua'))]:
+for f in [ADDON / 'vg' / 'roles.lua', ADDON / 'vg' / 'wsguide.lua', *sorted((ADDON / 'jobs').glob('*.lua'))]:
     text = re.sub(r'--\[\[.*?\]\]--', '', f.read_text(encoding='utf-8'), flags=re.S)
     for word in sorted(set(re.findall(r'\b([A-Z][A-Z0-9_]{2,})\s*=', text))):
         if word not in names:
