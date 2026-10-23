@@ -4,6 +4,7 @@
   "servers": {
     "tailscale": "100.93.179.33",
     "moved": {
+      "vanadreams.fairywitch.ca": "vanadreams.online",
       "100.114.52.41": "100.93.179.33"
     }
   },

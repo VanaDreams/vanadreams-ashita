@@ -9,7 +9,7 @@ namespace Vanadreams.Services
         private static readonly Regex Token = new Regex("\"[^\"]*\"|\\S+");
 
         /// <summary>The server's public name, which every player uses unless their network blocks the game's ports.</summary>
-        public const string VanadreamsServer = "vanadreams.fairywitch.ca";
+        public const string VanadreamsServer = "vanadreams.online";   // Lee, 23 Oct 2026 (was vanadreams.fairywitch.ca, still answers)
 
         /// <summary>
         /// The server's own address on Tailscale. It only answers a player the server has been shared with.

@@ -52,7 +52,7 @@ namespace Vanadreams.Tests
 
             c.UseTailscale(false);
             Assert.IsFalse(c.IsTailscale);
-            Assert.AreEqual("--server vanadreams.fairywitch.ca --lang 2", c.ToIniCommand());
+            Assert.AreEqual("--server vanadreams.online --lang 2", c.ToIniCommand());
 
             // a profile for some other server is not Tailscale just because it uses --hairpin
             Assert.IsFalse(LoaderCommand.Parse("--server 192.168.0.19 --hairpin").IsTailscale);
