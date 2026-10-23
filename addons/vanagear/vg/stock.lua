@@ -77,6 +77,16 @@ local function holdOwn(name, overlaysWorn)
     if (next(keep) ~= nil) then gFunc.EquipSet(keep); end
 end
 
+-- Resting laid over Idle by itself: the player's picks in Idle hold. The swaps for an action (an
+-- ability, a spell, a weaponskill) are meant to go on over everything and are not touched.
+local function wearOver(narrow, broad)
+    if (wear(narrow)) then
+        holdOwn(broad, { narrow });
+        return true;
+    end
+    return false;
+end
+
 stock.HandleDefault = function()
     local t = gVana.Toggles;
     local player = gData.GetPlayer();
@@ -107,7 +117,7 @@ stock.HandleDefault = function()
         wear('Tp_' .. (t.Tp or 'Default'));
     elseif (player.Status == 'Resting') then
         wear('Idle');
-        wear('Resting');
+        wearOver('Resting', 'Idle');
     elseif (pet ~= nil) and (pet.Status == 'Engaged') and (gVana.Sets.PetTP ~= nil) then
         wear((t.Pet == 'dt') and 'PetDT' or 'PetTP');
     else

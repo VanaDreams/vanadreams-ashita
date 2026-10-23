@@ -52,6 +52,22 @@ player.IsMoving = false
 player.HPP = 40
 gVana.Sets.Idle_Regen = { Feet = 'Regen Boots' }
 run('low HP, feet picked in Idle')
+
+-- resting: the built Resting set goes over Idle, the pick holds
+player.HPP = 100
+player.Status = 'Resting'
+gVana.Sets.Resting = { Feet = 'Resting Boots' }
+run('resting, feet picked in Idle')
+player.Status = 'Idle'
+
+-- an action's own set still goes on over everything (Lee: "they are supposed to flash in for
+-- the abilities"): a weaponskill's built set beats a pick in Ws_Default
+gVana.Sets.Ws_Default = { Neck = 'WS Neck', Feet = 'WS Boots' }
+gVana.Sets.SavageBlade = { Neck = 'Savage Neck', Feet = 'Savage Boots' }
+gVana.Own.Ws_Default = { Neck = true }
+gData.GetAction = function() return { Name = 'Savage Blade' } end
+worn = {}; stock.HandleWeaponskill()
+out[#out + 1] = 'weaponskill: ' .. tostring(worn.Neck) .. ' / ' .. tostring(worn.Feet)
 return table.concat(out, '\n')
 """, str(ADDON))
 print(result)
@@ -61,6 +77,8 @@ expect = [
     "moving, feet picked in both: Sprinter's Shoes",
     "/vg idle speed: Sprinter's Shoes",
     'low HP, feet picked in Idle: My Idle Boots',
+    'resting, feet picked in Idle: My Idle Boots',
+    'weaponskill: Savage Neck / Savage Boots',
 ]
 lines = result.split('\n')
 assert lines == expect, '\n'.join(f'{a!r} vs {b!r}' for a, b in zip(lines, expect) if a != b)
