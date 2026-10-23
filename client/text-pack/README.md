@@ -6,7 +6,9 @@ The launcher lists it in pivot.ini once, like the look and title packs; the Inst
 
 - `fixes.json`: each correction, by dialog file id, line number, the exact old text and its replacement, and why.
 - `build.py`: reads an untouched client, changes only those lines, checks every other line is byte for byte the
-  same, and writes the zip and its `.chunk.json`. Run it with no arguments for usage.
+  same, and writes the zip and its `.chunk.json`. Run it with no arguments for usage. Name the other overlay packs
+  after the out folder and it stops if any of them holds one of this pack's files.
+- `homepoint.py`: the Rolanberry hangout home point (below). `build.py` runs it; it needs xi-tools.
 
 To find a line: `explain/zone_NNN.txt` in the project's `cutscenes/xi-explain-all-zones.tgz` names the event and the
 line number (`print_msg2 ... <speaker> <line> "..."`). English dialog for zones 0-255 is file id 6420 + zone.
@@ -44,3 +46,18 @@ line. The pack then carries the armor2 DAT (about 28 MB unpacked, 5 MB zipped).
 Item 9025 (general2, file id 55671, "??? Box +1" on retail) is Clan Centurio's Mark Trophy on the server: a mark's
 killer gets one, and Montblanc takes it with the mark's own drop. It shows as "Mark Trophy" / "mark trophies" with a
 three-line description. The pack then carries the general2 DAT as well.
+
+### The Rolanberry hangout home point (from vanadreams-text-02)
+
+Every home point crystal (events 8700-8704; 335 actor blocks in 67 zone event DATs) gains home point 122,
+"Rolanberry Fields #1": zone 110, fee 500, zone-list position 67 under Derfland (region 11), at the hangout crystal
+(327.0, 23.62, 588.5). The loop bounds 122 and 67 become 123 and 68. Rolanberry Fields' event DAT (file id 5930)
+gains one home point block (actor 0x0106E290, event 8700) whose messages point at the home point text its dialog DAT
+already has (lines 0-21, and 6422 for "You do not have enough gil."). The server side is index 122 in
+`scripts/globals/homepoint.lua` and the crystal in `modules/vanadreams/hangout/hangout_decor.lua`; the fee there
+(`fee = 1`, 500 gil) must match.
+
+`homepoint.py` finds every table by decoding the script, writes only slots that hold the empty constant, appends
+new constants, changes the two bounds in place only after showing every reader is a loop bound or a loop exit, keeps
+every other block byte for byte, and re-decodes each patched block with xi-tools' `xi_explain` against the original.
+The pack then carries 68 event DATs (about 22.7 MB unpacked).

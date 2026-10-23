@@ -1,6 +1,9 @@
 r"""Build the Vanadreams text pack: corrections to retail dialog lines, as an XIPivot overlay.
 
-    python build.py <untouched FINAL FANTASY XI folder> <out folder>
+    python build.py <untouched FINAL FANTASY XI folder> <out folder> [<other pack .zip or overlay folder> ...]
+
+Any further arguments are the other overlay packs (looks, title, hair, ...): the build stops if one of
+them holds a file this pack holds, since only one overlay's copy of a file can win.
 
 fixes.json beside this script lists each correction: the dialog file id (fid), the line number in it,
 and the exact text to replace and its replacement. The script finds each file through the client's
@@ -11,6 +14,10 @@ fixes.json may also hold an "items" list: item strings (name, the two log names,
 Every byte of an item DAT is bit-rotated, so the build decodes the DAT, proves it re-encodes to the exact original
 bytes, rewrites only the named strings in place (they must fit where the old ones sat, before the icon), and checks
 that no other byte of the file changed.
+
+The pack also carries the Rolanberry hangout home point (homepoint.py): the 67 zone event DATs whose home point
+crystals list destinations gain "Rolanberry Fields #1", and zone 110's event DAT gains a home point event. That
+part needs xi-tools; see homepoint.py.
 
 Writes <out>/vanadreams-text-NN.zip (the changed ROM files) and its manifest entry
 <out>/vanadreams-text-NN.chunk.json, whose dest is the vanadreams-text overlay folder.
@@ -31,7 +38,7 @@ import sys
 import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PACK = 1  # bump for every rebuilt pack, so the launcher sees a new chunk
+PACK = 2  # bump for every rebuilt pack, so the launcher sees a new chunk
 DEST = "{ashita}/polplugins/DATs/vanadreams-text"
 
 
@@ -106,10 +113,21 @@ def edit_item(dec, fx):
     return touched
 
 
+def pack_names(path):
+    """The ROM paths another overlay pack holds: a zip's names, or the files under an overlay folder."""
+    if os.path.isdir(path):
+        out = set()
+        for root, _, names in os.walk(path):
+            for n in names:
+                out.add(os.path.relpath(os.path.join(root, n), path).replace("\\", "/").upper())
+        return out
+    return {n.replace("\\", "/").upper() for n in zipfile.ZipFile(path).namelist() if not n.endswith("/")}
+
+
 def main():
-    if len(sys.argv) != 3:
+    if len(sys.argv) < 3:
         sys.exit(__doc__)
-    game, out = sys.argv[1], sys.argv[2]
+    game, out, others = sys.argv[1], sys.argv[2], sys.argv[3:]
     both = json.load(open(os.path.join(HERE, "fixes.json"), encoding="utf-8"))
     fixes, item_fixes = both["fixes"], both.get("items", [])
     files = {}
@@ -148,6 +166,22 @@ def main():
             sys.exit(rel + ": a byte outside the edited strings changed")
         items[rel] = bytes(dec.translate(ROT_ENC))
 
+    # the Rolanberry hangout home point: whole event DATs, proven inside homepoint.build()
+    import homepoint
+    events, hp_report = homepoint.build(game)
+    clash = set(events) & (set(files) | set(items))
+    if clash:
+        sys.exit("an event DAT is also a dialog or item file: %s" % sorted(clash))
+    print("home point: %d event DATs, %d blocks patched, new block %s in %s"
+          % (len(events), len(hp_report["blocks"]), hp_report["zone110"]["actor_id"], hp_report["zone110"]["rel"]))
+
+    ours = {rel.upper() for rel in list(files) + list(items) + list(events)}
+    for other in others:
+        both = ours & pack_names(other)
+        if both:
+            sys.exit("%s also holds %s; only one overlay's copy would load" % (other, sorted(both)[:10]))
+        print("no shared files with", other)
+
     os.makedirs(out, exist_ok=True)
     name = "vanadreams-text-%02d.zip" % PACK
     zpath = os.path.join(out, name)
@@ -169,8 +203,14 @@ def main():
             info.compress_type = zipfile.ZIP_DEFLATED
             z.writestr(info, items[rel])
             unpacked += len(items[rel])
+        for rel in sorted(events):
+            info = zipfile.ZipInfo(rel, date_time=(2026, 10, 16, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            z.writestr(info, events[rel])
+            unpacked += len(events[rel])
     blob = open(zpath, "rb").read()
-    entry = {"name": name, "size": len(blob), "sha256": hashlib.sha256(blob).hexdigest(), "files": len(files) + len(items),
+    entry = {"name": name, "size": len(blob), "sha256": hashlib.sha256(blob).hexdigest(),
+             "files": len(files) + len(items) + len(events),
              "unpacked": unpacked, "dest": DEST}
     json.dump(entry, open(os.path.join(out, name.replace(".zip", ".chunk.json")), "w"))
     print(json.dumps(entry))
