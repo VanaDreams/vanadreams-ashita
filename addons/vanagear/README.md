@@ -128,7 +128,10 @@ it lists the item names in `gVana.WeaponAllow` and vanagear lets those through.
   `/vg save <name>` saves it under that name and swapping comes back on. Weapons are left out
   unless `/vg weapons on`.
 - Every slot in the `/vg` window is a list: pick a piece and it is yours in that set (marked *).
-  **New set** saves what you wear under the typed name.
+  **New set** saves what you wear under the typed name. A slot you pick in Idle stays yours
+  while you walk and when your HP or MP is low: the Movement, Regen and Refresh pieces vanagear
+  would lay over Idle by themselves skip it. `/vg idle speed`, `/vg idle regen`, `/vg idle refresh`
+  and `/vg kite` are you asking for them, so they still go on.
 - A set of yours named like a built one (`Idle`, `Tp_Default`, `Reward`, `CallBeast`, a
   weaponskill or spell) replaces the slots it names wherever that set goes on. Any other name is a
   set of its own: `/vg wear <name>` (until `/vg wear off`), `/vg with <name> <command>`,

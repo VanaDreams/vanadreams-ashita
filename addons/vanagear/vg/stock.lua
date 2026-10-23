@@ -57,6 +57,26 @@ local function overlays()
     if (t.TH) then wear('TH'); end
 end
 
+-- The slots the player picked by hand in a set (the window's drop-downs, /vg set) go back on
+-- over the sets laid on it by themselves - Movement while moving, the Regen and Refresh idles
+-- on low HP or MP - unless the player also picked that slot in the overlay set. Lee, 22 Oct
+-- 2026: "i can see it putting on movement gear underneath instead of the drop down i chose".
+-- An overlay the player asked for by a toggle (/vg idle speed, /vg kite) is not touched here.
+local function holdOwn(name, overlaysWorn)
+    local own = gVana.Own and gVana.Own[name];
+    local set = gVana.Sets[name];
+    if (own == nil) or (set == nil) then return; end
+    local keep = {};
+    for slot in pairs(own) do
+        local pickedInOverlay = false;
+        for _, o in ipairs(overlaysWorn) do
+            if (gVana.Own[o] ~= nil) and (gVana.Own[o][slot]) then pickedInOverlay = true; end
+        end
+        if (not pickedInOverlay) and (set[slot] ~= nil) then keep[slot] = set[slot]; end
+    end
+    if (next(keep) ~= nil) then gFunc.EquipSet(keep); end
+end
+
 stock.HandleDefault = function()
     local t = gVana.Toggles;
     local player = gData.GetPlayer();
@@ -93,9 +113,14 @@ stock.HandleDefault = function()
     else
         wear('Idle');
         local idle = t.Idle or 'auto';
-        if (idle == 'regen') or ((idle == 'auto') and (player.HPP < 60)) then wear('Idle_Regen'); end
-        if (idle == 'refresh') or ((idle == 'auto') and (player.MaxMP > 0) and (player.MPP < 70)) then wear('Idle_Refresh'); end
-        if (idle == 'speed') or (player.IsMoving) then wear('Movement'); end
+        local auto = {};   -- the overlays that went on by themselves, not by a toggle
+        if (idle == 'regen') then wear('Idle_Regen');
+        elseif (idle == 'auto') and (player.HPP < 60) and (wear('Idle_Regen')) then auto[#auto + 1] = 'Idle_Regen'; end
+        if (idle == 'refresh') then wear('Idle_Refresh');
+        elseif (idle == 'auto') and (player.MaxMP > 0) and (player.MPP < 70) and (wear('Idle_Refresh')) then auto[#auto + 1] = 'Idle_Refresh'; end
+        if (idle == 'speed') then wear('Movement');
+        elseif (player.IsMoving) and (not t.Kite) and (wear('Movement')) then auto[#auto + 1] = 'Movement'; end
+        if (#auto > 0) then holdOwn('Idle', auto); end
     end
     overlays();
 end
