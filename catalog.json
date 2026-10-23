@@ -552,7 +552,7 @@
         "path": "addons/vanagear",
         "branch": "main"
       },
-      "version": "0.1.19",
+      "version": "0.1.20",
       "install": "copy-to-addons",
       "load": "/addon load vanagear",
       "config": "config\\addons\\luashitacast\\",
