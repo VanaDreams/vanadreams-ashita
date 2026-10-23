@@ -239,6 +239,18 @@ renderSlots = function(name)
         .. ((ex and ex.spell) and '  (goes on as you cast it)' or ''));
     imgui.SameLine();
     imgui.TextDisabled(yours and (gVana.Built[name] and '  built, with your changes' or '  your own set') or '  built');
+    -- lock the look to this set: the swaps still happen, nobody sees them
+    local core = require('vg.core');
+    local looked = { core.LookSet() == name };
+    if (imgui.Checkbox('Lock my look to this set (the swaps stop showing)##vg_look_' .. name, looked)) then
+        if (looked[1]) then
+            if (core.SetLook(name)) then sayNote('Your look is locked to ' .. mine.Label(name) .. '. Untick, or /vg look off, to unlock.');
+            else sayNote('Could not lock the look to ' .. mine.Label(name) .. '.'); end
+        else
+            core.SetLook(nil);
+            sayNote('Look unlocked.');
+        end
+    end
     imgui.Separator();
     for slot = 1, 16 do
         local slotName = gData.Constants.EquipSlotNames[slot];

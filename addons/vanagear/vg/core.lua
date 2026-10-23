@@ -29,7 +29,7 @@ gVana = {
     BuiltAt = nil,
     Toggles = { DT = false, Kite = false, TH = false, Tp = 'Default', Idle = 'auto', Nuke = 'power', Burst = false,
                 Stage = false, Pet = 'tp' },
-    Prefs = { ZoneWait = 10, Weapons = false, WeaponPick = {}, Locked = {}, Underlay = {}, MoteKeys = false },
+    Prefs = { ZoneWait = 10, Weapons = false, WeaponPick = {}, Locked = {}, Underlay = {}, MoteKeys = false, Look = {} },
     Pieces = {},
     Built = {},
     Own = {},
@@ -219,6 +219,7 @@ local function stepBuild(budget)
         gVana.Pieces = q.pieces;
         gVana.BuiltAt = os.time();
         core.ApplyOwn();
+        core.ApplyLook();
         local fc = vdata.ModId('FASTCAST');
         gVana.FastCast = (q.totals.Precast and fc) and (q.totals.Precast['m' .. fc] or 0) or 0;
         local count = 0;
@@ -336,6 +337,38 @@ end
 
 core.OnSettled = function()
     wanted = true;
+end
+
+-- ---------------------------------------------------------------- the look
+
+-- The set the player's appearance is locked to for this job (the window's "Lock my look" box,
+-- /vg look <name>), kept in prefs and put back after every rebuild, so the swaps for actions
+-- and overlays never show (Lee, 22 Oct 2026: "style lock the gear set, and stop all the
+-- animations"). Any set vanagear has - built, or the player's own - can be the look.
+core.LookSet = function()
+    local job = gVana.Who and gVana.Who.JobName or '';
+    return (gVana.Prefs.Look or {})[job];
+end
+
+core.SetLook = function(name)
+    local job = gVana.Who and gVana.Who.JobName or '';
+    if (job == '') then return false; end
+    gVana.Prefs.Look = gVana.Prefs.Look or {};
+    gVana.Prefs.Look[job] = name;
+    core.SavePrefs();
+    if (name == nil) then
+        AshitaCore:GetChatManager():QueueCommand(1, '/lockstyle off');
+        return true;
+    end
+    return core.ApplyLook();
+end
+
+core.ApplyLook = function()
+    local name = core.LookSet();
+    local set = name and gVana.Sets[name];
+    if (set == nil) then return false; end
+    local ok = pcall(gFunc.LockStyle, set);
+    return ok;
 end
 
 -- ---------------------------------------------------------------- helpers for the handlers

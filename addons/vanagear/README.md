@@ -136,6 +136,10 @@ it lists the item names in `gVana.WeaponAllow` and vanagear lets those through.
   weaponskill or spell) replaces the slots it names wherever that set goes on. Any other name is a
   set of its own: `/vg wear <name>` (until `/vg wear off`), `/vg with <name> <command>`,
   `/gs equip <name>`, `/vg look <name>` (lockstyle).
+- **Lock my look to this set**, the box above a set's slots in the window (or `/vg look <name>`,
+  built sets included), locks your appearance to that set: the swaps for actions and overlays
+  still happen, they stop showing. It is kept per job and put back after every rebuild and zone.
+  Untick, or `/vg look off`, to unlock.
 - `/vg set <name> <slot> <item>` changes one slot from chat; `/vg sets` lists yours.
 - Kept in `config\addons\vanagear\sets\<JOB>.lua`.
 

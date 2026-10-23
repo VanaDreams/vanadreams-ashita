@@ -84,7 +84,7 @@ commands.Lines = function()
     line('/vg save <name>', 'save what you are wearing as a set (swapping comes back on). Named like a built set (Idle, Tp_Default, Reward, a weaponskill) it replaces those slots there');
     line('/vg set <name> <slot> <item>', 'change one slot of a set (any set in the /vg window too); /vg sets lists yours');
     line('/vg wear <name> | off', 'put on one of your sets and keep it on over the built sets');
-    line('/vg look <name> | off', 'lock one of your sets as your look (/lockstyle); the sets go on swapping underneath');
+    line('/vg look <name> | off', 'lock a set as your look (/lockstyle), built or yours, kept per job; the swaps go on underneath without showing');
     line('/vg remove <word>, /vg folder', 'delete one of yours; open the folder they are kept in, to write them by hand');
     line('/vg keys mote | off', 'Motenten\'s F9-F12 keys, as GearSwap players have them');
     line('/gs c <word>', 'the same as /vg <word>, so GearSwap macros keep working');
@@ -438,10 +438,21 @@ commands.Vg = function(args)
         local name = table.concat(args, ' ', 2);
         if (arg == 'off') then
             if (cmd == 'wear') then use.Wear(nil); say('Back to the built sets.');
-            else AshitaCore:GetChatManager():QueueCommand(1, '/lockstyle off'); say('Look unlocked.'); end
+            else core.SetLook(nil); say('Look unlocked.'); end
             return;
         end
         local set, found = findSet(name);
+        if (set == nil) and (cmd == 'look') then
+            -- any set vanagear has can be the look, built ones too
+            for k in pairs(gVana.Sets) do
+                if (string.lower(k) == string.lower(mine.SetName(name))) or (string.lower(k) == string.lower(name)) then found = k; set = gVana.Sets[k]; end
+            end
+            if (set ~= nil) then
+                core.SetLook(found);
+                say(mine.Label(found) .. ' locked as your look. /vg look off to unlock.');
+                return;
+            end
+        end
         if (set == nil) then
             local names = {};
             for k in pairs(mine.Sets()) do names[#names + 1] = k; end
@@ -451,7 +462,7 @@ commands.Vg = function(args)
             use.Wear(found, set);
             say('Wearing ' .. found .. ' until /vg wear off.');
         else
-            gFunc.LockStyle(set);
+            core.SetLook(found);
             say(found .. ' locked as your look. /vg look off to unlock.');
         end
     elseif (cmd == 'folder') then
