@@ -91,7 +91,8 @@ out[#out + 1] = 'called ' .. #called .. ' ' .. exc.Name .. ' ' .. kup.Name
 -- nothing is sent until the server says the trust is yours; first it is asked about once
 gVana.Who = { Job = 1 }
 os.clock = (function() local c = 0 return function() c = c + 5 return c end end)()
-trusts.Tick() trusts.Tick() trusts.Tick() trusts.Tick()
+-- four requests now go out (!trustgear info and !trustuse info for each trust), one per tick
+trusts.Tick() trusts.Tick() trusts.Tick() trusts.Tick() trusts.Tick()
 out[#out + 1] = table.concat(sent, ' ; ')
 out[#out + 1] = 'ours ' .. tostring(trusts.Ours(exc)) .. ' ' .. tostring(trusts.Ours(kup))
 -- the server's answer, hidden from chat
@@ -123,6 +124,25 @@ out[#out + 1] = table.concat(sent, ' ; ')
 package.loaded['vg.trusts'] = nil
 trusts = require('vg.trusts')
 out[#out + 1] = 'reloaded ' .. tostring(trusts.Own(exc, 'Engaged').Head)
+-- what the player switched off: the server's list is hidden from chat, shown as unticked boxes, and a change goes back
+trusts.TextIn({ message = '\x1e\x01[VG trust] 16818177|Excenmille|7|1|99' })
+trusts.TextIn({ message = '[VG uses] 16818177|flash:ability,cure_iv:cure,savage_blade:weaponskill' })
+local eo = { message = '[VG off] 16818177|cureiv,weaponskill' }
+trusts.TextIn(eo)
+local flash, cure, wsk = { Name = 'flash' }, { Name = 'cure_iv' }, { Name = 'savage_blade' }
+out[#out + 1] = 'off ' .. tostring(eo.blocked) .. ' cure ' .. tostring(trusts.IsOff(exc, cure)) .. ' flash ' .. tostring(trusts.IsOff(exc, flash))
+sent = {}
+trusts.SetOff(exc, flash, true)
+trusts.SetOff(exc, cure, false)
+trusts.SetOff(exc, flash, false)
+trusts.SetOff(exc, wsk, true)
+out[#out + 1] = 'now cure ' .. tostring(trusts.IsOff(exc, cure)) .. ' flash ' .. tostring(trusts.IsOff(exc, flash)) .. ' ws ' .. tostring(trusts.IsOff(exc, wsk))
+for _ = 1, 12 do trusts.Tick() end
+local useLines = {}
+for _, l in ipairs(sent) do
+    if string.find(l, '!trustuse %d+ o[nf]+ ') then useLines[#useLines + 1] = l end
+end
+out[#out + 1] = table.concat(useLines, ' ; ')
 return table.concat(out, '\n')
 """, str(ADDON), TMP)
 print(result)
@@ -135,7 +155,7 @@ def head_ring(head, ring=0):
     return [0, 0, 0, 0, head] + [0] * 8 + [ring, 0, 0]
 expect = [
     'called 2 Excenmille Kupipi',
-    '/say !trustgear 16818177 info ; /say !trustgear 16818178 info',
+    '/say !trustgear 16818177 info ; /say !trustuse 16818177 info ; /say !trustgear 16818178 info ; /say !trustuse 16818178 info',
     'ours false false',
     'blocked true true uses 4',
     'sets Idle,Engaged,Weaponskill,Cure,Ability,Savage Blade',
@@ -146,6 +166,10 @@ expect = [
     'again 0',
     ' ; '.join([line('engaged', head_ring(0, 108)), line('flash', head_ring(102)), '/say !trustgear 16818177 flash clear']),
     'reloaded remove',
+    'off true cure true flash false',
+    'now cure false flash false ws true',
+    # flash was switched off and back on before anything was sent, so only its last word goes; the others go once each
+    '/say !trustuse 16818177 on flash ; /say !trustuse 16818177 on cure_iv ; /say !trustuse 16818177 off savage_blade',
 ]
 assert lines == expect, '\n'.join(f'{a!r} vs {b!r}' for a, b in zip(lines, expect) if a != b)
 print('PASS')

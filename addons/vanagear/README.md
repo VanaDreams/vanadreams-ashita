@@ -30,7 +30,14 @@ while vanagear is ticked.
 ## Your own profiles
 
 Profiles in `config\addons\luashitacast\` keep working, `/lac` included. A profile with sets of
-its own wins: vanagear's sets go under it only if you turn that on with `/vg underlay on`.
+its own runs exactly as LuAshitacast runs it: its weapons swap as written, nothing vanagear built
+fills a slot it leaves out, and a piece you put on from the menu is swapped off as usual. The one
+difference is the wait after every zone (below), which protects the server. vanagear's sets go
+under your profile only if you turn that on with `/vg underlay on`.
+
+Don't load the luashitacast addon as well: vanagear is LuAshitacast, and two of them swap every slot
+against each other. If it is loaded, vanagear notices, stops swapping and says so in chat; type
+`/addon unload luashitacast` and your profile and `/lac` commands carry on in vanagear.
 Profiles the launcher made from GearSwap files, and profiles whose sets are all empty, get the
 built sets underneath automatically, so anything they leave out is filled.
 
@@ -85,10 +92,21 @@ trust's sets, `!trustgear <trust> <set>` shows one, `!trustgear <trust> <set> cl
 and `!trustgear <trust> clear` deletes them all. Your picks are kept in
 `config\addons\vanagear\trusts.lua`.
 
+**Choosing what a trust uses.** Each spell, ability and weaponskill in a trust's "Uses" list has a
+checkbox. Untick one and that trust never casts or uses it: the server skips it for as long as the
+trust is out and remembers the choice for the next time you call it. "other spells" and "other
+abilities" switch off the ones a trust picks in the fight (bursts, storms, Indi spells...). Without
+vanagear, `!trustuse <trust>` lists what is switched off, `!trustuse <trust> off <action>` and
+`on <action>` change it (a name like `Cure IV` or `Flash`, or a kind: `cure`, `nuke`, `enfeebling`,
+`enhancing`, `dark`, `divine`, `song`, `ninjutsu`, `ability`, `weaponskill`) and
+`!trustuse <trust> reset` puts everything back. The server answers `!trustuse <trust> info` with a
+`[VG off]` line that vanagear reads and hides, as it does the `[VG uses]` line.
+
 ## Weapons
 
 With `/vg weapons off` (the default) nothing changes Main, Sub or Range: not the built sets, not
-your own sets, not a profile's sets, not an imported GearSwap file. The only way a weapon changes
+your own vanagear sets, not an imported GearSwap file. (A LuAshitacast profile of your own with sets
+of its own is the exception: it swaps weapons as it always did.) The only way a weapon changes
 is the lists on the Main, Sub and Range lines of the `/vg` window (or `/vg weapon main <item>`):
 they start at "Leave it alone", and the weapon picked is worn in every set for that job.
 

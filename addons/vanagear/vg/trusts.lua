@@ -463,6 +463,19 @@ trusts.TextIn = function(e)
         e.blocked = true;
         return;
     end
+    -- [VG off] <id>|<key>,<key>...: what the player has switched off for this trust (vanadreams' !trustuse)
+    local offId, offList = string.match(text, '%[VG off%] (%d+)|([^\r\n]*)');
+    if (offId ~= nil) then
+        local i = info[tonumber(offId)];
+        if (i ~= nil) then
+            i.Off = i.Off or {};
+            for key in string.gmatch(offList, '%w+') do
+                i.Off[key] = true;
+            end
+        end
+        e.blocked = true;
+        return;
+    end
     local usesId, list = string.match(text, '%[VG uses%] (%d+)|([^\r\n]*)');
     if (usesId ~= nil) then
         local i = info[tonumber(usesId)];
@@ -495,6 +508,7 @@ trusts.Tick = function()
             if (not asked[t.Id]) then
                 asked[t.Id] = true;
                 queue(t.Id .. ' info', string.format('/say !trustgear %d info', t.Id));
+                queue(t.Id .. ' off', string.format('/say !trustuse %d info', t.Id));
             elseif (info[t.Id] ~= nil) then
                 trusts.Send(t);
             end
@@ -504,6 +518,22 @@ trusts.Tick = function()
     for id in pairs(asked) do
         if (not seen[id]) then asked[id] = nil; info[id] = nil; end
     end
+end
+
+-- Is this action (or kind) switched off for this trust? Keys are the same as the server's: letters and digits of the name.
+trusts.IsOff = function(t, use)
+    local i = info[t.Id];
+    return (i ~= nil) and (i.Off ~= nil) and (i.Off[trusts.Key(use.Name)] == true);
+end
+
+-- Switch an action off or on: shown at once, sent to the server as !trustuse (a newer line for the same action
+-- replaces one still waiting), and the server keeps it for as long as the trust is out and every time it is called.
+trusts.SetOff = function(t, use, off)
+    local i = info[t.Id];
+    if (i == nil) then return; end
+    i.Off = i.Off or {};
+    i.Off[trusts.Key(use.Name)] = off and true or nil;
+    queue(t.Id .. ' use ' .. use.Name, string.format('/say !trustuse %d %s %s', t.Id, off and 'off' or 'on', use.Name));
 end
 
 trusts.Say = say;

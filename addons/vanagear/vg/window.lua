@@ -303,9 +303,16 @@ local function renderTrust(t)
     elseif (#i.Uses == 0) then
         imgui.TextDisabled('Uses: only its weapon.');
     else
-        local names = {};
-        for _, use in ipairs(i.Uses) do names[#names + 1] = useLabel(trusts, use); end
-        imgui.TextWrapped('Uses: ' .. table.concat(names, ', '));
+        -- what it uses: untick one and the trust stops using it (the server keeps the choice while it is out
+        -- and every time you call it again)
+        imgui.TextDisabled('Uses (untick one to stop ' .. t.Name .. ' using it):');
+        for n, use in ipairs(i.Uses) do
+            local on = { not trusts.IsOff(t, use) };
+            if (imgui.Checkbox(useLabel(trusts, use) .. '##vg_use_' .. t.Id .. '_' .. use.Name, on)) then
+                trusts.SetOff(t, use, not on[1]);
+            end
+            if (n % 3 ~= 0) and (n < #i.Uses) then imgui.SameLine(180 * (n % 3)); end
+        end
     end
     imgui.Separator();
 

@@ -24,6 +24,8 @@ It writes `config\charcapture\<YourName>.json` in the Ashita folder and prints a
 
 Then open the Vanadreams Launcher, go to Capture, pick the snapshot and press **Send to Vanadreams**. The server side imports it onto your Vanadreams account after a look.
 
+**Wardrobes that are not paid for this month:** the game will not let you open them to use them, but opening the wardrobe from the main menu still shows the gear in them. Do that once for each wardrobe before you capture, and the gear comes across. If a bag reads as locked but its items were captured, the capture summary says so.
+
 ## What's in the file
 
 Documented in [the design](../../docs/design/2026-09-13-character-capture-design.md). Item `extra` blocks are kept whole, so augments come with the gear.

@@ -87,7 +87,7 @@ local zone = { Holding = true, EnteredAt = os.clock(), InZoneAt = nil };
 gVana.HandHeld = {};
 
 core.HoldByHand = function(slot)
-    if (slot < 1) or (slot > 16) or (require('vg.mine').Dressing) then
+    if (slot < 1) or (slot > 16) or (require('vg.mine').Dressing) or (core.PureLac()) then
         return;
     end
     if (gState.Disabled[slot] ~= true) then
@@ -374,6 +374,75 @@ core.Underlay = function()
         end
     end
     return true;
+end
+
+-- ---------------------------------------------------------------- LuAshitacast mode
+
+-- A profile of the player's own with sets of its own, and the underlay off: vanagear stands aside and
+-- LuAshitacast runs it exactly as LuAshitacast would. Weapons swap as the profile says, no built piece
+-- fills a gap, and a piece put on from the menu is swapped off as usual. Only the zone wait stays: it
+-- protects the server (Ferrin, 22 Oct 2026: "keep the wait").
+core.PureLac = function()
+    if (gProfile == nil) or (gProfile.IsVanagearStock) or (gProfile.ImportedFromGearSwap) then
+        return false;
+    end
+    return not core.Underlay();
+end
+
+-- ---------------------------------------------------------------- another LuAshitacast loaded as well
+
+-- Players who also load the luashitacast addon themselves get two engines swapping every slot against each
+-- other (22 Oct 2026). vanagear counts the equip packets it queues; an injected equip packet it did not queue,
+-- on three or more slots within five seconds, means another swapper is running. vanagear then stops swapping
+-- for a minute at a time and says why, once. Range and ammo are left out: vanafish swaps rods and bait itself.
+local ownSent, ownSentAt = 0, 0;
+local foreign = {};
+local standDownAt = nil;
+local warned = false;
+
+-- Called just before vanagear queues an equip packet (0x50 or 0x51).
+core.MarkOwnEquip = function()
+    local now = os.clock();
+    if (now - ownSentAt > 2) then
+        ownSent = 0;
+    end
+    ownSent = ownSent + 1;
+    ownSentAt = now;
+end
+
+-- Called for every injected equip packet going out. slots: the zero-based equipment slots it changes.
+core.SawInjectedEquip = function(slots)
+    local now = os.clock();
+    if (ownSent > 0) and (now - ownSentAt <= 2) then
+        ownSent = ownSent - 1;
+        return;
+    end
+    for _, s in ipairs(slots) do
+        if (s ~= 2) and (s ~= 3) then
+            foreign[s] = now;
+        end
+    end
+    local count = 0;
+    for s, at in pairs(foreign) do
+        if (now - at <= 5) then
+            count = count + 1;
+        else
+            foreign[s] = nil;
+        end
+    end
+    if (count >= 3) then
+        standDownAt = now;
+        if (not warned) then
+            warned = true;
+            print(chat.header('vanagear') .. chat.error('LuAshitacast is loaded as well, and the two were swapping your gear against each other. vanagear has stopped swapping.'));
+            print(chat.header('vanagear') .. chat.message('vanagear runs your LuAshitacast profiles and /lac commands itself: type /addon unload luashitacast and everything works as before.'));
+        end
+    end
+end
+
+-- True while another swapper has been seen in the last minute.
+core.StandingDown = function()
+    return (standDownAt ~= nil) and (os.clock() - standDownAt < 60);
 end
 
 return core;
