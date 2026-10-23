@@ -79,6 +79,9 @@ roles.Modes = {
     NinjutsuBuff = { Stats = { NINJUTSU = 1, FASTCAST = 1, PDT = -0.3 }, Caps = { FASTCAST = 80, PDT = -50 } },
     Utsusemi = { Stats = { UTSUSEMI_BONUS = 10, FASTCAST = 2, HASTE_GEAR = 2, PDT = -0.5, MDT = -0.3 }, Caps = { FASTCAST = 80, HASTE_GEAR = 25, PDT = -50, MDT = -50 } },
     Song = { Stats = { SINGING = 1, STRING = 0.5, WIND = 0.5, ALL_SONGS_EFFECT = 4, SONG_DURATION_BONUS = 2, CHR = 0.4, MACC = 0.5 } },
+    -- the debuff songs (Elegy, Lullaby, Requiem, Threnody, Finale...) have to land: Ghlin's Endgame
+    -- Barding Guide puts their resist value at "Macc = 1, Skill = .9, and CHR = .5" (M401)
+    SongDebuff = { Stats = { MACC = 1, SINGING = 0.9, STRING = 0.9, WIND = 0.9, CHR = 0.5, SONG_DURATION_BONUS = 0.5 } },
     BluePhysical = { Stats = { STR = 1, DEX = 0.7, ATT = 0.5, ACC = 0.5, BLUE = 0.5 } },
     BlueMagical = { Stats = { MATT = 2, INT = 1, MACC = 0.7, BLUE = 0.3 } },
     Geomancy = { Stats = { GEOMANCY_SKILL = 1, HANDBELL_SKILL = 1, GEOMANCY_BONUS = 4, INDI_DURATION = 2, CONSERVE_MP = 0.2 } },
@@ -131,6 +134,9 @@ roles.Modes = {
 
 -- Mode names each kind of job gets.
 roles.Fighter = { 'Idle', 'Idle_Regen', 'Resting', 'Dt', 'Movement', 'Tp_Default', 'Tp_Hybrid', 'Tp_Acc', 'Ws_Default' };
+-- a support job (WHM, BLM, SCH, GEO, SMN, BRD: Lee, 22 Oct 2026, "their guides will be about maxing
+-- that support") gets the standing sets but no fighting or weaponskill set unless a band adds them
+roles.Support = { 'Idle', 'Idle_Regen', 'Resting', 'Dt', 'Movement' };
 roles.Caster = { 'Idle_Refresh', 'Precast', 'Interim' };
 roles.Shooter = { 'Preshot', 'Midshot' };
 roles.Pet = { 'PetTP', 'PetDT', 'PetAtk', 'PetMab', 'PetAcc' };
@@ -145,7 +151,7 @@ roles.SkillSets = {
     ['Dark Magic'] = { 'Dark', 'Drain' },
     ['Divine Magic'] = { 'Divine' },
     ['Ninjutsu'] = { 'Ninjutsu' },
-    ['Singing'] = { 'Song', 'Song_Precast' },
+    ['Singing'] = { 'Song', 'SongDebuff', 'Song_Precast' },
     ['Blue Magic'] = { 'BluePhysical', 'BlueMagical' },
     ['Geomancy'] = { 'Geomancy' },
 };

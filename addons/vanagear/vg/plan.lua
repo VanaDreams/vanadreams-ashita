@@ -90,9 +90,36 @@ end
     reasons slots were held, for the job, subjob and weapons the player has right now.
     opts.Weapons: let the builder choose Main, Sub and Range.
 ]]--
+-- A job file's Bands are level ranges, each with its own Tweaks and Modes: { To = 30, Tweaks = {...} }
+-- in rising order. The band the player's level falls in is laid over the job's all-level Tweaks,
+-- so a 70s character is not scored by what a 99 wants (the guides read for M401).
+plan.Band = function(job, level)
+    for _, b in ipairs(job.Bands or {}) do
+        if (level <= (b.To or 99)) then return b; end
+    end
+    return nil;
+end
+
+local function bandTweaks(job, level)
+    local band = plan.Band(job, level);
+    if (band == nil) or (band.Tweaks == nil) then return job.Tweaks or {}; end
+    local out = copy(job.Tweaks or {});
+    for modeName, t in pairs(band.Tweaks) do
+        out[modeName] = out[modeName] or {};
+        for _, part in ipairs({ 'Stats', 'Caps', 'Pet', 'PetCaps' }) do
+            if (t[part] ~= nil) then
+                out[modeName][part] = out[modeName][part] or {};
+                for k, v in pairs(t[part]) do out[modeName][part][k] = v; end
+            end
+        end
+    end
+    return out;
+end
+
 plan.For = function(who, equipment, opts)
     local job = plan.Job(who.JobName);
-    local tweaks = job.Tweaks or {};
+    local tweaks = bandTweaks(job, who.Level or 99);
+    local band = plan.Band(job, who.Level or 99);
     local names, seen = {}, {};
     local function add(list)
         for _, n in ipairs(list) do
@@ -101,7 +128,8 @@ plan.For = function(who, equipment, opts)
     end
 
     add(roles.Always);
-    if (job.Fighter ~= false) then add(roles.Fighter); end
+    if (job.Support) then add(roles.Support);
+    elseif (job.Fighter ~= false) then add(roles.Fighter); end
 
     local skills, haveSkill = {}, {};
     for _, s in ipairs(job.Skills or {}) do
@@ -120,6 +148,7 @@ plan.For = function(who, equipment, opts)
     if (job.Shooter) or (shooting) then add(roles.Shooter); end
     if (job.Pet) then add(roles.Pet); end
     add(job.Modes or {});
+    if (band ~= nil) then add(band.Modes or {}); end
 
     -- slots: weapons held unless asked; ammo held under a bow or gun, which shoots it
     local slots, held = {}, {};
@@ -142,10 +171,15 @@ plan.For = function(who, equipment, opts)
     local out = {};
     for _, n in ipairs(names) do
         local m = mode(n, tweaks);
-        if (dualWield) and (string.sub(n, 1, 3) == 'Tp_') then
-            m.Stats.DUAL_WIELD = m.Stats.DUAL_WIELD or 1.2;
-            m.Caps = m.Caps or {};
-            m.Caps.DUAL_WIELD = m.Caps.DUAL_WIELD or 35;
+        if (string.sub(n, 1, 3) == 'Tp_') then
+            if (dualWield) then
+                m.Stats.DUAL_WIELD = m.Stats.DUAL_WIELD or 1.2;
+                m.Caps = m.Caps or {};
+                m.Caps.DUAL_WIELD = m.Caps.DUAL_WIELD or 35;
+            else
+                -- a template may weight dual wield for its band; under a shield or a two-hander it is worth nothing
+                m.Stats.DUAL_WIELD = nil;
+            end
         end
         out[#out + 1] = { Name = n, Mode = m, Slots = slots };
     end
@@ -205,6 +239,19 @@ plan.For = function(who, equipment, opts)
             local res = resources:GetAbilityById(id);
             local display = (res ~= nil) and res.Name[1] or ws.key;
             local m = wsMode(ws, display);
+            -- the job file's Weaponskills (and the band's) lay the wiki guide's priorities over the
+            -- script-derived ones, stat by stat (M401)
+            for _, from in ipairs({ job.Weaponskills, band and band.Weaponskills }) do
+                local extra = from and from[display];
+                if (extra ~= nil) then
+                    for _, part in ipairs({ 'Stats', 'Caps' }) do
+                        if (extra[part] ~= nil) then
+                            m[part] = m[part] or {};
+                            for k, v in pairs(extra[part]) do m[part][k] = v; end
+                        end
+                    end
+                end
+            end
             out[#out + 1] = { Name = plan.WsSetName(display), Mode = m, Slots = slots, Weaponskill = display };
         end
     end
@@ -294,6 +341,11 @@ plan.SpellMode = function(skill, name)
     elseif (skill == 'Divine Magic') then
         return 'Divine';
     elseif (skill == 'Singing') then
+        -- the songs sung at the monster want to land; the rest want potency and duration
+        local lowered = string.lower(name);
+        for _, word in ipairs({ 'elegy', 'lullaby', 'requiem', 'threnody', 'finale', 'nocturne', 'virelai', 'magic finale', 'pining nocturne' }) do
+            if (string.find(lowered, word, 1, true)) then return 'SongDebuff'; end
+        end
         return 'Song';
     elseif (skill == 'Blue Magic') then
         return require('vg.lists').BluePhysical[name] and 'BluePhysical' or 'BlueMagical';

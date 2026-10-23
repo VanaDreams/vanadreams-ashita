@@ -13,6 +13,11 @@ while vanagear is ticked.
 - Reads your inventory and wardrobes, and scores every piece your job, level and race can wear
   against that job's weights (`jobs\<JOB>.lua`, built on `vg\roles.lua`). Caps count: once gear
   haste is at 25% or damage taken at -50%, a slot goes to something else.
+- The weights come from the player-written job guides on FFXIclopedia and BG-wiki, by level
+  band (1-30, 31-60, 61-75, 76-99), so a level 60 is scored by what the guides say a 60 wants,
+  not by what a 99 wants. Each job file names its guides. The support jobs (WHM, BLM, RDM,
+  SCH, GEO, SMN, BRD) get no fighting set unless their guide gives one at that level; NIN, PLD
+  and RUN are built as tanks.
 - Builds idle, resting, damage taken, fighting (default, hybrid, accuracy), one set per
   weaponskill your weapons can use, precast, interim and midcast by skill, one set per spell you
   have learned and can cast now (main or support job: Utsusemi, elemental and debuff ninjutsu,
