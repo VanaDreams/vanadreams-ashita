@@ -1,5 +1,5 @@
 r"""Off-game test of three vanagear behaviours (Ferrin, 18 Oct 2026):
-- a slot you change from the equipment menu is left alone until the next zone;
+- a slot you change from the equipment menu is not held (only the lua swaps); a locked slot stays locked through a zone;
 - the fighting set answers to "Engaged" (and the window lists it so);
 - (pulling a LuAshitacast profile over is tests\profiles.py).
 
@@ -32,12 +32,10 @@ gVana.Who = { JobName = 'SAM' }
 local mine = require('vg.mine')
 local out = {}
 
--- the menu puts a cape on (slot 16), then the player zones
-core.HoldByHand(16)
-out[#out + 1] = 'held ' .. tostring(gState.Disabled[16])
--- a slot the player locked with /lac disable stays locked through the zone
+-- a slot changed from the menu is not held (Lee, 24 Oct 2026: only the lua swaps)
+out[#out + 1] = 'held ' .. tostring(core.HoldByHand ~= nil or gState.Disabled[16] == true)
+-- a slot the player locked stays locked through the zone
 gState.Disabled[5] = true
-core.HoldByHand(5)
 core.ZoneIn()
 out[#out + 1] = 'after zone ' .. tostring(gState.Disabled[16]) .. ' ' .. tostring(gState.Disabled[5])
 
@@ -47,8 +45,8 @@ return table.concat(out, '\n')
 """, str(ADDON), TMP)
 print(result)
 expect = [
-    'held true',
-    'after zone false true',
+    'held false',
+    'after zone nil true',
     'names Tp_Default Tp_Default Engaged Seigan',
 ]
 lines = result.split('\n')

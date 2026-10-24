@@ -376,20 +376,8 @@ packethandlers.HandleOutgoingPacket = function(e)
         return;
     end
 
-    -- vanagear: gear you equip yourself from the menu (0x50 one piece, 0x51 an equipset) stays
-    -- as you put it until the next zone. Only the client's own packets count: the swaps vanagear
-    -- and LuAshitacast send are injected, and holding those locked every slot after the first
-    -- swap (Ferrin 19 Oct 2026: "it used to puck up my ws it doesnt now").
-    if (e.injected) then
-        -- a swap of ours, not a hand change
-    elseif (e.id == 0x50) then
-        gVanaCore.HoldByHand(struct.unpack('B', e.data, 0x05 + 1) + 1);
-    elseif (e.id == 0x51) then
-        local count = struct.unpack('B', e.data, 0x04 + 1);
-        for i = 0, math.min(count, 16) - 1 do
-            gVanaCore.HoldByHand(struct.unpack('B', e.data, 0x08 + (i * 4) + 0x01 + 1) + 1);
-        end
-    end
+    -- vanagear: gear you equip yourself from the menu is not held; the lua swaps it at its next swap
+    -- (Lee, 24 Oct 2026: "take out the hand-change hold too, so only the lua swaps").
 
     --Manual lockstyle packet
     if (e.id == 0x53) and (e.injected == false) then

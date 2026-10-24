@@ -82,30 +82,12 @@ end
 
 local zone = { Holding = true, EnteredAt = os.clock(), InZoneAt = nil };
 
--- Slots you changed yourself from the equipment menu: vanagear leaves them as you put them
--- until the next zone (a Job Points cape stays on). slot index -> true.
-gVana.HandHeld = {};
-
-core.HoldByHand = function(slot)
-    if (slot < 1) or (slot > 16) or (require('vg.mine').Dressing) or (core.PureLac()) then
-        return;
-    end
-    if (gState.Disabled[slot] ~= true) then
-        gVana.HandHeld[slot] = true;
-        gState.Disabled[slot] = true;
-    end
-end
-
-local function releaseHandHeld()
-    for slot in pairs(gVana.HandHeld) do
-        gState.Disabled[slot] = false;
-    end
-    gVana.HandHeld = {};
-end
+-- A slot you change yourself from the equipment menu is no longer held until the next zone: the lua
+-- swaps it at its next swap, as LuAshitacast does (Lee, 24 Oct 2026: "take out the hand-change hold too,
+-- so only the lua swaps"; it had been asked for 18 Oct 2026). /vg lock keeps a slot as you have it.
 
 -- Called on the incoming zone packet (0x0A).
 core.ZoneIn = function()
-    releaseHandHeld();
     zone.Holding = true;
     zone.Leaving = false;
     zone.EnteredAt = os.clock();
