@@ -153,6 +153,16 @@ check('set out whole', profile.SaveSet(path, 'RudrasStorm', false) and profile.R
 check('backup made', io.open(vgDir .. '\\profiles\\Ferrin_6971\\backups') ~= nil or os.execute('dir "' .. vgDir .. '\\profiles\\Ferrin_6971\\backups" >nul 2>nul') == 0)
 check('built untouched by your edits', profile.Run(path).Built.Idle.Feet == 'Built Boots')
 
+-- Undo takes back only the last change to that set, then the one before; a deleted set comes back whole
+check('undo: set out whole comes back', profile.Undo(path, 'RudrasStorm') and profile.Run(path).Sets.RudrasStorm.Ring2 == "Epaminondas's Ring")
+check('undo: last slot change only', profile.SetSlot(path, 'Idle', 'Hands', 'Agent Cuffs') and profile.SetSlot(path, 'Idle', 'Hands', 'remove')
+    and profile.Undo(path, 'Idle') and profile.Run(path).Sets.Idle.Hands == 'Agent Cuffs' and profile.Run(path).Sets.Idle.Neck == 'Etoile Gorget +2')
+check('undo: a second one goes further back', profile.Undo(path, 'Idle') and profile.Run(path).Sets.Idle.Hands == nil and profile.Run(path).Sets.Idle.Neck == 'Etoile Gorget +2')
+check('undo: other sets untouched', profile.Run(path).Sets.WS.Head == 'remove' and profile.Run(path).Sets.Movement.Feet == 'Tandava Crackows')
+check('undo: a set made by a pick goes again', profile.Undo(path, 'Movement') and profile.Run(path).Sets.Movement == nil)
+check('undo: nothing left to take back for it', profile.CanUndo(path, 'Movement') == false and profile.Undo(path, 'Movement') == false)
+check('undo: list kept on disk', readAll(vgDir .. '\\profiles\\Ferrin_6971\\undo\\DNC.lua'):find('Idle', 1, true) ~= nil)
+
 -- the engine's addset writes your sets table
 gFileTools.SaveSet('Fishing', { Range = 'Lu Shang\'s Fishing Rod' })
 p = profile.Run(path)

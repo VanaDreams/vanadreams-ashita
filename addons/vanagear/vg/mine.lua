@@ -414,6 +414,27 @@ mine.RemoveSet = function(name)
     return true, found;
 end
 
+-- The name the set has in your file, for Undo: the set may be gone from the file, so not FindSet's.
+local function undoName(name)
+    local vp = require('vg.profile');
+    local _, found = mine.FindSet(vp.FileName(mine.SetName(name)));
+    return found or vp.FileName(mine.SetName(name));
+end
+
+mine.CanUndo = function(name)
+    return (profilePath() ~= nil) and require('vg.profile').CanUndo(profilePath(), undoName(name));
+end
+
+-- Your last change to one of your sets taken back.
+mine.Undo = function(name)
+    if (profilePath() == nil) then
+        return false;
+    end
+    local done = require('vg.profile').Undo(profilePath(), undoName(name));
+    if (done) then changed(); end
+    return done;
+end
+
 mine.ReloadSets = function()
     require('vg.core').ApplyOwn();
 end

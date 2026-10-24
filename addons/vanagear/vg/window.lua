@@ -446,9 +446,16 @@ renderSlots = function(name)
         mine.SaveSet(name);
         setNote = name .. ' now holds what you wear.';
     end
+    if (mine.CanUndo(name)) then
+        imgui.SameLine();
+        if (vd.Button('Undo my last change')) then
+            mine.Undo(name);
+            setNote = 'Your last change to ' .. name .. ' is taken back.';
+        end
+    end
     if (yours) then
         imgui.SameLine();
-        if (vd.Button(gVana.Built[name] and 'Undo my changes' or 'Delete this set')) then
+        if (vd.Button(gVana.Built[name] and 'Back to the built set' or 'Delete this set')) then
             mine.RemoveSet(name);
             setNote = gVana.Built[name] and (name .. ' is back to the built set.') or (name .. ' deleted.');
         end
@@ -599,7 +606,7 @@ local function renderTrust(t)
             imgui.PopItemWidth();
         end
         if (next(mine) ~= nil) or (not selected.Built) then
-            if (vd.Button(selected.Built and 'Undo my changes' or 'Delete this set')) then
+            if (vd.Button(selected.Built and 'Back to the built set' or 'Delete this set')) then
                 trusts.Reset(t, selected.Name);
                 trustNote = selected.Built and (selected.Name .. ' is back to the built set.') or (selected.Name .. ' deleted.');
             end

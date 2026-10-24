@@ -481,6 +481,83 @@ local function quote(piece)
     return string.format('%q', piece);
 end
 
+-- ---------------------------------------------------------------- undo
+
+--[[
+    Each change to one of your sets keeps that set's text from just before it, newest last, in
+    profiles\<Name>_<id>\undo\<file> (at most 50). Undo puts the newest one for that set back, exactly as
+    it was written, and takes it off the list, so a second Undo goes one change further back. Lee, 24
+    Oct 2026: "make Undo undo only my last change" (the button had deleted the whole set).
+]]--
+local undoMax = 50;
+local undoCache = {};
+
+local function undoPath(path)
+    return string.format('%s\\undo\\%s', base(), string.match(path, '[^\\]+$'));
+end
+
+local function readUndo(path)
+    if (undoCache[path] == nil) then
+        local chunk = loadfile(undoPath(path));
+        local ok, list = false, nil;
+        if (chunk ~= nil) then ok, list = pcall(chunk); end
+        undoCache[path] = (ok and type(list) == 'table') and list or {};
+    end
+    return undoCache[path];
+end
+
+local function writeUndo(path, list)
+    undoCache[path] = list;
+    local lines = { 'return {' };
+    for _, h in ipairs(list) do
+        lines[#lines + 1] = string.format('    { set = %q, text = %s },', h.set, h.text and quote(h.text) or 'false');
+    end
+    lines[#lines + 1] = '};';
+    return write(undoPath(path), table.concat(lines, '\n') .. '\n');
+end
+
+-- The set's own text in the file (Idle = { ... }), or false when the file has no such set.
+local function setText(text, setName)
+    for _, opener in ipairs(setsOpeners) do
+        local _, e = string.find(text, opener, 1, true);
+        if (e ~= nil) then
+            for _, k in ipairs(gFileTools.ParseTable(text, e + 1)) do
+                if (k.Name == setName) then return string.sub(text, k.StartIndex, k.EndIndex); end
+            end
+            return false;
+        end
+    end
+    return false;
+end
+
+local function remember(path, text, setName)
+    local list = readUndo(path);
+    list[#list + 1] = { set = setName, text = setText(text, setName) };
+    while (#list > undoMax) do table.remove(list, 1); end
+    writeUndo(path, list);
+end
+
+profile.CanUndo = function(path, setName)
+    for _, h in ipairs(readUndo(path)) do
+        if (h.set == setName) then return true; end
+    end
+    return false;
+end
+
+-- Your last change to the set taken back. false when there is none to take back.
+profile.Undo = function(path, setName)
+    local list = readUndo(path);
+    for i = #list, 1, -1 do
+        if (list[i].set == setName) then
+            local h = table.remove(list, i);
+            writeUndo(path, list);
+            backup(path);
+            return gFileTools.SaveSets(path, { [setName] = h.text or false });
+        end
+    end
+    return false;
+end
+
 --[[
     One slot of one of your sets in the file. piece nil takes the slot out (built fills it again). Only that
     slot's text changes. noBackup: during the pull-over, which is the first write of a new file.
@@ -503,9 +580,14 @@ profile.SetSlot = function(path, setName, slot, piece, noBackup)
     for _, k in ipairs(keys) do
         if (k.Name == setName) then entry = k; end
     end
-    if (not noBackup) then backup(path); end
+    if (entry == nil) and (piece == nil) then
+        return true;
+    end
+    if (not noBackup) then
+        backup(path);
+        remember(path, text, setName);
+    end
     if (entry == nil) then
-        if (piece == nil) then return true; end
         return gFileTools.SaveSets(path, { [setName] = { [slot] = piece } });
     end
     local open = string.find(text, '=', entry.StartIndex, true);
@@ -546,6 +628,8 @@ end
 -- A whole set of yours into the file (Take what I wear), or out of it with set = false.
 profile.SaveSet = function(path, setName, set)
     backup(path);
+    local text = readFile(path);
+    if (text ~= nil) then remember(path, text, setName); end
     return gFileTools.SaveSets(path, { [setName] = set });
 end
 
