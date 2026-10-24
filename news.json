@@ -2,6 +2,36 @@
   "_about": "Vana'News on the launcher's Play page. Newest first. The launcher shows the first 8 and caches the last copy it fetched.",
   "items": [
     {
+      "date": "2026-10-24",
+      "by": "Ferrin",
+      "title": "VanaGear 0.2.0 and launcher 0.2.50",
+      "body": "VanaGear now writes a profile for each job, shaped for how that job plays, and swaps only from it. A Settings tab, every /vg command listed in the window, and trusts that get the gear you and your other trusts are not using. The launcher stops carrying macros between game copies and turns LuAshitacast off when VanaGear is on."
+    },
+    {
+      "date": "2026-10-23",
+      "by": "Ferrin",
+      "title": "Moogle Mode",
+      "body": "A third character mode: Vana'diel without the grind. Choose it once at Mog the Merciful. The server is now vanadreams.online and the site vanadreams.org."
+    },
+    {
+      "date": "2026-10-23",
+      "by": "Ferrin",
+      "title": "Endgame fixes",
+      "body": "A.M.A.N. Trove sacks open, every Salvage cell counts, Nyzul Isle token floors pay out, and fixes across the Sea, the Sky and Einherjar."
+    },
+    {
+      "date": "2026-10-23",
+      "by": "Ferrin",
+      "title": "Hotfixes",
+      "body": "Every notorious monster drops one endgame material for sure. Classic mode starts you with a trust party, and the Login Moogle sells the Records of Eminence trusts."
+    },
+    {
+      "date": "2026-10-22",
+      "by": "Ferrin",
+      "title": "The October update",
+      "body": "Standard experience and drops with capacity points at 10x, Classic mode, endgame upgrade materials, Legion, Besieged, Clan Centurio and over 3,800 Magian trials."
+    },
+    {
       "date": "2026-10-18",
       "by": "Ferrin",
       "title": "Gear your trusts",
