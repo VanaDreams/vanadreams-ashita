@@ -2,11 +2,16 @@
     vanagear: gear for your trusts.
 
     Every trust you have called gets gear sets built from your bags for its job and level, the
-    same way your own sets are built: Idle, Engaged (damage taken and enmity for a tank), a
-    Weaponskill set and one for each weaponskill it uses, a set for each kind of spell it casts
-    (Cure, Nuke, Enhancing...) and an Ability set for a tank. Every slot of every set can be
-    changed in the trust's tab of the /vg window, and you can add a set named after anything the
-    trust uses (Flash, Savage Blade, Cure IV).
+    same way your own sets are built: Engaged (damage taken and enmity for a tank), and swap-ins
+    over it: a Weaponskill set and one for each weaponskill it uses, a set for each kind of spell
+    it casts (Cure, Nuke, Enhancing...), one for each job ability it uses that reads gear, and an
+    Ability set for a tank. No Idle set: a trust only needs its gear in a fight. Every slot of
+    every set can be changed in the trust's tab of the /vg window, and you can add a set named
+    after anything the trust uses (Flash, Savage Blade, Cure IV).
+
+    A piece goes to one user: your own sets have first call on what you carry, then your trusts in
+    the order you called them, each built from what is left, so a trust gets the next best piece
+    or leaves the slot empty (trusts.Pool).
 
     The trust never wears anything and your gear never leaves your bags: the server gives the
     trust the stats of the pieces while you carry them in your inventory or a wardrobe (Ferrin,
@@ -265,8 +270,11 @@ trusts.Plan = function(t)
         end
     end
 
+    -- A trust needs no Idle set: it fights in Engaged and its abilities, spells and weaponskills swap in
+    -- over that (Lee, 24 Oct 2026: "they dont need idle sets, they just need engaged sets, and ability,
+    -- spell, ws swap ins"). Out of a fight the server falls back to Engaged (trustgearutils pickIDs), and an
+    -- Idle set the server still has from before is cleared by the next send, as it is no longer planned.
     local tank = trusts.Tanks[t.JobName];
-    add('Idle', named(casters[t.JobName] and 'Idle_Refresh' or 'Idle'), 'standing around');
     add('Engaged', named(trusts.ModeFor[t.JobName] or 'Tp_Default'), tank and 'fighting: damage taken down and enmity' or 'fighting');
 
     local i = info[t.Id];
@@ -293,11 +301,17 @@ trusts.Plan = function(t)
         add('Ability', named('Enmity'), 'job abilities: enmity');
     end
 
-    -- each weaponskill it uses that vanagear knows the stats of gets its own set, as yours do
+    -- each weaponskill it uses that vanagear knows the stats of gets its own set, as yours do, and each job
+    -- ability it uses that the server reads gear for (data\abilities.lua, from the ability scripts) gets its own
+    -- swap-in, as your abilities do
     if (i ~= nil) then
         local byKey = {};
         for _, ws in pairs(vdata.Weaponskills()) do
             byKey[ws.key] = ws;
+        end
+        local abilityByKey = {};
+        for _, a in pairs(vdata.Abilities()) do
+            abilityByKey[a.key] = a;
         end
         for _, use in ipairs(i.Uses) do
             local ws = byKey[use.Name];
@@ -305,19 +319,95 @@ trusts.Plan = function(t)
                 local display = trusts.Pretty(use.Name);
                 add(display, plan.WsMode(ws, display), display);
             end
+            local a = abilityByKey[use.Name];
+            if (use.Kind == 'ability') and (a ~= nil) then
+                local m = { Name = trusts.Pretty(use.Name), Stats = {}, Caps = {} };
+                for _, mod in ipairs(a.mods) do
+                    if (mod ~= 'ONE_HOUR_RECAST') and (vdata.ModId(mod) ~= nil) then m.Stats[mod] = 1; end
+                end
+                if (next(m.Stats) ~= nil) then add(m.Name, m, m.Name); end
+            end
         end
     end
 
     return list;
 end
 
--- The sets built from your bags for this trust (rebuilt when your bags change, the trust levels
--- or the server says what it uses): set name -> { [slot] = piece }.
+-- How many copies of each piece a group of sets needs at once: the most any one set names (two of the same
+-- ring in one set need two rings; the same piece in two sets is one, as only one set is worn at a time).
+-- sets: set name -> slot -> item name, { Name = } or a list of pieces by level.
+local function needed(sets, into)
+    for _, set in pairs(sets or {}) do
+        if (type(set) == 'table') then
+            local inSet = {};
+            for slot, entry in pairs(set) do
+                if (type(slot) == 'string') and (gData.Constants.EquipSlots == nil or gData.Constants.EquipSlots[slot] ~= nil) then
+                    local names = {};
+                    if (type(entry) == 'string') then names[1] = entry;
+                    elseif (type(entry) == 'table') and (entry.Name ~= nil) then names[1] = entry.Name;
+                    elseif (type(entry) == 'table') then
+                        for _, e in ipairs(entry) do names[#names + 1] = (type(e) == 'table') and e.Name or e; end
+                    end
+                    for _, n in ipairs(names) do
+                        if (type(n) == 'string') and (n ~= 'remove') and (n ~= 'displaced') then
+                            local key = string.lower(n);
+                            inSet[key] = (inSet[key] or 0) + 1;
+                        end
+                    end
+                end
+            end
+            for key, n in pairs(inSet) do
+                if (n > (into[key] or 0)) then into[key] = n; end
+            end
+        end
+    end
+    return into;
+end
+
+-- The pieces this trust may be given: what you carry in your equip bags, less what your own sets use, less
+-- what the trusts called before it already have (Lee, 24 Oct 2026: "they should pull the gear from the
+-- wardrobe but not gear already being used by the pc or another trust"; "if another trust is using that
+-- gear, it goes to a lesser piece or just doesnt gear the slot"). You come first, then your trusts in the
+-- order they sit in the party, which is the order you called them. Returns the pieces and a signature of
+-- what was held back, so the sets are built again when that changes.
+trusts.Pool = function(t)
+    local held = needed((gProfile ~= nil) and (type(gProfile.Sets) == 'table') and gProfile.Sets or gVana.Sets, {});
+    for _, u in ipairs(trusts.Called()) do
+        if (u.Id == t.Id) then break; end
+        if (trusts.Ours(u)) then
+            local finals = {};
+            for _, s in ipairs(trusts.Sets(u)) do
+                local named = {};
+                for slot, name in pairs(trusts.Final(u, s.Name)) do named[gData.Constants.EquipSlotNames[slot]] = name; end
+                finals[s.Name] = named;
+            end
+            needed(finals, held);
+        end
+    end
+    local keys = {};
+    for k, n in pairs(held) do keys[#keys + 1] = k .. '=' .. n; end
+    table.sort(keys);
+    local left, pool = {}, {};
+    for k, n in pairs(held) do left[k] = n; end
+    for _, p in ipairs(gVana.Pieces or {}) do
+        local key = string.lower(p.Name);
+        if ((left[key] or 0) > 0) then
+            left[key] = left[key] - 1;
+        else
+            pool[#pool + 1] = p;
+        end
+    end
+    return pool, table.concat(keys, ',');
+end
+
+-- The sets built from your bags for this trust (rebuilt when your bags change, the trust levels, the
+-- server says what it uses, or what you and the trusts before it hold changes): set name -> { [slot] = piece }.
 trusts.Built = function(t)
     local i = info[t.Id];
     local uses = i and #i.Uses or -1;
+    local pool, heldSig = trusts.Pool(t);
     local b = built[t.Name];
-    if (b ~= nil) and (b.at == gVana.BuiltAt) and (b.job == t.Job) and (b.level == t.Level) and (b.uses == uses) then
+    if (b ~= nil) and (b.at == gVana.BuiltAt) and (b.job == t.Job) and (b.level == t.Level) and (b.uses == uses) and (b.held == heldSig) then
         return b.sets, b.plan;
     end
     local slots = {};
@@ -326,9 +416,9 @@ trusts.Built = function(t)
     local sets = {};
     local planned = trusts.Plan(t);
     for _, p in ipairs(planned) do
-        sets[p.Name] = score.Build(score.Compile(p.Mode), gVana.Pieces or {}, who, slots, { 0 });
+        sets[p.Name] = score.Build(score.Compile(p.Mode), pool, who, slots, { 0 });
     end
-    built[t.Name] = { at = gVana.BuiltAt, job = t.Job, level = t.Level, uses = uses, sets = sets, plan = planned };
+    built[t.Name] = { at = gVana.BuiltAt, job = t.Job, level = t.Level, uses = uses, held = heldSig, sets = sets, plan = planned };
     return sets, planned;
 end
 

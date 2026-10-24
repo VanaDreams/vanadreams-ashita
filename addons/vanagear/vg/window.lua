@@ -460,8 +460,8 @@ renderSlots = function(name)
 end
 
 
--- A trust's tab: who it is and what it uses, its sets from your bags (Idle, Engaged and a set for
--- each kind of action), every slot a list like yours. Nothing is worn: the trust gets the stats
+-- A trust's tab: who it is and what it uses, its sets from your bags (Engaged, and a swap-in for
+-- each kind of action; no Idle, a trust only needs its gear in a fight), every slot a list like yours. Nothing is worn: the trust gets the stats
 -- of these pieces while you carry them, and the server swaps sets as the trust acts (vg\trusts.lua).
 local trustNote = nil;
 local trustSel = {};
@@ -559,7 +559,7 @@ local function renderTrust(t)
         imgui.TextDisabled(selected.Built and ('  goes on for ' .. selected.For) or
             ('  goes on when ' .. t.Name .. ' uses ' .. selected.Name .. ' (or anything of that kind)'));
         if (overlay) then
-            imgui.TextDisabled('Slots left empty keep the Idle or Engaged piece.');
+            imgui.TextDisabled('Slots left empty keep the Engaged piece.');
         end
         local mine = trusts.Own(t, selected.Name);
         local set = trusts.Built(t)[selected.Name] or {};
@@ -571,13 +571,13 @@ local function renderTrust(t)
             imgui.Text(string.format('%-6s', slotName));
             imgui.SameLine(80);
             imgui.PushItemWidth(260);
-            local empty = overlay and '(keeps Idle/Engaged)' or '(nothing)';
+            local empty = overlay and '(keeps Engaged)' or '(nothing)';
             local preview = (shown or empty) .. ((pick ~= nil) and '  *' or '');
             if (imgui.BeginCombo('##vg_t_' .. t.Name .. selected.Key .. slotName, preview, ImGuiComboFlags_None)) then
                 if (selected.Built) and (imgui.Selectable('Built: ' .. (builtPiece or 'nothing') .. '##vg_tb_' .. slotName, pick == nil)) then
                     trusts.SetSlot(t, selected.Name, slotName, nil);
                 end
-                if (imgui.Selectable((overlay and 'Nothing: keep the Idle/Engaged piece' or 'Nothing') .. '##vg_tn_' .. slotName, pick == 'remove')) then
+                if (imgui.Selectable((overlay and 'Nothing: keep the Engaged piece' or 'Nothing') .. '##vg_tn_' .. slotName, pick == 'remove')) then
                     trusts.SetSlot(t, selected.Name, slotName, 'remove');
                 end
                 local seen = {};

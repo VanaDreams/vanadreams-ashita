@@ -1,6 +1,6 @@
 r"""Off-game test of vg\trusts.lua: the trusts in the party get sets built from the bags for
-their job, level and what the server says they use (Idle, Engaged, a set per spell kind and
-weaponskill, Ability for a tank), your picks lay over them, only changed sets are sent, and the
+their job, level and what the server says they use (Engaged, and swap-ins: a set per spell kind,
+weaponskill and job ability that reads gear, Ability for a tank; no Idle), your picks lay over them, only changed sets are sent, and the
 lines carry the item ids in the server's slot order (Main 0 ... Back 15).
 
     python addons/vanagear/tests/trusts.py
@@ -38,6 +38,7 @@ package.loaded['vg.data'] = {
     SlotBit = (function() local t = {} for i = 1, 16 do t[i] = bit.lshift(1, i - 1) end return t end)(),
     Items = function() return {} end,
     Weaponskills = function() return { [42] = { key = 'savage_blade', skill = 3, level = 0, wsc = { STR = 0.5, MND = 0.5 }, hits = 2, kind = 'physical' } } end,
+    Abilities = function() return { [48] = { key = 'sentinel', job = 7, level = 30, mods = { 'SENTINEL_EFFECT', 'ENHANCES_GUARDIAN' } } } end,
 }
 package.preload['encoding'] = function() return { ShiftJIS_To_UTF8 = function(_, s) return s end } end
 
@@ -88,6 +89,7 @@ gVana = {
         piece(106, 'Knight Helm', 4, PLD, 99, { DMGPHYS = -500, ENMITY = 6 }),
         piece(107, 'Strong Helm', 4, PLD, 99, { STR = 20, ATT = 30 }),
         piece(108, 'Bold Ring', 13, PLD, 1, { ENMITY = 5 }),
+        piece(109, 'Guard Feet', 8, PLD, 1, { SENTINEL_EFFECT = 10 }),
     },
 }
 
@@ -151,6 +153,58 @@ for _, l in ipairs(sent) do
     if string.find(l, '!trustuse %d+ o[nf]+ ') then useLines[#useLines + 1] = l end
 end
 out[#out + 1] = table.concat(useLines, ' ; ')
+
+-- one user per piece: your sets first, then your trusts in party order, each from what is left
+trusts.TextIn({ message = '[VG trust] 16818178|Kupipi|3|0|99' })
+trusts.TextIn({ message = '[VG uses] 16818178|cure_iv:cure' })
+local function rings(t, set)
+    local n = 0
+    for _, name in pairs(trusts.Final(t, set)) do if name == 'Shared Ring' then n = n + 1 end end
+    return n
+end
+local function has(t, set, name)
+    for _, n in pairs(trusts.Final(t, set)) do if n == name then return true end end
+    return false
+end
+gProfile = nil
+gVana.Sets = {}
+out[#out + 1] = 'free: Kupipi cure rings ' .. rings(kup, 'Cure') .. ', Excenmille ability helm ' .. tostring(has(exc, 'Ability', 'Knight Helm'))
+-- you wear one Shared Ring and the Knight Helm in your own sets
+gProfile = { Sets = { Nuke = { Ring1 = 'Shared Ring' }, Tp_Default = { Head = 'Knight Helm' }, Idle = { Head = 'Knight Helm' } } }
+out[#out + 1] = 'yours taken: Kupipi cure rings ' .. rings(kup, 'Cure') .. ', Excenmille ability helm ' .. tostring(has(exc, 'Ability', 'Knight Helm'))
+-- you wear both rings: Kupipi's ring slots go empty
+gProfile.Sets.Nuke.Ring2 = 'Shared Ring'
+out[#out + 1] = 'both taken: Kupipi cure rings ' .. rings(kup, 'Cure')
+-- the trust called first holds a Shared Ring (your pick for it): the one called after it gets the other copy
+gProfile = nil
+trusts.SetSlot(exc, 'Engaged', 'Ring2', 'Shared Ring')
+out[#out + 1] = 'earlier trust holds one: Kupipi cure rings ' .. rings(kup, 'Cure')
+-- no piece is promised more often than it is carried, across you and every trust
+gProfile = { Sets = { Nuke = { Ring1 = 'Shared Ring' }, Tp_Default = { Head = 'Knight Helm' } } }
+trusts.SetSlot(exc, 'Engaged', 'Ring2', nil)
+local carried, promised = {}, {}
+for _, p in ipairs(gVana.Pieces) do carried[p.Name] = (carried[p.Name] or 0) + 1 end
+local function count(sets, into)
+    local most = {}
+    for _, set in pairs(sets) do
+        local inSet = {}
+        for _, name in pairs(set) do if type(name) == 'string' then inSet[name] = (inSet[name] or 0) + 1 end end
+        for name, n in pairs(inSet) do if n > (most[name] or 0) then most[name] = n end end
+    end
+    for name, n in pairs(most) do into[name] = (into[name] or 0) + n end
+end
+count(gProfile.Sets, promised)
+for _, t in ipairs({ exc, kup }) do
+    local finals = {}
+    for _, s in ipairs(trusts.Sets(t)) do finals[s.Name] = trusts.Final(t, s.Name) end
+    count(finals, promised)
+end
+local over = {}
+for name, n in pairs(promised) do
+    -- the player's own picks are kept as they chose them; only what vanagear picks is shared out
+    if (n > (carried[name] or 0)) and (name ~= 'Healer Cap') then over[#over + 1] = name .. ' ' .. n end
+end
+out[#out + 1] = 'over-promised: ' .. ((#over > 0) and table.concat(over, ', ') or 'none')
 return table.concat(out, '\n')
 """, str(ADDON), TMP)
 print(result)
@@ -166,11 +220,12 @@ expect = [
     '/say !trustgear 16818177 info ; /say !trustuse 16818177 info ; /say !trustgear 16818178 info ; /say !trustuse 16818178 info',
     'ours false false',
     'blocked true true uses 4',
-    'sets Idle,Engaged,Weaponskill,Cure,Ability,Savage Blade',
+    'sets Engaged,Weaponskill,Cure,Ability,Savage Blade,Sentinel',
     'Cure IV/savageblade',
     # the tank's Engaged and Ability sets take the damage taken and enmity helm, its weaponskills the strong one
-    ' ; '.join([line('idle', head_ring(106)), line('engaged', head_ring(106, 108)), line('weaponskill', head_ring(107)),
-                line('ability', head_ring(106, 108)), line('savageblade', head_ring(107))]),
+    ' ; '.join([line('engaged', head_ring(106, 108)), line('weaponskill', head_ring(107)),
+                line('ability', head_ring(106, 108)), line('savageblade', head_ring(107)),
+                line('sentinel', [0, 0, 0, 0, 0, 0, 0, 0, 109] + [0] * 7)]),
     'again 0',
     ' ; '.join([line('engaged', head_ring(0, 108)), line('flash', head_ring(102)), '/say !trustgear 16818177 flash clear']),
     'reloaded remove',
@@ -178,6 +233,11 @@ expect = [
     'now cure false flash false ws true',
     # flash was switched off and back on before anything was sent, so only its last word goes; the others go once each
     '/say !trustuse 16818177 on flash ; /say !trustuse 16818177 on cure_iv ; /say !trustuse 16818177 off savage_blade',
+    'free: Kupipi cure rings 2, Excenmille ability helm true',
+    'yours taken: Kupipi cure rings 1, Excenmille ability helm false',
+    'both taken: Kupipi cure rings 0',
+    'earlier trust holds one: Kupipi cure rings 1',
+    'over-promised: none',
 ]
 assert lines == expect, '\n'.join(f'{a!r} vs {b!r}' for a, b in zip(lines, expect) if a != b)
 print('PASS')
