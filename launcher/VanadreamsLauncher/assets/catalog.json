@@ -553,7 +553,7 @@
         "path": "addons/vanagear",
         "branch": "main"
       },
-      "version": "0.2.0",
+      "version": "0.2.1",
       "install": "copy-to-addons",
       "load": "/addon load vanagear",
       "config": "config\\addons\\vanagear\\profiles\\",
