@@ -63,7 +63,9 @@ include.Default = function()
     -- the toggles, and what goes on by itself
     if (t.Kite) then wear('Movement'); end
     if (t.TH) and (player.Status == 'Engaged') then wear('TH'); end
-    if (t.DT) or (player.HPP < 40) then wear('Dt'); end
+    -- /vg dt: all (Dt), pdt (Dt_Physical) or mdt (Dt_Magic); under 40% HP, Dt by itself
+    if (t.DT == 'pdt') then wear('Dt_Physical'); elseif (t.DT == 'mdt') then wear('Dt_Magic'); end
+    if ((t.DT) and (t.DT ~= 'pdt') and (t.DT ~= 'mdt')) or (player.HPP < 40) then wear('Dt'); end
     if (pet ~= nil) and ((pet.HPP or 100) < 50) then wear('PetDT'); end
 
     -- ailments, last: what you wear for them beats everything above

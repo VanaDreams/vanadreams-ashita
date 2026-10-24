@@ -39,7 +39,7 @@ commands.Lines = function()
     line('/vg', 'open the window: your sets, the piece in each slot and why');
     line('/vg build', 'rebuild the sets now (also happens on job change, level up and new gear)');
     line('/vg status', 'what is running, and any piece your sets name that you do not carry');
-    line('/vg dt', 'damage taken gear over everything else, on or off');
+    line('/vg dt [pdt | mdt | all | off]', 'damage taken gear over everything else: physical, magic or both (also in the Settings tab)');
     line('/vg kite', 'movement gear over everything else, on or off');
     if (s.TH ~= nil) then line('/vg th', 'treasure hunter gear over everything else, on or off'); end
     if (s.Tp_Default ~= nil) then line('/vg tp default | hybrid | acc | proc', 'which fighting set you wear (proc: your low-damage Tp_Proc and Ws_Proc)'); end
@@ -60,17 +60,16 @@ commands.Lines = function()
     end
     line('/vg weapons on | off', 'let vanagear choose your weapons (swapping them costs TP); off, the default, leaves them alone');
     line('/vg weapon main|sub|range <item>', 'the weapon worn in every set, picked by you; the window has the same lists');
-    line('/vg lock <slot>, /vg unlock <slot>', 'keep a slot as you have it');
+    line('/vg lock <slot>|all, /vg unlock <slot>|all', 'keep a slot as you have it: nothing equips it, saved for this job (/vg disable and /vg enable are the same)');
     line('/vg why <set> <slot>', 'the piece that won and the three behind it');
     line('/vg upgrades', 'pieces in storage that would win a slot');
     line('/vg underlay on | off', 'fill the slots your sets leave empty from the built sets (off: your sets as written, your rules only)');
-    line('/vg addset <name>', 'write what you are wearing into your profile as a set');
     line('/vg reload, /vg load <file>, /vg newlua [name]', 'read your profile again / load another / make a new one, in config\\addons\\vanagear\\profiles');
     line('/vg template', 'write this job\'s profile again from its job template, keeping your sets and commands (the old one goes to backups first)');
-    line('/vg edit, /vg list [set]', 'open your profile in your editor / list its sets');
+    line('/vg edit, /vg list [set]', 'open your profile in your editor / list every set worn, built ones included (/vg sets lists only yours)');
     line('/vg set <set> [seconds], /vg equip <slot> <item>', 'keep a set on for a while / put one piece on');
     line('/vg fwd <args>', 'hand a command to your profile\'s own HandleCommand');
-    line('/vg lockstyle <set>, /vg naked, /vg disable|enable [slot]', 'the engine\'s look lock, strip and slot locks');
+    line('/vg lockstyle <set>, /vg naked', 'the engine\'s look lock and strip');
     line('/vg gear, /vg packvalidate, /vg pack|unpack', 'Packer: fetch, check and put away the gear your profile names');
     line('/vg config, /vg debug, /vg exec <lua>', 'the engine\'s settings window, debug output, run a line of Lua');
     line('/vg trusts on | off', 'give your called trusts the stats of a set from your bags (a tab each in /vg); off stops sending');
@@ -88,11 +87,12 @@ commands.Lines = function()
     line('then <command> / burst <command>', 'in a command: goes once the action before it has finished, plus the link gap / at once (a chain); /vg stop stops a running command');
     line('/vg with <set> <command>', 'put a set on, then the command (/ja, /ma, /pet, /ws), and keep the set on until it is done');
     line('/vg dress', 'stop swapping so you can put on what you like from the equipment menu');
-    line('/vg save <name>', 'save what you are wearing as a set (swapping comes back on). Named like a built set (Idle, Tp_Default, Reward, a weaponskill) it replaces those slots there');
+    line('/vg save <name> (or /vg addset)', 'save what you are wearing as a set (swapping comes back on). Named like a built set (Idle, Tp_Default, Reward, a weaponskill) it replaces those slots there');
     line('/vg set <name> <slot> <item>', 'change one slot of a set (any set in the /vg window too); /vg sets lists yours');
     line('/vg wear <name> | off', 'put on one of your sets and keep it on over the built sets');
     line('/vg look <name> | off', 'lock a set as your look (/lockstyle), built or yours, kept per job; the swaps go on underneath without showing');
-    line('/vg remove <word>, /vg folder', 'delete one of yours; open the folder they are kept in, to write them by hand');
+    line('/vg remove <word>, /vg folder', 'delete one of your commands or sets; open your profiles folder to edit by hand (then /vg reload)');
+    line('/vg wait <seconds>', 'how long after zoning in before gear changes (protects the server)');
     line('/vg keys mote | off', 'Motenten\'s F9-F12 keys, as GearSwap players have them');
     line('/gs c <word>', 'the same as /vg <word>, so GearSwap macros keep working');
     line('/gs equip <set>', 'put on a set by its GearSwap or vanagear name');
@@ -277,7 +277,8 @@ commands.Vg = function(args)
     -- /vg <command>. Where a word is vanagear's too, the shape decides: /vg set <set> [seconds] locks a set
     -- on and /vg set <set> <slot> <item> changes your set; /vg equip <slot> <item> is the engine's and
     -- /vg equip <set> vanagear's. The engine's Packer validate is /vg packvalidate; /vg config opens its settings.
-    local engineWords = { addset = true, debug = true, disable = true, enable = true, edit = true, fwd = true, gear = true,
+    -- addset, disable and enable are vanagear's own now (/vg save, /vg lock, /vg unlock), one way each.
+    local engineWords = { debug = true, edit = true, fwd = true, gear = true,
         list = true, load = true, lockstyle = true, naked = true, newlua = true, pack = true, unpack = true, preppack = true,
         prepunpack = true, safecall = true, unload = true, exec = true };
     local engine = nil;
@@ -312,6 +313,7 @@ commands.Vg = function(args)
         if (gProfile ~= nil) and (gProfile.FilePath ~= nil) then
             gState.LoadProfileEx(gProfile.FilePath);
         end
+        mine.Reload();   -- your commands and the every-job ALL.lua read again too
         core.Request(true);
         say('Reloaded your profile; rebuilding.');
     elseif (cmd == 'template') then
@@ -333,7 +335,11 @@ commands.Vg = function(args)
         core.Request(true);
         say('Rebuilding.');
     elseif (cmd == 'dt') then
-        t.DT = onOff(arg, t.DT); say('Damage taken gear ' .. (t.DT and 'on' or 'off') .. '.');
+        -- on (all), pdt, mdt or off; no word turns it on or off
+        if (arg == 'pdt') or (arg == 'mdt') then t.DT = arg;
+        elseif (arg == 'all') then t.DT = true;
+        else t.DT = onOff(arg, t.DT and true or false); end
+        say('Damage taken gear: ' .. ((t.DT == 'pdt') and 'physical (Dt_Physical)' or ((t.DT == 'mdt') and 'magic (Dt_Magic)' or (t.DT and 'all (Dt)' or 'off'))) .. '.');
     elseif (cmd == 'kite') then
         t.Kite = onOff(arg, t.Kite); say('Movement gear ' .. (t.Kite and 'on' or 'off') .. '.');
     elseif (cmd == 'th') then
@@ -379,13 +385,13 @@ commands.Vg = function(args)
             core.SetWeaponPick(slotName, (lower == 'none') and nil or ((lower == 'remove') and 'remove' or piece));
             say(slotName .. ((lower == 'none') and ' is left alone.' or (': ' .. piece .. ', in every set.')));
         end
-    elseif (cmd == 'lock') or (cmd == 'unlock') then
-        local slot = slotNames[arg];
-        if (slot == nil) then say('Usage: /vg lock <slot>, for example /vg lock Neck'); return; end
-        p.Locked[job()] = p.Locked[job()] or {};
-        p.Locked[job()][slot] = (cmd == 'lock') and true or nil;
-        save(); core.Request();
-        say(gData.Constants.EquipSlotNames[slot] .. ((cmd == 'lock') and ' locked.' or ' unlocked.'));
+    elseif (cmd == 'lock') or (cmd == 'unlock') or (cmd == 'disable') or (cmd == 'enable') then
+        -- one lock: /vg disable and /vg enable (LuAshitacast's words) are /vg lock and /vg unlock
+        local on = (cmd == 'lock') or (cmd == 'disable');
+        local slot = (arg == '' or arg == 'all') and 'all' or slotNames[arg];
+        if (slot == nil) then say('Usage: /vg lock <slot> (or all), for example /vg lock Neck'); return; end
+        core.SetLock(slot, on);
+        say(((slot == 'all') and 'Every slot' or gData.Constants.EquipSlotNames[slot]) .. (on and ' locked for ' or ' unlocked for ') .. job() .. '.');
     elseif (cmd == 'why') then
         why(args[2], args[3]);
     elseif (cmd == 'upgrades') then
@@ -471,7 +477,8 @@ commands.Vg = function(args)
             local _, name = mine.SetSlot(args[2], slotName, (string.lower(piece) ~= 'built') and piece or nil);
             say(string.format('%s %s: %s.', name, slotName, (string.lower(piece) ~= 'built') and piece or 'built piece'));
         end
-    elseif (cmd == 'save') then
+    elseif (cmd == 'save') or (cmd == 'addset') then
+        -- one way to save what you wear: /vg addset (LuAshitacast's word) is /vg save
         local ok, name, count = mine.SaveSet(table.concat(args, ' ', 2));
         say(ok and string.format('Saved %s: the %d pieces you are wearing.', name, count) or 'Usage: /vg save <name>');
     elseif (cmd == 'wear') or (cmd == 'look') then
@@ -506,9 +513,10 @@ commands.Vg = function(args)
             say(found .. ' locked as your look. /vg look off to unlock.');
         end
     elseif (cmd == 'folder') then
-        say('Your commands and sets are in ' .. mine.OpenFolder() .. '. After editing them by hand, type /vg mine reload.');
+        say('Your profiles, with your sets and commands in them, are in ' .. mine.OpenFolder() .. '. After editing one by hand, type /vg reload.');
     elseif (cmd == 'mine') then
-        if (arg == 'reload') then mine.Reload(); say('Your commands read again.'); end
+        -- /vg mine reload is /vg reload: your commands live in the profile, read again with it
+        if (arg == 'reload') then commands.Vg({ 'reload' }); end
         gVana.Window.Open = true;
         gVana.Window.Mine = true;
     elseif (mine.Run(cmd)) then
@@ -572,11 +580,9 @@ commands.Gs = function(args)
     elseif (cmd == 'validate') then
         commands.Validate();
     elseif (cmd == 'export') then
-        local name = args[2] or 'Exported';
-        gFunc.AddSet(name);
+        commands.Vg({ 'save', args[2] or 'Exported' });
     elseif (cmd == 'reload') or (cmd == 'r') then
-        core.Request();
-        say('Rebuilding.');
+        commands.Vg({ 'reload' });
     else
         commands.Vg(args);
     end

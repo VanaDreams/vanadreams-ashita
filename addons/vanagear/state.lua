@@ -127,6 +127,7 @@ state.LoadProfile = function(profilePath)
         -- vanagear: a fresh build goes into the profile's built table, then its sets are read back merged
         if (gVanaCore ~= nil) then
             gVanaCore.ApplyOwn();
+            gVanaCore.ApplyLocks(gProfile.VgJob);   -- the job's saved slot locks (/vg lock, /vg disable)
         end
     end
 end

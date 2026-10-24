@@ -61,7 +61,7 @@ local skillSet = {
 
 local function overlays()
     local t = gVana.Toggles;
-    if (t.DT) then wear('Dt'); end
+    if (t.DT == 'pdt') then wear('Dt_Physical'); elseif (t.DT == 'mdt') then wear('Dt_Magic'); elseif (t.DT) then wear('Dt'); end
     if (t.Kite) then wear('Movement'); end
     if (t.TH) then wear('TH'); end
 end

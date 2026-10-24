@@ -56,6 +56,7 @@ local lists = {
 -- Your toggles and modes. /vg dt, /vg kite, /vg th and /vg tp are vanagear's and need nothing here.
 local state = {
 };
+profile.State = state;   -- the /vg window's Settings tab shows these: a true/false as a checkbox, a choice as buttons
 
 -- 5. commands -----------------------------------------------------------------------------------------
 -- Your commands: /vg <word> runs the lines in order. "wait 2" pauses two seconds, "then /ws ..." goes
@@ -273,6 +274,11 @@ profile.HandlePrecast = function()
     if (family ~= nil) then wear(family .. '_Precast'); end
     cancels(spell);
     shadows(spell);
+    -- /vg stage: the spell's own gear waits until just before it lands (cast time less the Precast set's fast cast)
+    if (gVana.Toggles.Stage) and (spell.CastTime ~= nil) and (sets.Interim ~= nil) and (next(sets.Interim) ~= nil) then
+        local delay = ((spell.CastTime * (1 - math.min(0.8, (gVana.FastCast or 0) / 100))) / 1000) - 0.1;
+        if (delay >= 0.4) then gFunc.SetMidDelay(delay); end
+    end
 
     -- yours:
 end
@@ -280,6 +286,9 @@ end
 -- ...then its kind's set, and the spell's own over it, while it casts.
 profile.HandleMidcast = function()
     local spell = gData.GetAction();
+    -- /vg stage: Interim (spell interruption down, damage taken down) holds while the spell casts, and the
+    -- spell's gear below goes on just before it lands
+    if (gVana.Toggles.Stage) and (sets.Interim ~= nil) and (next(sets.Interim) ~= nil) then gFunc.InterimEquipSet(sets.Interim); end
     local kind = skillSets[spell.Skill];
     if (kind ~= nil) then wear(kind); end
     -- its family's set (Regen II wears Regen), then the spell's own if it has none or you made one

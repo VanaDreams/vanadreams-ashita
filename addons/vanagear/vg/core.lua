@@ -342,6 +342,32 @@ core.LookSet = function()
     return (gVana.Prefs.Look or {})[job];
 end
 
+-- ---------------------------------------------------------------- slot locks
+
+-- One lock (Lee, 24 Oct 2026: the commands cleaned up): /vg lock and the engine's /vg disable are the same
+-- thing now. A locked slot is kept as you have it: nothing equips it (gState.Disabled), vanagear builds
+-- nothing for it, and the lock is saved for the job and put back each time the job's profile loads.
+-- slot: 1-16, or 'all'.
+core.SetLock = function(slot, on, jobName)
+    jobName = jobName or (gVana.Who and gVana.Who.JobName) or '';
+    gVana.Prefs.Locked[jobName] = gVana.Prefs.Locked[jobName] or {};
+    local slots = {};
+    if (slot == 'all') then for i = 1, 16 do slots[#slots + 1] = i; end else slots[1] = slot; end
+    for _, i in ipairs(slots) do
+        gVana.Prefs.Locked[jobName][i] = on and true or nil;
+        gState.Disabled[i] = on and true or false;
+    end
+    core.SavePrefs();
+    core.Request();
+end
+
+-- The job's saved locks back on as its profile loads; slots it does not lock are left as they are.
+core.ApplyLocks = function(jobName)
+    for i in pairs(gVana.Prefs.Locked[jobName or ''] or {}) do
+        gState.Disabled[i] = true;
+    end
+end
+
 core.SetLook = function(name)
     local job = gVana.Who and gVana.Who.JobName or '';
     if (job == '') then return false; end

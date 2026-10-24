@@ -141,7 +141,20 @@ it lists the item names in `gVana.WeaponAllow` and vanagear lets those through.
   still happen, they stop showing. It is kept per job and put back after every rebuild and zone.
   Untick, or `/vg look off`, to unlock.
 - `/vg set <name> <slot> <item>` changes one slot from chat; `/vg sets` lists yours.
-- Kept in `config\addons\vanagear\sets\<JOB>.lua`.
+- Kept in your job's profile, `config\addons\vanagear\profiles\<Name>_<id>\<JOB>.lua`, in its sets table.
+- **Wear it** in the window puts a set on once; your profile's own swaps carry on from there.
+  `/vg wear <name>` is the one that keeps it on.
+
+## Settings
+
+The **Settings** tab of the window has the gear modes as buttons and boxes: damage taken (off,
+all, physical, magic), the fighting set, standing, nukes, your pet, magic burst, kite, Treasure
+Hunter, staged casting, choosing weapons, filling empty slots from the built sets, trust gear,
+Motenten's keys, the zone wait, the slots you lock, and your job template's own settings. Each
+one does exactly what its `/vg` command does, so macros keep working.
+
+Every `/vg` command is listed in the **Your sets** tab, under **Commands**: click one to see what
+it does. Your own commands are there too, as soon as you make them.
 
 ## Your own commands
 
@@ -159,8 +172,9 @@ it lists the item names in `gVana.WeaponAllow` and vanagear lets those through.
   action is done. Example: `/vg dress`, equip the jug, `/vg save lizard`, then
   `/vg add lizard /vg with lizard /ja "Bestial Loyalty" <me>` and type `/lizard`.
 - The **Your commands** tab of the window walks you through making one (a word, its lines, which
-  jobs), has examples to start from, and runs, changes and deletes the ones you have; **Open folder** opens
-  `config\addons\vanagear\` to write them by hand (`/vg mine reload` after).
+  jobs), has examples to start from, and runs, changes and deletes the ones you have. They are
+  written into your job's profile (its commands table; `ALL.lua` beside it for every job); **Open
+  the folder** opens your profiles to write them by hand (`/vg reload` after).
 
 ## Beastmaster
 

@@ -201,7 +201,12 @@ commands.HandleCommand = function(e)
             return;
         end
         local name = string.match(path, '([^\\]+)%.lua$') or 'profile';
-        file:write(require('vg.profile').JobTemplate(gState.PlayerName, name));
+        -- named for a job: that job's template (templates\<JOB>.lua); any other name: the plain one
+        local vp = require('vg.profile');
+        local tf = io.open(vp.JobTemplatePath(string.upper(name)), 'r');
+        local templateText = (tf ~= nil) and tf:read('*all') or nil;
+        if (tf ~= nil) then tf:close(); end
+        file:write(templateText or vp.JobTemplate(gState.PlayerName, name));
         file:close();
         gState.LoadProfileEx(path);
         return;

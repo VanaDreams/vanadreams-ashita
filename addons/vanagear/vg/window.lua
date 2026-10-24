@@ -44,8 +44,9 @@ local examples = {
 -- Lua, what a LuAshitacast profile can do on top. Plain text, no form.
 local function renderHowTo()
     vd.Eyebrow('How to: your commands, chains and going further');
-    imgui.TextWrapped('Everything here is done in the Your commands tab or in the files it writes '
-        .. '(config\\addons\\vanagear\\commands\\<JOB>.lua, ALL.lua for every job). You never need Lua for a chain.');
+    imgui.TextWrapped('Everything here is done in the Your commands tab, which writes your commands into your job\'s profile '
+        .. '(config\\addons\\vanagear\\profiles\\<Name>_<id>\\<JOB>.lua, its commands table; ALL.lua beside it for every job). '
+        .. 'You never need Lua for a chain. Every /vg command is listed in the Your sets tab, under Commands.');
     imgui.Separator();
 
     vd.Eyebrow('1. A command word');
@@ -126,7 +127,8 @@ local function renderMine()
     if (vd.Button('4. Save it', nil, true)) then
         local ok, word, file = mine.Add(newWord[1], mine.Split(newLines[1]), everyJob[1]);
         if (ok) then
-            sayNote(string.format('Saved. Type /vg %s to run it (kept in %s.lua).', word, file));
+            sayNote(string.format('Saved. Type /vg %s to run it (kept in %s). It is listed in the Your sets tab under Commands.', word,
+                (file == 'ALL') and 'ALL.lua, for every job' or ('your ' .. file .. ' profile')));
             newWord[1] = '';
             newLines[1] = '';
         else
@@ -187,13 +189,132 @@ local function renderMine()
         mine.OpenFolder();
     end
     imgui.SameLine();
-    if (vd.Button('Read the files again')) then
-        mine.Reload();
-        sayNote('Read the files again.');
+    if (vd.Button('Read your profile again')) then
+        require('vg.commands').Vg({ 'reload' });
+        sayNote('Read your profile again.');
     end
     imgui.SameLine();
-    imgui.TextDisabled('The files are config\\addons\\vanagear\\commands\\<JOB>.lua, if you would rather write them by hand.');
+    imgui.TextDisabled('Your commands are in your job\'s profile (its commands table), if you would rather write them by hand.');
 end
+
+-- The "Settings" tab (Lee, 24 Oct 2026: "some of the commands can get a setting in the vg tab ... as a
+-- check box rather than a / command"). Each control runs the /vg command a macro would, so the two can
+-- never disagree, and the commands stay for macros in a fight. Under them, the job template's own
+-- toggles (its profile.State): a true/false as a checkbox, a choice (profile.StateChoices) as buttons.
+local waitBuffer = { 10 };
+local function choice(label, id, current, options)
+    imgui.Text(label);
+    imgui.SameLine(190);
+    for i, o in ipairs(options) do
+        if (i > 1) then imgui.SameLine(); end
+        if (imgui.RadioButton(o[2] .. '##vg_set_' .. id .. i, current == o[1])) and (current ~= o[1]) then
+            return o[1];
+        end
+    end
+    return nil;
+end
+local function tick(label, id, on)
+    local box = { on and true or false };
+    if (imgui.Checkbox(label .. '##vg_set_' .. id, box)) then return box[1]; end
+    return nil;
+end
+
+local function renderSettings()
+    local run = require('vg.commands').Vg;
+    local t, p = gVana.Toggles, gVana.Prefs;
+    local s = gVana.Sets;
+    local v;
+
+    vd.Eyebrow('Gear modes (the same as the /vg commands, which stay for your macros)');
+    local dt = (t.DT == 'pdt') and 'pdt' or ((t.DT == 'mdt') and 'mdt' or (t.DT and 'all' or 'off'));
+    v = choice('Damage taken', 'dt', dt, { { 'off', 'Off' }, { 'all', 'All (Dt)' }, { 'pdt', 'Physical (Dt_Physical)' }, { 'mdt', 'Magic (Dt_Magic)' } });
+    if (v ~= nil) then run({ 'dt', v }); end
+    if (s.Tp_Default ~= nil) then
+        v = choice('Fighting set', 'tp', t.Tp, { { 'Default', 'Default' }, { 'Hybrid', 'Hybrid' }, { 'Acc', 'Accuracy' }, { 'Proc', 'Proc' } });
+        if (v ~= nil) then run({ 'tp', string.lower(v) }); end
+    end
+    local idle = { { 'auto', 'Auto' }, { 'regen', 'Regen' } };
+    if (s.Idle_Refresh ~= nil) then idle[#idle + 1] = { 'refresh', 'Refresh' }; end
+    idle[#idle + 1] = { 'speed', 'Speed' };
+    v = choice('Standing', 'idle', t.Idle or 'auto', idle);
+    if (v ~= nil) then run({ 'idle', v }); end
+    if (s.Nuke ~= nil) or (s.Enfeebling ~= nil) then
+        v = choice('Nukes and enfeebles', 'nuke', t.Nuke or 'power', { { 'power', 'Damage' }, { 'acc', 'Accuracy' } });
+        if (v ~= nil) then run({ 'nuke', v }); end
+    end
+    if (s.PetTP ~= nil) then
+        v = choice('Your pet', 'pet', t.Pet or 'tp', { { 'tp', 'Fighting' }, { 'dt', 'Damage taken' }, { 'acc', 'Accuracy' } });
+        if (v ~= nil) then run({ 'pet', v }); end
+    end
+    if (s.Burst ~= nil) then v = tick('Magic burst gear on nukes', 'burst', t.Burst); if (v ~= nil) then run({ 'burst', v and 'on' or 'off' }); end end
+    v = tick('Movement gear over everything (kite)', 'kite', t.Kite); if (v ~= nil) then run({ 'kite', v and 'on' or 'off' }); end
+    if (s.TH ~= nil) then v = tick('Treasure Hunter gear over everything', 'th', t.TH); if (v ~= nil) then run({ 'th', v and 'on' or 'off' }); end end
+    if (s.Interim ~= nil) then v = tick('Staged casting (safety gear while casting, spell gear just before it lands)', 'stage', t.Stage); if (v ~= nil) then run({ 'stage', v and 'on' or 'off' }); end end
+
+    imgui.Separator();
+    vd.Eyebrow('How vanagear works for you');
+    v = tick('Let vanagear choose your weapons (swapping them costs TP)', 'weapons', p.Weapons); if (v ~= nil) then run({ 'weapons', v and 'on' or 'off' }); end
+    v = tick('Fill the slots your sets leave empty from the built sets', 'underlay', require('vg.core').Underlay()); if (v ~= nil) then run({ 'underlay', v and 'on' or 'off' }); end
+    v = tick('Send your called trusts their sets', 'trusts', p.TrustGear ~= false); if (v ~= nil) then run({ 'trusts', v and 'on' or 'off' }); end
+    v = tick('Motenten\'s F9-F12 keys, as GearSwap players have them', 'keys', p.MoteKeys); if (v ~= nil) then run({ 'keys', v and 'mote' or 'off' }); end
+    imgui.Text('Wait after zoning in (seconds)');
+    imgui.SameLine(190);
+    waitBuffer[1] = p.ZoneWait or 10;
+    imgui.PushItemWidth(90);
+    if (imgui.InputInt('##vg_set_wait', waitBuffer)) and (waitBuffer[1] >= 0) then run({ 'wait', tostring(waitBuffer[1]) }); end
+    imgui.PopItemWidth();
+
+    imgui.Separator();
+    vd.Eyebrow('Locked slots: kept as you have them, nothing equips them (saved for this job)');
+    local locked = p.Locked[(gVana.Who and gVana.Who.JobName) or ''] or {};
+    for i, slotName in ipairs(gData.Constants.EquipSlotNames) do
+        if ((i - 1) % 4 ~= 0) then imgui.SameLine(((i - 1) % 4) * 150 + 8); end
+        v = tick(slotName, 'lock' .. i, locked[i]);
+        if (v ~= nil) then run({ v and 'lock' or 'unlock', slotName }); end
+    end
+
+    if (gProfile ~= nil) and (type(gProfile.State) == 'table') and (next(gProfile.State) ~= nil) then
+        imgui.Separator();
+        vd.Eyebrow('Your ' .. tostring(gProfile.VgJob or '') .. ' profile\'s own settings');
+        local keys = {};
+        for k in pairs(gProfile.State) do keys[#keys + 1] = k; end
+        table.sort(keys);
+        local choices = (type(gProfile.StateChoices) == 'table') and gProfile.StateChoices or {};
+        for _, k in ipairs(keys) do
+            local cur = gProfile.State[k];
+            if (type(cur) == 'boolean') then
+                v = tick(k, 'state_' .. k, cur);
+                if (v ~= nil) then gProfile.State[k] = v; end
+            elseif (choices[k] ~= nil) then
+                local opts = {};
+                for _, c in ipairs(choices[k]) do opts[#opts + 1] = { c, c }; end
+                v = choice(k, 'state_' .. k, cur, opts);
+                if (v ~= nil) then gProfile.State[k] = v; end
+            end
+        end
+    end
+end
+
+-- A /vg command chosen in the side bar: what it does, and for one of yours its lines and Run.
+local function renderCommand(entry)
+    vd.Eyebrow(entry[1]);
+    imgui.TextWrapped(entry[2]);
+    local own = require('vg.mine').List()[string.match(entry[1], '^/vg (%S+)$') or ''];
+    if (own ~= nil) then
+        imgui.Separator();
+        imgui.Text('Its lines:');
+        for _, line in ipairs(own.lines) do imgui.BulletText(line); end
+        if (vd.Button('Run it', nil, true)) then require('vg.mine').Run(string.match(entry[1], '^/vg (%S+)$')); end
+        imgui.SameLine();
+        imgui.TextDisabled('Change or delete it in the Your commands tab.');
+    else
+        imgui.Separator();
+        imgui.TextDisabled('Type it in chat or put it in a macro. Words in <> are yours to fill in; a | means pick one.');
+    end
+end
+
+window.RenderSettings = renderSettings;   -- for tests\commands_settings.py
+window.RenderCommand = renderCommand;
 
 -- The set names in the order the list shows them: everything else, then the spell sets.
 local function sortedNames()
@@ -545,6 +666,7 @@ window.Render = function()
                 for _, name in ipairs(names) do
                     if (vd.Selectable(require('vg.mine').Label(name) .. '##vg_set_' .. name, window.Selected == name)) then
                         window.Selected = name;
+                        window.Command = nil;
                     end
                 end
                 if (#spells > 0) then
@@ -553,14 +675,27 @@ window.Render = function()
                     for _, name in ipairs(spells) do
                         if (vd.Selectable(gVana.Explain[name].spell .. '##vg_set_' .. name, window.Selected == name)) then
                             window.Selected = name;
+                            window.Command = nil;
                         end
+                    end
+                end
+                -- every /vg command, the ones for this job and gear and yours (a new one shows here at once):
+                -- they cannot be used if they are not known (Lee, 24 Oct 2026)
+                local cmdLines = require('vg.commands').Lines();
+                imgui.Separator();
+                imgui.TextDisabled('Commands');
+                for i, l in ipairs(cmdLines) do
+                    if (vd.Selectable(l[1] .. '##vg_cmd_' .. i, window.Command == l[1])) then
+                        window.Command = l[1];
                     end
                 end
                 imgui.EndChild();
                 imgui.SameLine();
 
                 imgui.BeginChild('slots', { 0, -60 }, ImGuiChildFlags_Borders);
-                renderSlots(window.Selected);
+                local chosen = nil;
+                for _, l in ipairs(cmdLines) do if (l[1] == window.Command) then chosen = l; end end
+                if (chosen ~= nil) then renderCommand(chosen); else window.Command = nil; renderSlots(window.Selected); end
                 imgui.EndChild();
                 if (tabs) then imgui.EndTabItem(); end
             end
@@ -570,6 +705,12 @@ window.Render = function()
             if (tabs) and (imgui.BeginTabItem('Your commands##vg_tab_mine', nil, mineFlags)) then
                 imgui.BeginChild('mine', { 0, -60 }, ImGuiChildFlags_Borders);
                 renderMine();
+                imgui.EndChild();
+                imgui.EndTabItem();
+            end
+            if (tabs) and (imgui.BeginTabItem('Settings##vg_tab_settings')) then
+                imgui.BeginChild('settings', { 0, -60 }, ImGuiChildFlags_Borders);
+                renderSettings();
                 imgui.EndChild();
                 imgui.EndTabItem();
             end

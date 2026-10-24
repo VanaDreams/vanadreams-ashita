@@ -24,6 +24,10 @@ roles.Modes = {
     Idle_Refresh = { Stats = { REFRESH = 5, PDT = -0.5 }, Caps = DT },
     Resting = { Stats = { HPHEAL = 1, MPHEAL = 2 } },
     Dt = { Stats = { PDT = -10, MDT = -8, HP = 0.05, MEVA = 0.1, DEF = 0.02 }, Caps = DT },
+    -- /vg dt pdt and /vg dt mdt (the Settings tab): one kind of damage first, the general damage taken that
+    -- counts for both (DMG) with it
+    Dt_Physical = { Stats = { PDT = -10, DMG = -10, HP = 0.05, DEF = 0.03, MDT = -2 }, Caps = { PDT = -50, DMG = -50, MDT = -50 } },
+    Dt_Magic = { Stats = { MDT = -10, DMG = -10, MEVA = 0.15, MDEF = 0.5, HP = 0.05, PDT = -2 }, Caps = { MDT = -50, DMG = -50, PDT = -50 } },
     Movement = { Stats = { MOVE_SPEED_GEAR_BONUS = 10 }, Caps = { MOVE_SPEED_GEAR_BONUS = 18 } },
 
     -- fighting
@@ -251,10 +255,10 @@ roles.Modes = {
 };
 
 -- Mode names each kind of job gets.
-roles.Fighter = { 'Idle', 'Idle_Regen', 'Resting', 'Dt', 'Movement', 'Tp_Default', 'Tp_Hybrid', 'Tp_Acc', 'Ws_Default' };
+roles.Fighter = { 'Idle', 'Idle_Regen', 'Resting', 'Dt', 'Dt_Physical', 'Dt_Magic', 'Movement', 'Tp_Default', 'Tp_Hybrid', 'Tp_Acc', 'Ws_Default' };
 -- a support job (WHM, BLM, SCH, GEO, SMN, BRD: Lee, 22 Oct 2026, "their guides will be about maxing
 -- that support") gets the standing sets but no fighting or weaponskill set unless a band adds them
-roles.Support = { 'Idle', 'Idle_Regen', 'Resting', 'Dt', 'Movement' };
+roles.Support = { 'Idle', 'Idle_Regen', 'Resting', 'Dt', 'Dt_Physical', 'Dt_Magic', 'Movement' };
 roles.Caster = { 'Idle_Refresh', 'Precast', 'Interim' };
 roles.Shooter = { 'Preshot', 'Preshot_Flurry', 'Preshot_FlurryII', 'Midshot', 'Midshot_Acc' };
 roles.Pet = { 'PetTP', 'PetDT', 'PetAtk', 'PetMab', 'PetAcc' };

@@ -39,7 +39,8 @@ gFunc = {
     Equip = function(slot, item) if type(slot) ~= 'string' or type(item) ~= 'string' then error('Equip given ' .. type(slot)) end equipped = equipped + 1 end,
     CancelAction = function() world.cancelled = true end,
     Message = function() end,
-    InterimEquipSet = function() end,
+    InterimEquipSet = function(set) if type(set) ~= 'table' then error('InterimEquipSet given ' .. type(set)) end end,
+    SetMidDelay = function(d) if type(d) ~= 'number' then error('SetMidDelay given ' .. type(d)) end end,
 }
 gData = {
     GetPlayer = function() return world.player end,
@@ -117,7 +118,8 @@ for _, job in ipairs(jobs) do
                 for _, tp in ipairs({ 'Default', 'Acc', 'Proc' }) do
                     gVana.Toggles.Tp = tp
                     gVana.Toggles.TH = (buffs == 1)
-                    gVana.Toggles.DT = (buffs == 1)
+                    gVana.Toggles.DT = (buffs == 1) and ({ true, 'pdt', 'mdt' })[(tp == 'Default') and 1 or ((tp == 'Acc') and 2 or 3)] or false
+                    gVana.Toggles.Stage = (buffs == 1)
                     world.buffs = buffs
                     world.area = (buffs == 1) and 'Port Jeuno' or 'West Ronfaure'
                     world.target = { Name = 'Mob', Distance = 3 }
@@ -142,7 +144,7 @@ for _, job in ipairs(jobs) do
                         call(job, profile, 'HandleAbility', a)
                     end
                     for _, sp in ipairs(actions.spell) do
-                        world.action = sp
+                        world.action = setmetatable({ CastTime = 3000 }, { __index = sp })
                         world.target = (sp.Skill == 'Healing Magic') and { Name = 'Test', Distance = 0 } or { Name = 'Mob', Distance = 10 }
                         call(job, profile, 'HandlePrecast', sp.Name)
                         call(job, profile, 'HandleMidcast', sp.Name)
