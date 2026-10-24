@@ -553,12 +553,12 @@
         "path": "addons/vanagear",
         "branch": "main"
       },
-      "version": "0.1.20",
+      "version": "0.2.0",
       "install": "copy-to-addons",
       "load": "/addon load vanagear",
-      "config": "config\\addons\\luashitacast\\",
+      "config": "config\\addons\\vanagear\\profiles\\",
       "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/vanagear",
-      "description": "Gear sets built for you from what you carry, for your job and level, and a list of commands for that job: type /vg. Built on LuAshitacast by ThornyFFXI and replaces it; your LuAshitacast profiles keep working. GearSwap's /gs c commands work too. Your called trusts get a tab each showing their jobs and what they use, with Idle, Engaged and per-ability sets from your bags whose stats they use."
+      "description": "Gear sets built for you from what you carry, for your job and level, written into a profile for each job that is shaped for how that job plays: type /vg. Built on LuAshitacast by ThornyFFXI and replaces it; your LuAshitacast profile for a job is brought over the first time you play it. A Settings tab, every command listed in the window, and GearSwap's /gs c commands work too. Your called trusts get a tab each with a fighting set and swap-ins for what they use, from gear in your bags that you and your other trusts are not using."
     },
     {
       "id": "multisend",
