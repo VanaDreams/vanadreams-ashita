@@ -51,6 +51,7 @@ return profile;
 tmp = Path(tempfile.mkdtemp())
 try:
     install = str(tmp) + '\\'
+    shutil.copytree(ADDON / 'templates', tmp / 'addons' / 'vanagear' / 'templates')
     L = luajit21.LuaRuntime(unpack_returned_tuples=True)
     result = L.execute(r"""
 local addon_path, install, starter = ...
@@ -162,10 +163,11 @@ check('commands written', profile.WriteCommands(path, { reward = { '/ja "Reward"
 p = profile.Run(path)
 check('commands read back, sets kept', p.Commands.reward ~= nil and p.Commands.samba == nil and p.Sets.Idle.Neck == 'Etoile Gorget +2')
 
--- a new profile from the template
+-- a new profile from the job's template (templates\WAR.lua, copied into this install below)
 local warPath = profile.Ensure('WAR', nil)
 local war = profile.Run(warPath)
 check('template loads with built, sets and commands', war and type(war.Built) == 'table' and type(war.Sets) == 'table' and type(war.Commands) == 'table')
+check('new profile is the job template', war and war.VgTemplate == true and readAll(warPath):find('vanagear template: Warrior', 1, true) ~= nil)
 gProfile = war; gProfile.FilePath = warPath; gProfile.VgJob = 'WAR'
 profile.WriteBuilt({ Idle = { Head = 'Nyame Helm' } }, 'WAR')
 profile.SetSlot(warPath, 'Idle', 'Feet', 'Hermes\' Sandals')

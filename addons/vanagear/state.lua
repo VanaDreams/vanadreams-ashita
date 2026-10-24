@@ -229,8 +229,10 @@ state.HandleEquipEvent = function(eventName, equipStyle)
             -- whose piece the profile names but the player does not carry. Then the profile's
             -- rules, then a ring being used holds its slot over both. In LuAshitacast mode (a profile of the
             -- player's own) the built sets stay out entirely, so the profile runs as LuAshitacast runs it.
+            -- A profile written from a job template (profile.VgTemplate) does everything the stock rules
+            -- do itself, in its own order, so they stay out of it.
             local fallback = nil;
-            if (gVanaStock[eventName] ~= nil) and (next(gVana.Sets) ~= nil) and (not gVanaCore.PureLac()) then
+            if (gVanaStock[eventName] ~= nil) and (next(gVana.Sets) ~= nil) and (not gVanaCore.PureLac()) and (not gProfile.VgTemplate) then
                 local ok, err = pcall(gVanaStock[eventName]);
                 if (not ok) then
                     print(chat.header('vanagear') .. chat.error('Error in ' .. eventName .. ': ' .. tostring(err)));

@@ -86,6 +86,8 @@ local function holdOwn(name, overlaysWorn)
     if (next(keep) ~= nil) then gFunc.EquipSet(keep); end
 end
 
+stock.HoldOwn = holdOwn;   -- the job templates' shared checks use it too (vg\include.lua)
+
 -- Resting laid over Idle by itself: the player's picks in Idle hold. The swaps for an action (an
 -- ability, a spell, a weaponskill) are meant to go on over everything and are not touched.
 local function wearOver(narrow, broad)

@@ -72,6 +72,11 @@ local handlers = { 'OnLoad', 'OnUnload', 'HandleCommand', 'HandleDefault', 'Hand
 local builtHead = '-- Built by vanagear from your bags with the job template; rewritten at each rebuild. Change gear in sets below.';
 local commandsHead = '-- Your commands: /vg <word> runs the lines in order; "wait 2" pauses two seconds.';
 
+-- the job's template that ships with vanagear
+profile.JobTemplatePath = function(job)
+    return string.format('%saddons\\vanagear\\templates\\%s.lua', AshitaCore:GetInstallPath(), job);
+end
+
 profile.JobTemplate = function(name, job)
     local out = {
         string.format('-- vanagear profile for %s, %s.', name, job),
@@ -236,7 +241,13 @@ profile.Ensure = function(job, lacPath)
         text = string.gsub(text, '/luashitacast ', '/vg ');
         text = string.gsub(text, '/lac ', '/vg ');
     end
-    if (not write(path, text or profile.JobTemplate(gState.PlayerName, job))) then
+    -- no LuAshitacast profile to pull over: the job's template (templates\<JOB>.lua, its sections and
+    -- handlers shaped for how the job plays), else the plain one
+    local template = nil;
+    if (text == nil) then
+        template = readFile(profile.JobTemplatePath(job));
+    end
+    if (not write(path, text or template or profile.JobTemplate(gState.PlayerName, job))) then
         return nil, false;
     end
     if (text ~= nil) then

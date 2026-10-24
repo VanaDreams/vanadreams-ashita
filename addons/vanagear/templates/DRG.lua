@@ -24,6 +24,7 @@
 ]]--
 
 local profile = {};
+profile.VgTemplate = true;   -- written from a vanagear job template: vanagear's stock rules stay out of it
 
 -- 1. built --------------------------------------------------------------------------------------------
 -- vanagear's sets from your bags: one for standing, fighting, each job ability, weapon skill and spell

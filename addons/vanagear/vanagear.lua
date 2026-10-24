@@ -36,6 +36,7 @@ gPreservedGlobalKeys = T{};
 -- vanagear's own parts; made before the load event so LuAshitacast keeps them across profiles
 gVanaCore            = require('vg.core');
 gVanaStock           = require('vg.stock');
+gVanaInclude         = require('vg.include');   -- the job templates' shared checks (local vg = gVanaInclude)
 gVanaUse             = require('vg.use');
 gVanaMine            = require('vg.mine');
 gVanaCommands        = require('vg.commands');
