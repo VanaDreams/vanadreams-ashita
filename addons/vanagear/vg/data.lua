@@ -29,6 +29,15 @@ data.Traits = function() return load('traits'); end
 data.Gifts = function() return load('gifts'); end
 data.GearSets = function() return load('gearsets'); end
 data.Latents = function() return load('latents'); end
+data.WsElements = function() return load('wselements'); end
+-- the stat an enfeebling spell reads (Paralyze II -> { stat = 'MND', saboteur = true }), nil if not one
+data.Enfeeble = function(name)
+    return load('enfeebles')[string.gsub(string.lower(name or ''), '[^%l%d]', '')];
+end
+-- the element a weaponskill's damage takes (Aeolian Edge -> 'Wind'), nil for a physical one
+data.WsElement = function(name)
+    return load('wselements')[string.gsub(string.lower(name or ''), '[^%l%d]', '')];
+end
 
 -- mod name -> server mod id, and back
 local modIds = nil;

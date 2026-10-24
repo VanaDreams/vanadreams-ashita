@@ -76,7 +76,48 @@ roles.Modes = {
     Enspell = { Stats = { ENSPELL_DMG_BONUS = 3, ENSPELL_DMG_PCT = 3, ACC = 0.5, DOUBLE_ATTACK = 0.5 } },
     SneakAttack = { Stats = { SNEAK_ATK_DEX = 3, DEX = 1, CRITHITRATE = 1, CRIT_DMG_INCREASE = 1 } },
     TrickAttack = { Stats = { TRICK_ATK_AGI = 3, AGI = 1, CRITHITRATE = 1, CRIT_DMG_INCREASE = 1 } },
+    -- both waiting at once: one hit takes both bonuses (GetAwayCoxn's THF.lua SATA set)
+    SneakTrickAttack = { Stats = { SNEAK_ATK_DEX = 3, TRICK_ATK_AGI = 3, DEX = 1, AGI = 1, CRITHITRATE = 1, CRIT_DMG_INCREASE = 1 } },
     Cure_Solace = { Stats = { AFFLATUS_SOLACE = 3, CURE_POTENCY = 1, MND = 0.3 }, Caps = { CURE_POTENCY = 50 } },
+    -- the Dark Knight's (the DRK template): Souleater and Last Resort while they are up, the Absorb
+    -- spells, Dread Spikes
+    Souleater = { Stats = { SOULEATER_EFFECT = 3, STALWART_SOUL = 1, ATT = 0.5, ACC = 0.3 } },
+    LastResort = { Stats = { DESPERATE_BLOWS = 3, ATT = 0.5, HASTE_GEAR = 1 }, Caps = { HASTE_GEAR = 25 } },
+    Absorb = { Stats = { ENHANCES_ABSORB_EFFECTS = 3, AUGMENTS_ABSORB = 2, ABSORB_EFFECT_DURATION = 1, DARK = 1, MACC = 1 } },
+    DreadSpikes = { Stats = { DREAD_SPIKES_EFFECT = 3, HP = 0.05, DARK = 0.3 } },
+    -- the Samurai's (the SAM template, GetAwayCoxn's SAM.lua): fighting under Hasso values Zanshin
+    -- (the server reads it for Hasso's extra swing, battle_entity), under Seigan Third Eye's counter;
+    -- Third Eye's own and Sengikori's are single pieces laid over (weaponskills.lua reads
+    -- SENGIKORI_BONUS on the weapon skill, not on the press)
+    Hasso = {
+        Stats = { ACC = 0.5, ATT = 0.25, STORETP = 1.5, DOUBLE_ATTACK = 2, TRIPLE_ATTACK = 3, QUAD_ATTACK = 4,
+                  HASTE_GEAR = 3, CRITHITRATE = 1, STR = 0.25, DEX = 0.35, ZANSHIN = 1, ZANSHIN_DOUBLE_DAMAGE = 1, PDT = -0.3 },
+        Caps = { HASTE_GEAR = 25, PDT = -50 },
+    },
+    Seigan = {
+        Stats = { ACC = 0.5, STORETP = 1.2, DOUBLE_ATTACK = 1.6, TRIPLE_ATTACK = 2.4, HASTE_GEAR = 3, THIRD_EYE_COUNTER_RATE = 2,
+                  THIRD_EYE_RETENTION_RATE = 1, ZANSHIN = 0.5, PDT = -3, MDT = -2 },
+        Caps = { HASTE_GEAR = 25, PDT = -50, MDT = -50 },
+    },
+    -- the Monk's (the MNK template, GetAwayCoxn's MNK.lua "Footwork"): fighting under Footwork, every
+    -- kick does the weapon's damage (attack.cpp, KICK_DMG), so the kick stats come up
+    FootworkTP = {
+        Stats = { ACC = 0.8, ATT = 0.25, STORETP = 1.5, DOUBLE_ATTACK = 2, TRIPLE_ATTACK = 3, HASTE_GEAR = 3, MARTIAL_ARTS = 0.5,
+                  KICK_DMG = 2, KICK_ATTACK_RATE = 2, EXTRA_KICK_ATTACK = 1.5, STR = 0.25, DEX = 0.35, PDT = -0.3 },
+        Caps = { HASTE_GEAR = 25, PDT = -50 },
+    },
+    ThirdEye = { Stats ={ THIRD_EYE_RETENTION_RATE = 3, THIRD_EYE_COUNTER_RATE = 2 } },
+    Sengikori = { Stats = { SENGIKORI_BONUS = 3 } },
+    -- a tank's: enmity over a job ability or Flash, and spell interruption down while the monster hits
+    -- you mid-cast (the PLD and RUN templates)
+    Enmity = { Stats = { ENMITY = 3, PDT = -1, MDT = -0.5, HP = 0.02 }, Caps = { PDT = -50, MDT = -50 } },
+    -- fighting as the tank (GetAwayCoxn's PLD.lua Tank_Main, Tank_MEVA, picked with /vg fwd tank): damage
+    -- taken capped and hate kept, or magic evasion first against a caster
+    Tank_Main = { Stats = { PDT = -4, MDT = -2.5, DMG = -2, ENMITY = 1, HP = 0.04, SHIELDBLOCKRATE = 1, DEF = 0.03, MEVA = 0.03 }, Caps = { PDT = -50, MDT = -50, DMG = -50 } },
+    Tank_MEVA = { Stats = { MEVA = 0.12, MDT = -4, PDT = -2, DMG = -2, ENMITY = 0.5, HP = 0.03 }, Caps = { PDT = -50, MDT = -50, DMG = -50 } },
+    -- while Cover is up: the server reads these when a covered hit lands on you (battleutils.cpp)
+    Covering = { Stats = { COVER_TO_MP = 3, COVER_MAGIC_AND_RANGED = 10, PDT = -1, MDT = -0.5, HP = 0.02 }, Caps = { PDT = -50, MDT = -50 } },
+    SpellInterrupt = { Stats ={ SPELLINTERRUPT = 2, PDT = -1, MDT = -0.5, ENMITY = 0.5 }, Caps = { SPELLINTERRUPT = 102, PDT = -50, MDT = -50 } },
     -- the obi: a waist piece that makes the day and weather bonus apply every time. Hachirin-no-Obi
     -- does it for every element (FORCE_DW_BONUS_PENALTY), the elemental obis for their own one
     Obi = { Stats = { FORCE_DW_BONUS_PENALTY = 10 } },
@@ -96,10 +137,16 @@ roles.Modes = {
         Stats = { MAGIC_BURST_BONUS_CAPPED = 4, MAGIC_BURST_BONUS_UNCAPPED = 4, MATT = 1, INT = 0.7, MACC = 0.5, MAGIC_DAMAGE = 0.6 },
         Caps = { MAGIC_BURST_BONUS_CAPPED = 40 },
     },
-    Drain = { Stats = { ENH_DRAIN_ASPIR = 3, DARK = 1, MACC = 1 } },
+    -- Death does its base plus three times the MP you have when it lands (damage_spell.lua), so the set
+    -- is MP first; the BLM template holds it on with /vg fwd death so the MP is not lost (GetAwayCoxn)
+    Death = { Stats = { MP = 3, MATT = 1, MAGIC_DAMAGE = 0.6, MACC = 0.6, INT = 0.3, MAGIC_BURST_BONUS_CAPPED = 1 }, Caps = { MAGIC_BURST_BONUS_CAPPED = 40 } },
+    Drain = { Stats ={ ENH_DRAIN_ASPIR = 3, DARK = 1, MACC = 1 } },
     Dark = { Stats = { DARK = 1, MACC = 1.5, INT = 0.5 } },
     Divine = { Stats = { DIVINE = 1, MACC = 1, MND = 1, MATT = 1 } },
-    Ninjutsu = { Stats = { NINJUTSU = 1, MACC = 1, MATT = 1.5, INT = 0.5 } },
+    -- NIN_NUKE_BONUS_GEAR is added to the nuke's magic attack (damage_spell.lua, Koga Hatsuburi type gear)
+    Ninjutsu = { Stats = { NINJUTSU = 1, MACC = 1, MATT = 1.5, INT = 0.5, NIN_NUKE_BONUS_GEAR = 2 } },
+    -- over an elemental ninjutsu under Futae: its multiplier reads ENHANCES_FUTAE (damage_spell.lua)
+    Futae = { Stats = { ENHANCES_FUTAE = 3 } },
     NinjutsuDebuff = { Stats = { MACC = 2, NINJUTSU = 1.5, INT = 0.3 } },
     NinjutsuBuff = { Stats = { NINJUTSU = 1, FASTCAST = 1, PDT = -0.3 }, Caps = { FASTCAST = 80, PDT = -50 } },
     Utsusemi = { Stats = { UTSUSEMI_BONUS = 10, FASTCAST = 2, HASTE_GEAR = 2, PDT = -0.5, MDT = -0.3 }, Caps = { FASTCAST = 80, HASTE_GEAR = 25, PDT = -50, MDT = -50 } },
@@ -115,7 +162,21 @@ roles.Modes = {
     -- Shot; in the shot itself ranged accuracy and Store TP come first, damage a distant second.
     -- After the shot LuAshitacast puts Idle or the fighting set back on by itself.
     Preshot = { Stats = { SNAPSHOT = 3, RAPID_SHOT = 1.5 }, Caps = { SNAPSHOT = 70 } },
+    -- under Flurry (15 Snapshot) or Flurry II (30) less Snapshot gear reaches the cap, and the slots
+    -- it frees go to Rapid Shot (GetAwayCoxn's RNG.lua: Preshot_FlurryI, Preshot_FlurryII)
+    Preshot_Flurry = { Stats = { SNAPSHOT = 3, RAPID_SHOT = 1.5 }, Caps = { SNAPSHOT = 55 } },
+    Preshot_FlurryII = { Stats = { SNAPSHOT = 3, RAPID_SHOT = 1.5 }, Caps = { SNAPSHOT = 40 } },
     Midshot = { Stats = { RACC = 1.5, STORETP = 2, AGI = 0.4, RATT = 0.4, CRITHITRATE = 0.3, TRIPLE_SHOT_RATE = 1 } },
+    -- with /vg tp acc: the shot for a monster you keep missing
+    Midshot_Acc = { Stats = { RACC = 3, AGI = 0.8, STORETP = 0.5, RATT = 0.2 } },
+    -- the Ranger's (the RNG template), each a whole shot set with the effect on top. The server reads
+    -- True Shot gear on every shot (physical_utilities), Velocity Shot's snapshot and ranged attack,
+    -- Barrage's accuracy and extra shot (battleutils), Double Shot's rate (battle_entity)
+    TrueShot = { Stats = { TRUE_SHOT_EFFECT = 2, RACC = 1.5, STORETP = 2, AGI = 0.4, RATT = 0.4 } },
+    Velocity = { Stats = { VELOCITY_RATT_BONUS = 3, RACC = 1.5, STORETP = 2, AGI = 0.4, RATT = 0.5 } },
+    Velocity_Preshot = { Stats = { VELOCITY_SNAPSHOT_BONUS = 3, SNAPSHOT = 3, RAPID_SHOT = 1.5 }, Caps = { SNAPSHOT = 70 } },
+    DoubleShot = { Stats = { DOUBLE_SHOT_RATE = 3, RACC = 1.5, STORETP = 1.5, AGI = 0.4, RATT = 0.5 } },
+    Barrage = { Stats = { BARRAGE_ACC = 3, BARRAGE_COUNT = 30, RACC = 2, RATT = 0.6, AGI = 0.4 } },
 
     -- Corsair abilities (Luck of the Draw)
     PhantomRoll = {
@@ -138,6 +199,10 @@ roles.Modes = {
 
     -- treasure hunter, laid over whatever else is on with /vg th
     TH = { Stats = { TREASURE_HUNTER = 10 } },
+    -- under Doom, and using Holy Water: what makes the cure land (Purity Ring, Gishdubar Sash; cursna.lua
+    -- reads ENHANCES_CURSNA_RCVD, flask_of_holy_water.lua ENHANCES_HOLYWATER). GetAwayCoxn's Doomed, Holy_Water
+    Doomed = { Stats = { ENHANCES_CURSNA_RCVD = 3, ENHANCES_HOLYWATER = 1 } },
+    HolyWater = { Stats = { ENHANCES_HOLYWATER = 3, ENHANCES_CURSNA_RCVD = 1 } },
 
     -- pets
     PetTP = {
@@ -163,9 +228,9 @@ roles.Fighter = { 'Idle', 'Idle_Regen', 'Resting', 'Dt', 'Movement', 'Tp_Default
 -- that support") gets the standing sets but no fighting or weaponskill set unless a band adds them
 roles.Support = { 'Idle', 'Idle_Regen', 'Resting', 'Dt', 'Movement' };
 roles.Caster = { 'Idle_Refresh', 'Precast', 'Interim' };
-roles.Shooter = { 'Preshot', 'Midshot' };
+roles.Shooter = { 'Preshot', 'Preshot_Flurry', 'Preshot_FlurryII', 'Midshot', 'Midshot_Acc' };
 roles.Pet = { 'PetTP', 'PetDT', 'PetAtk', 'PetMab', 'PetAcc' };
-roles.Always = { 'TH' };
+roles.Always = { 'TH', 'Doomed', 'HolyWater' };
 
 -- The midcast sets each kind of magic gets, by the skill name LuAshitacast reports.
 roles.SkillSets = {
@@ -195,5 +260,27 @@ roles.SubSkills = {
     GEO = { 'Geomancy', 'Elemental Magic' },
     RUN = { 'Enhancing Magic', 'Divine Magic' },
 };
+
+-- Each kind of song has a family set (the templates wear it over Song): the song set's stats with the
+-- server's own effect stat for that kind on top (MARCH_EFFECT...). The debuff songs build on SongDebuff.
+roles.SongFamilies = {
+    { set = 'March', mod = 'MARCH_EFFECT' }, { set = 'Minuet', mod = 'MINUET_EFFECT' },
+    { set = 'Madrigal', mod = 'MADRIGAL_EFFECT' }, { set = 'Ballad', mod = 'BALLAD_EFFECT' },
+    { set = 'Paeon', mod = 'PAEON_EFFECT' }, { set = 'Minne', mod = 'MINNE_EFFECT' },
+    { set = 'Scherzo', mod = 'SCHERZO_EFFECT' }, { set = 'Prelude', mod = 'PRELUDE_EFFECT' },
+    { set = 'Etude', mod = 'ETUDE_EFFECT' }, { set = 'Carol', mod = 'CAROL_EFFECT' },
+    { set = 'Mazurka', mod = 'MAZURKA_EFFECT' }, { set = 'Hymnus', mod = 'HYMNUS_EFFECT' },
+    { set = 'Lullaby', mod = 'LULLABY_EFFECT', debuff = true }, { set = 'Elegy', mod = 'ELEGY_EFFECT', debuff = true },
+    { set = 'Requiem', mod = 'REQUIEM_EFFECT', debuff = true }, { set = 'Threnody', mod = 'THRENODY_EFFECT', debuff = true },
+    { set = 'Finale', mod = 'FINALE_EFFECT', debuff = true },
+};
+for _, f in ipairs(roles.SongFamilies) do
+    local base = roles.Modes[f.debuff and 'SongDebuff' or 'Song'];
+    local stats = {};
+    for k, v in pairs(base.Stats) do stats[k] = v; end
+    stats[f.mod] = 3;
+    roles.Modes[f.set] = { Stats = stats };
+    table.insert(roles.SkillSets['Singing'], f.set);
+end
 
 return roles;

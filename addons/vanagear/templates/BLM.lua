@@ -18,6 +18,8 @@
     One of its abilities lasts and changes what you take:
     - Mana Wall (5 minutes): half the damage you take is paid in MP, and gear adds to it (Taranus's
       Cape); ManaWall goes over standing and fighting while it is up.
+    Death does three times the MP you have when it lands: /vg fwd death holds the Death set (MP first) on
+    standing, before and during every spell, so the MP it adds is never lost (GetAwayCoxn's BLM.lua).
     It swings a club, dagger, scythe or staff, and its subjob can bring more (Scholar's Arts, a pet on /SMN).
 ]]--
 
@@ -36,6 +38,11 @@ profile.Built = built;
 local sets = {
     -- sets vanagear does not build, here so they show in the /vg window to fill:
     Stoneskin_Precast = {}, -- over Precast for Stoneskin
+    Ws_Acc = {},            -- over a weapon skill with /vg tp acc
+    Tp_Proc = {},           -- fighting with /vg tp proc: low damage, for a weakness you have to trigger (Vagary)
+    Ws_Proc = {},           -- over a weapon skill with /vg tp proc
+    Sleeping = {},          -- while you are asleep
+    Reraise = {},           -- while you are weakened
     ManaWall = {},          -- over standing and fighting while Mana Wall is up
 };
 profile.Sets = sets;
@@ -48,6 +55,7 @@ local lists = {
 -- 4. state --------------------------------------------------------------------------------------------
 -- Your toggles and modes. /vg dt, /vg kite, /vg th and /vg tp are vanagear's and need nothing here.
 local state = {
+    death = false,   -- /vg fwd death: hold the Death set (MP) on, so the MP is there when Death lands
 };
 
 -- 5. commands -----------------------------------------------------------------------------------------
@@ -99,6 +107,16 @@ local families = {
     { skill = 'Dark Magic', match = '^Drain', set = 'Drain' },
     { skill = 'Dark Magic', match = '^Aspir', set = 'Drain' },
     { skill = 'Elemental Magic', match = 'helix', set = 'Helix' },
+    -- songs by kind (Victory March wears March, Foe Lullaby II wears Lullaby)
+    { skill = 'Singing', match = 'March', set = 'March' }, { skill = 'Singing', match = 'Minuet', set = 'Minuet' },
+    { skill = 'Singing', match = 'Madrigal', set = 'Madrigal' }, { skill = 'Singing', match = 'Ballad', set = 'Ballad' },
+    { skill = 'Singing', match = 'Paeon', set = 'Paeon' }, { skill = 'Singing', match = 'Minne', set = 'Minne' },
+    { skill = 'Singing', match = 'Scherzo', set = 'Scherzo' }, { skill = 'Singing', match = 'Prelude', set = 'Prelude' },
+    { skill = 'Singing', match = 'Etude', set = 'Etude' }, { skill = 'Singing', match = 'Carol', set = 'Carol' },
+    { skill = 'Singing', match = 'Mazurka', set = 'Mazurka' }, { skill = 'Singing', match = 'Hymnus', set = 'Hymnus' },
+    { skill = 'Singing', match = 'Lullaby', set = 'Lullaby' }, { skill = 'Singing', match = 'Elegy', set = 'Elegy' },
+    { skill = 'Singing', match = 'Requiem', set = 'Requiem' }, { skill = 'Singing', match = 'Threnody', set = 'Threnody' },
+    { skill = 'Singing', match = 'Finale', set = 'Finale' },
 };
 local function familyOf(spell)
     for _, f in ipairs(families) do
@@ -156,6 +174,29 @@ local function wsBailout(ws)
     return false;
 end
 
+local moonshadeTP = 2250;   -- below this TP a weapon skill takes Moonshade Earring
+
+-- the spell will not go off: asleep, petrified, stunned, terrorized, silenced, mute or charmed
+local function spellBailout()
+    for _, b in ipairs({ 'Sleep', 'Petrification', 'Stun', 'Terror', 'Silence', 'Mute', 'Charm' }) do
+        if (gData.GetBuffCount(b) > 0) then return true; end
+    end
+    return false;
+end
+
+-- Utsusemi over shadows you still have: the old ones come off just before the new ones land (Ichi
+-- 2.4 s into the cast, Ni 0.5 s), or the new cast is wasted. Copy Image is buffs 66, 444, 445, 446.
+local function shadows(spell)
+    local delay = (spell.Name == 'Utsusemi: Ichi') and 2.4 or ((spell.Name == 'Utsusemi: Ni') and 0.5 or nil);
+    if (delay == nil) then return; end
+    for _, id in ipairs({ 66, 444, 445, 446 }) do
+        if (gData.GetBuffCount(id) > 0) then
+            (function() AshitaCore:GetChatManager():QueueCommand(-1, '/cancel ' .. id); end):once(delay);
+            return;
+        end
+    end
+end
+
 -- 7. handlers -----------------------------------------------------------------------------------------
 
 profile.OnLoad = function()
@@ -167,6 +208,10 @@ end
 
 -- /vg fwd <word> ... arrives here
 profile.HandleCommand = function(args)
+    if (args[1] == 'death') then
+        state.death = not state.death;
+        gFunc.Message('Death set held: ' .. tostring(state.death));
+    end
 end
 
 -- Every moment nothing is going off: a pet's move (/BST), standing, fighting, resting.
@@ -195,6 +240,8 @@ profile.HandleDefault = function()
     vg.Default();   -- movement, regen and refresh when low, DT, TH, town, the rings in use
     -- Mana Wall, while it is up
     if (gData.GetBuffCount('Mana Wall') > 0) then wear('ManaWall'); end
+    -- with /vg fwd death and over half your MP: the Death set stays on, so the MP it adds is not lost
+    if (state.death) and (player.MPP > 50) then wear('Death'); end
 
     -- yours:
 end
@@ -210,18 +257,28 @@ profile.HandleAbility = function()
 end
 
 profile.HandleItem = function()
+    local item = gData.GetAction();
+    local own = setFor(item.Name);
+    if (own ~= nil) then gFunc.EquipSet(own); end
+
     -- yours:
 end
 
 -- The subjob's spells: fast cast before the spell starts (and its kind's own, Cure_Precast, Song_Precast)...
 profile.HandlePrecast = function()
     local spell = gData.GetAction();
+    if (spellBailout()) then
+        gFunc.CancelAction();
+        return;
+    end
     wear('Precast');
     local kind = skillSets[spell.Skill];
     if (kind ~= nil) then wear(kind .. '_Precast'); end
     local family = familyOf(spell);
     if (family ~= nil) then wear(family .. '_Precast'); end
     cancels(spell);
+    shadows(spell);
+    if (state.death) then wear('Death'); end   -- /vg fwd death: no fast cast pieces that would drop the MP
 
     -- yours:
 end
@@ -239,7 +296,8 @@ profile.HandleMidcast = function()
     if (spell.Skill == 'Enhancing Magic') and (bySkill(spell.Name)) then wear('Enhancing_Skill'); end
     -- vanagear's toggles: /vg burst puts Burst over a nuke; /vg nuke acc puts NukeACC over a nuke and Macc
     -- over an enfeeble
-    if (spell.Skill == 'Elemental Magic') then
+    -- (an elemental ninjutsu, Katon: Ichi to Suiton: San, is a nuke too)
+    if (spell.Skill == 'Elemental Magic') or ((spell.Skill == 'Ninjutsu') and (string.find(spell.Name, '^%a+ton:') ~= nil)) then
         if (gVana.Toggles.Nuke == 'acc') then wear('NukeACC'); end
         if (gVana.Toggles.Burst) then wear('Burst'); end
     elseif (spell.Skill == 'Enfeebling Magic') and (gVana.Toggles.Nuke == 'acc') then
@@ -258,6 +316,8 @@ profile.HandleMidcast = function()
         if (kind ~= nil) then wear(kind .. '_Self'); end
         if (family ~= nil) then wear(family .. '_Self'); end
     end
+    if (state.death) then wear('Death'); end   -- /vg fwd death: Death's damage is three times the MP you have
+    if (gVana.Toggles.TH) then wear('TH'); end   -- /vg th: the spell tags the monster for Treasure Hunter
 
     -- yours:
 end
@@ -265,6 +325,8 @@ end
 -- A ranged attack: snapshot gear before the shot...
 profile.HandlePreshot = function()
     wear('Preshot');
+    -- Flurry gives Snapshot itself (15, Flurry II 30): the set that tops it up and puts Rapid Shot in the rest
+    if (gData.GetBuffCount(581) > 0) then wear('Preshot_FlurryII'); elseif (gData.GetBuffCount(265) > 0) then wear('Preshot_Flurry'); end
 
     -- yours:
 end
@@ -272,6 +334,8 @@ end
 -- ...then the shot's own gear while it flies.
 profile.HandleMidshot = function()
     wear('Midshot');
+    if (gVana.Toggles.Tp ~= 'Default') then wear('Midshot_' .. gVana.Toggles.Tp); end   -- /vg tp acc: Midshot_Acc
+    if (gVana.Toggles.TH) then wear('TH'); end   -- /vg th: the shot tags the monster for Treasure Hunter
 
     -- yours:
 end
@@ -286,6 +350,22 @@ profile.HandleWeaponskill = function()
     wear('Ws_Default');
     local own = setFor(ws.Name);
     if (own ~= nil) then gFunc.EquipSet(own); end
+    if (gVana.Toggles.Tp ~= 'Default') then   -- /vg tp acc: SavageBlade_Acc if you made one, else Ws_Acc
+        local inMode = string.gsub(ws.Name, '[^%w]', '') .. '_' .. gVana.Toggles.Tp;
+        if (sets[inMode] ~= nil) then wear(inMode); else wear('Ws_' .. gVana.Toggles.Tp); end
+    end
+    -- under 2,250 TP in the normal mode, Moonshade Earring's TP bonus, if you carry it
+    if (gVana.Toggles.Tp == 'Default') and (gData.GetPlayer().TP < moonshadeTP) and (gVana.Carries('Moonshade Earring')) then
+        gFunc.Equip('Ear2', 'Moonshade Earring');
+    end
+    -- a weapon skill whose damage takes an element (Trueflight, Aeolian Edge), on its day or weather:
+    -- that element's obi if you have one (Obi_Light...), else Obi (Hachirin-no-Obi)
+    local element = vg.WsElement(ws.Name);
+    local env = gData.GetEnvironment();
+    if (element ~= nil) and ((element == env.DayElement) or (element == env.WeatherElement)) then
+        local obi = sets['Obi_' .. element];
+        if (obi ~= nil) and (next(obi) ~= nil) then gFunc.EquipSet(obi); else wear('Obi'); end
+    end
 
     -- yours:
 end

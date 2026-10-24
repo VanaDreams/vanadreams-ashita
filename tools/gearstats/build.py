@@ -448,6 +448,26 @@ def extras(server):
     write_table(OUT / 'latents.lua', ['Item id = list of { latent, param, mod, v } (sql/item_latents.sql), only the conditions a set can',
                                       'be built for: ' + ', '.join(f'{k} {v}' for k, v in sorted(LATENTS_KEPT.items())) + '.'], latents)
 
+    # the element a magical weaponskill's damage takes (params.ele in its script), for the obi; the
+    # element column in weapon_skills.sql is the skillchain/gorget one, not this
+    ws_elements = {}
+    for path in sorted((server / 'scripts' / 'actions' / 'weaponskills').glob('*.lua')):
+        m = re.search(r'params\.ele\s*=\s*xi\.element\.([A-Z]+)', path.read_text(encoding='utf-8', errors='replace'))
+        if m and m.group(1) != 'NONE':
+            ws_elements[re.sub(r'[^a-z0-9]', '', path.stem.lower())] = m.group(1).capitalize()
+    write_table(OUT / 'wselements.lua', ['Weaponskill (its name in lower case, letters and digits only) = the element its damage takes',
+                                         '(params.ele in scripts/actions/weaponskills), for the obi.'], ws_elements)
+
+    # the stat each enfeebling spell reads against the target's, and whether Saboteur strengthens it
+    # (scripts/globals/spells/enfeebling_spell.lua, STAT_USED and SABOTEUR)
+    enfeebles = {}
+    text = (server / 'scripts' / 'globals' / 'spells' / 'enfeebling_spell.lua').read_text(encoding='utf-8', errors='replace')
+    for m in re.finditer(r'\[xi\.magic\.spell\.([A-Z0-9_]+)\s*\]\s*=\s*\{\s*xi\.effect\.\w+\s*,\s*-?\d+\s*,\s*xi\.mod\.([A-Z]+)\s*,'
+                         r'\s*-?\d+\s*,\s*-?\d+\s*,\s*-?\d+\s*,\s*-?\d+\s*,\s*(true|false)', text):
+        enfeebles[re.sub(r'[^a-z0-9]', '', m.group(1).lower())] = {'stat': m.group(2), 'saboteur': m.group(3) == 'true'}
+    write_table(OUT / 'enfeebles.lua', ['Enfeebling spell (its name in lower case, letters and digits only) = { stat it reads against the',
+                                        "target's, saboteur: Saboteur strengthens it } (scripts/globals/spells/enfeebling_spell.lua)."], enfeebles)
+
     # the mod names these use, added to mods.lua without touching the rest of it
     used = {m['mod'] for s in sets.values() for m in s['mods']} | {l['mod'] for ls in latents.values() for l in ls}
     mods_path = OUT / 'mods.lua'

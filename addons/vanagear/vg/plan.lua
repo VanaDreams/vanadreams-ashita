@@ -172,7 +172,26 @@ plan.EffectSets = {
     { set = 'Saboteur', job = 'RDM', level = 83, mainOnly = true },
     { set = 'SneakAttack', job = 'THF', level = 15 },
     { set = 'TrickAttack', job = 'THF', level = 30 },
+    { set = 'SneakTrickAttack', job = 'THF', level = 30 },
     { set = 'Cure_Solace', job = 'WHM', level = 40 },
+    { set = 'Souleater', job = 'DRK', level = 30 },
+    { set = 'LastResort', job = 'DRK', level = 15 },
+    { set = 'Enmity', job = 'PLD', level = 1, mainOnly = true },
+    { set = 'SpellInterrupt', job = 'PLD', level = 1, mainOnly = true },
+    { set = 'Tank_Main', job = 'PLD', level = 1, mainOnly = true },
+    { set = 'Tank_MEVA', job = 'PLD', level = 1, mainOnly = true },
+    { set = 'Covering', job = 'PLD', level = 35, mainOnly = true },
+    { set = 'FootworkTP', job = 'MNK', level = 65, mainOnly = true },
+    { set = 'Futae', job = 'NIN', level = 77, mainOnly = true },
+    { set = 'ThirdEye', job = 'SAM', level = 15 },
+    { set = 'Hasso', job = 'SAM', level = 25 },
+    { set = 'Seigan', job = 'SAM', level = 35 },
+    { set = 'Sengikori', job = 'SAM', level = 77, mainOnly = true },
+    { set = 'Barrage', job = 'RNG', level = 30 },
+    { set = 'Velocity', job = 'RNG', level = 45 },
+    { set = 'Velocity_Preshot', job = 'RNG', level = 45 },
+    { set = 'TrueShot', job = 'RNG', level = 78, mainOnly = true },
+    { set = 'DoubleShot', job = 'RNG', level = 79, mainOnly = true },
 };
 
 plan.For = function(who, equipment, opts)
@@ -329,11 +348,22 @@ plan.For = function(who, equipment, opts)
     for _, s in ipairs(okSpells and known or {}) do
         local setName = plan.WsSetName(s.Name);
         local kind = plan.SpellMode(s.Skill, s.Name);
+        -- a spell with a mode of its own (Dread Spikes) is built from it, not from its kind's
+        if (roles.Modes[setName] ~= nil) then kind = setName; end
         if (kind ~= nil) and (not have[string.lower(setName)]) then
             have[string.lower(setName)] = true;
             local m = mode(kind, tweaks);
             m.Name = setName;
-            out[#out + 1] = { Name = setName, Mode = m, Slots = slots, Spell = s.Name, SameAs = kind };
+            -- an enfeeble reads one stat against the target's (enfeebling_spell.lua): MND for Paralyze,
+            -- Slow, Distract, INT for Blind, Poison, Sleep; the other is worth nothing to it. GetAwayCoxn's
+            -- RDM.lua has Mind_Enfeebling and Int_Enfeebling for this
+            local enf = vdata.Enfeeble(s.Name);
+            if (enf ~= nil) and (m.Stats ~= nil) then
+                local other = (enf.stat == 'MND') and 'INT' or 'MND';
+                m.Stats[enf.stat] = math.max(m.Stats[enf.stat] or 0, m.Stats[other] or 0, 0.6) + 0.4;
+                m.Stats[other] = nil;
+            end
+            out[#out + 1] = { Name = setName, Mode = m, Slots = slots, Spell = s.Name, SameAs = (kind ~= setName) and kind or nil };
         end
     end
 
@@ -347,7 +377,12 @@ plan.For = function(who, equipment, opts)
     end
     -- the obi sets, waist only, for anyone with a spell to cast (the templates wear Obi_<element>,
     -- else Obi, over a spell whose element is the day's or the weather's)
-    if (okSpells) and (known ~= nil) and (#known > 0) then
+    -- or over a weaponskill whose damage takes an element (Trueflight, Aeolian Edge)
+    local elementalWs = false;
+    for _, o in ipairs(out) do
+        if (o.Weaponskill ~= nil) and (vdata.WsElement(o.Weaponskill) ~= nil) then elementalWs = true; end
+    end
+    if ((okSpells) and (known ~= nil) and (#known > 0)) or (elementalWs) then
         for _, n in ipairs({ 'Obi', 'Obi_Fire', 'Obi_Ice', 'Obi_Wind', 'Obi_Earth', 'Obi_Thunder', 'Obi_Water', 'Obi_Light', 'Obi_Dark' }) do
             addEffect(n, { 11 });
         end
@@ -360,6 +395,7 @@ plan.For = function(who, equipment, opts)
     for _, s in ipairs(okSpells and known or {}) do
         if (s.Skill == 'Enhancing Magic') and ((string.find(s.Name, '^En%a+$')) or (string.find(s.Name, '^En%a+ II$'))) then addEffect('Enspell'); end
         if (string.find(s.Name, 'helix')) then addEffect('Helix'); end
+        if (s.Skill == 'Dark Magic') and (string.find(s.Name, '^Absorb')) then addEffect('Absorb'); end
     end
 
     -- every cap less what the job's traits and gifts already give

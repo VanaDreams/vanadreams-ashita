@@ -52,5 +52,9 @@ return {
         ['Boost'] = { Stats = { BOOST_EFFECT = 1 } },
         ['Footwork'] = { Stats = { FOOTWORK_ATT_BONUS = 1 } },
         ['Impetus'] = { Stats = { AUGMENTS_IMPETUS = 1 } },
+        -- read off the target (yourself) in job_utils\monk.lua, so the script reader misses them
+        -- (GetAwayCoxn's MNK.lua has both sets)
+        ['Dodge'] = { Stats = { DODGE_EFFECT = 1 } },
+        ['Focus'] = { Stats = { FOCUS_EFFECT = 1 } },
     },
 };

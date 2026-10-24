@@ -42,7 +42,7 @@ commands.Lines = function()
     line('/vg dt', 'damage taken gear over everything else, on or off');
     line('/vg kite', 'movement gear over everything else, on or off');
     if (s.TH ~= nil) then line('/vg th', 'treasure hunter gear over everything else, on or off'); end
-    if (s.Tp_Default ~= nil) then line('/vg tp default | hybrid | acc', 'which fighting set you wear'); end
+    if (s.Tp_Default ~= nil) then line('/vg tp default | hybrid | acc | proc', 'which fighting set you wear (proc: your low-damage Tp_Proc and Ws_Proc)'); end
     if (s.Idle_Refresh ~= nil) then
         line('/vg idle auto | regen | refresh | speed', 'standing still: auto puts regen on below 60% HP and refresh below 70% MP');
     else
@@ -327,7 +327,9 @@ commands.Vg = function(args)
     elseif (cmd == 'stage') then
         t.Stage = onOff(arg, t.Stage); say('Staged casting ' .. (t.Stage and 'on' or 'off') .. '.');
     elseif (cmd == 'tp') then
-        local modes = { default = 'Default', normal = 'Default', hybrid = 'Hybrid', acc = 'Acc' };
+        -- proc: low-damage sets of your own (Tp_Proc, Ws_Proc) for a weakness you have to trigger, as in
+        -- Vagary (GetAwayCoxn's SAM.lua); not in the cycle, only by name
+        local modes = { default = 'Default', normal = 'Default', hybrid = 'Hybrid', acc = 'Acc', proc = 'Proc' };
         if (modes[arg] ~= nil) then t.Tp = modes[arg];
         else
             local order = { Default = 'Hybrid', Hybrid = 'Acc', Acc = 'Default' };

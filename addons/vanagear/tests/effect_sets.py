@@ -25,6 +25,7 @@ package.loaded['vg.data'] = {
     ModId = function() return 1 end, PetTypes = {},
     Traits = function() return traits end, Gifts = function() return gifts end,
     ModName = function(id) return mods[id] end,
+    WsElement = function() return nil end, Enfeeble = function() return nil end,
 }
 package.loaded['vg.wsguide'] = {}
 function T(t) return t end

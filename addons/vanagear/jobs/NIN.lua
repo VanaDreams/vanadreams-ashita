@@ -35,6 +35,7 @@
 return {
     Fighter = true, Tank = true, Shooter = true, Skills = { 'Ninjutsu' },
     Tweaks = {
+        Tp_Default = { Stats = { DAKEN = 0.5 } },                                                -- Daken throws the shuriken in the ammo slot as you swing (attackround.cpp reads DAKEN)
         Tp_Hybrid = { Stats = { PDT = -3.5, MDT = -2.5 } },
         Ninjutsu = { Stats = { MATT = 2, MACC = 1, NINJUTSU = 0.8, NIN_NUKE_BONUS_INNIN = 1 } },
     },
@@ -70,5 +71,9 @@ return {
             Tp_Default = { Stats = { HASTE_GEAR = 4, DOUBLE_ATTACK = 3, DUAL_WIELD = 0.8, TRIPLE_ATTACK = 3, STORETP = 1.5 } }, -- Doing it right and Silhouette, DD: "Haste, Double Attack, and then Dual Wield"; Store TP at the haste cap
             Ws_Default = { Stats = { STR = 1, DEX = 0.8, ATT = 0.5, CRITHITRATE = 1, CRIT_DMG_INCREASE = 1.5, ALL_WSDMG_ALL_HITS = 3 } }, -- Silhouette and Finans: Jin crit; Ten and Chi STR and weaponskill damage; Shun DEX and double attack
         } },
+    },
+    -- Mijin Gakure: the reraise the server reads when it kills you (char_entity.cpp, MIJIN_RERAISE)
+    Abilities = {
+        ['Mijin Gakure'] = { Stats = { MIJIN_RERAISE = 10 } },
     },
 };

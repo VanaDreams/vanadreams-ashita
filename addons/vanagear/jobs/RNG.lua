@@ -32,6 +32,11 @@ return {
     Tweaks = {
         Midshot = { Stats = { STORETP = 2.5 } },
     },
+    -- Eagle Eye Shot is a ranged weaponskill with no stat modifier (job_utils\ranger.lua): ranged
+    -- attack, accuracy and weaponskill damage are all it reads
+    Abilities = {
+        ['Eagle Eye Shot'] = { Stats = { RATT = 1, RACC = 1.5, ALL_WSDMG_ALL_HITS = 2, ALL_WSDMG_FIRST_HIT = 1.5, CRITHITRATE = 0.3 } },
+    },
     Bands = {
         { To = 30, Tweaks = {
             Midshot = { Stats = { RACC = 2, STR = 0.5, RATT = 0.2, CRITHITRATE = 0, STORETP = 1 } },       -- Tyson: ranged accuracy first, STR next, ranged attack least; crits "don't bother"
