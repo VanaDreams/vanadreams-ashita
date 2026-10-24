@@ -56,4 +56,11 @@ return {
             Phalanx = { Stats = { PHALANX_RECEIVED = 6, ENHANCE = 0.5 } },                                -- Community guide and the tank guide: Phalanx+ sets
         } },
     },
+    -- Vivacious Pulse heals by Divine Magic skill (job_utils\rune_fencer.lua) and the AF3 head adds an ailment
+    -- removal; Lunge and Swipe are magic hits that also want magic attack and accuracy (GetAwayCoxn's Swipe set)
+    Abilities = {
+        ['Vivacious Pulse'] = { Stats = { DIVINE = 1, AUGMENTS_VIVACIOUS_PULSE = 10 } },
+        ['Lunge'] = { Stats = { SWIPE = 2, MAGIC_DAMAGE = 1.5, MATT = 2, MACC = 1, INT = 0.5 } },
+        ['Swipe'] = { Stats = { SWIPE = 2, MAGIC_DAMAGE = 1.5, MATT = 2, MACC = 1, INT = 0.5 } },
+    },
 };

@@ -34,6 +34,9 @@ return {
         Idle = { Stats = { REFRESH = 8, SUBLIMATION_BONUS = 2 } },
         Cure = { Stats = { HEALING = 0.8, ENMITY = 0 } },
         Nuke = { Stats = { MAGIC_DAMAGE = 1.5 } },
+        -- Grimoire gear cuts the cast and recast of a spell that matches your Arts (battleutils.cpp reads
+        -- GRIMOIRE_SPELLCASTING, a negative number, as the spell starts)
+        Precast = { Stats = { GRIMOIRE_SPELLCASTING = -2 } },
     },
     Bands = {
         { To = 30, Tweaks = {

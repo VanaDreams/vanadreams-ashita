@@ -51,12 +51,15 @@ return {
         } },
     },
     Abilities = {
-        ['Jump'] = { Stats = { JUMP_TP_BONUS = 0.05, JUMP_ATT_BONUS = 1, DOUBLE_ATTACK = 1.5, TRIPLE_ATTACK = 2, STORETP = 1, ACC = 0.3 } },
-        ['High Jump'] = { Stats = { JUMP_TP_BONUS = 0.05, JUMP_ATT_BONUS = 1, DOUBLE_ATTACK = 1.5, TRIPLE_ATTACK = 2, STORETP = 1, ACC = 0.3 } },
-        ['Spirit Jump'] = { Stats = { JUMP_SPIRIT_TP_BONUS = 0.05, JUMP_SOUL_SPIRIT_ATT_BONUS = 1, DOUBLE_ATTACK = 1.5, STORETP = 1 } },
-        ['Soul Jump'] = { Stats = { JUMP_SPIRIT_TP_BONUS = 0.05, JUMP_SOUL_SPIRIT_ATT_BONUS = 1, DOUBLE_ATTACK = 1.5, STORETP = 1 } },
+        ['Jump'] = { Stats = { JUMP_DOUBLE_ATTACK = 2, JUMP_ACC_BONUS = 0.5, JUMP_TP_BONUS = 0.05, JUMP_ATT_BONUS = 1, DOUBLE_ATTACK = 1.5, TRIPLE_ATTACK = 2, STORETP = 1, ACC = 0.3 } },
+        ['High Jump'] = { Stats = { JUMP_DOUBLE_ATTACK = 2, JUMP_ACC_BONUS = 0.5, JUMP_TP_BONUS = 0.05, JUMP_ATT_BONUS = 1, DOUBLE_ATTACK = 1.5, TRIPLE_ATTACK = 2, STORETP = 1, ACC = 0.3 } },
+        ['Spirit Jump'] = { Stats = { JUMP_DOUBLE_ATTACK = 2, JUMP_ACC_BONUS = 0.5, JUMP_SPIRIT_TP_BONUS = 0.05, JUMP_SOUL_SPIRIT_ATT_BONUS = 1, DOUBLE_ATTACK = 1.5, STORETP = 1 } },
+        ['Soul Jump'] = { Stats = { JUMP_DOUBLE_ATTACK = 2, JUMP_ACC_BONUS = 0.5, JUMP_SPIRIT_TP_BONUS = 0.05, JUMP_SOUL_SPIRIT_ATT_BONUS = 1, DOUBLE_ATTACK = 1.5, STORETP = 1 } },
         ['Ancient Circle'] = { Stats = { ANCIENT_CIRCLE_DURATION = 1, ANCIENT_CIRCLE_POTENCY = 2 } },
         ['Spirit Link'] = { Stats = { ENHANCES_SPIRIT_LINK = 1 } },
         ['Deep Breathing'] = { Stats = { ENHANCE_DEEP_BREATHING = 1 } },
+        -- the wyvern's level and whether it copies your subjob traits are set as it is called (petutils.cpp,
+        -- pets\wyvern.lua); JUMP_DOUBLE_ATTACK and JUMP_ACC_BONUS above are read on the jump (weaponskills.lua)
+        ['Call Wyvern'] = { Stats = { WYVERN_LVL_BONUS = 3, WYVERN_SUBJOB_TRAITS = 2 } },
     },
 };

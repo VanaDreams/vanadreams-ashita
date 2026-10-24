@@ -52,7 +52,8 @@ return {
         } },
         { To = 99, Tweaks = {
             Preshot = { Stats = { SNAPSHOT = 3, RAPID_SHOT = 1 } },                                    -- Community guide: the Snapshot piece, Rapid Shot for Flurry builds
-            Midshot = { Stats = { TRIPLE_SHOT_RATE = 1.5, STORETP = 2 } },                             -- Community guide: Chasseur's Frac, Lanun Gants, the Culottes
+            Midshot = { Stats = { STORETP = 2 } },
+            TripleShot = { Stats = { TRIPLE_SHOT_RATE = 3, STORETP = 2 } },                            -- Community guide: Chasseur's Frac, Lanun Gants, the Culottes (the rate only counts under Triple Shot)
             Tp_Default = { Stats = { DOUBLE_ATTACK = 2, TRIPLE_ATTACK = 3, PDT = -1 } },               -- Community guide: the engaged entry set
             QuickDrawAcc = { Stats = { MACC = 2, QUICK_DRAW_MACC = 2 } },                              -- Community guide: Laksamana's Tricorne
             QuickDraw = { Stats = { QUICK_DRAW_DMG = 1, MATT = 2 } },                                  -- Community guide: Lanun Frac

@@ -181,8 +181,21 @@ plan.EffectSets = {
     { set = 'Tank_Main', job = 'PLD', level = 1, mainOnly = true },
     { set = 'Tank_MEVA', job = 'PLD', level = 1, mainOnly = true },
     { set = 'Covering', job = 'PLD', level = 35, mainOnly = true },
+    { set = 'Enmity', job = 'RUN', level = 1, mainOnly = true },
+    { set = 'SpellInterrupt', job = 'RUN', level = 1, mainOnly = true },
+    { set = 'Tank_Main', job = 'RUN', level = 1, mainOnly = true },
+    { set = 'Tank_MEVA', job = 'RUN', level = 1, mainOnly = true },
     { set = 'FootworkTP', job = 'MNK', level = 65, mainOnly = true },
     { set = 'Futae', job = 'NIN', level = 77, mainOnly = true },
+    { set = 'Breath', job = 'DRG', level = 1, mainOnly = true },
+    { set = 'ChainAffinity', job = 'BLU', level = 40 },
+    { set = 'TripleShot', job = 'COR', level = 87, mainOnly = true },
+    { set = 'PetRangedWS', job = 'PUP', level = 1, mainOnly = true },
+    { set = 'Sublimation', job = 'SCH', level = 35 },
+    { set = 'Stratagem', job = 'SCH', level = 55, mainOnly = true },
+    { set = 'BurstAffinity', job = 'BLU', level = 25 },
+    { set = 'PetIdle', job = 'SMN', level = 1, mainOnly = true },
+    { set = 'Summoning', job = 'SMN', level = 1, mainOnly = true },
     { set = 'ThirdEye', job = 'SAM', level = 15 },
     { set = 'Hasso', job = 'SAM', level = 25 },
     { set = 'Seigan', job = 'SAM', level = 35 },
@@ -487,8 +500,17 @@ plan.SpellMode = function(skill, name)
         end
         return 'Song';
     elseif (skill == 'Blue Magic') then
-        return require('vg.lists').BluePhysical[name] and 'BluePhysical' or 'BlueMagical';
+        -- by what the spell needs, as GetAwayCoxn's BLU.lua sorts them
+        local L = require('vg.lists');
+        if (name == 'White Wind') then return 'WhiteWind'; end
+        if (L.BlueCure[name]) then return 'Cure'; end
+        if (L.BlueSkill[name]) then return 'BlueSkill'; end
+        if (L.BlueDebuff[name]) then return 'BlueDebuff'; end
+        if (L.BlueBuff[name]) then return 'BlueBuff'; end
+        if (L.BlueEnmity[name]) then return 'Enmity'; end
+        return L.BluePhysical[name] and 'BluePhysical' or 'BlueMagical';
     elseif (skill == 'Geomancy') then
+        if (string.find(name, '^Indi%-')) then return 'Indi'; end
         return 'Geomancy';
     end
     return nil;

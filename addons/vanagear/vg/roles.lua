@@ -156,7 +156,23 @@ roles.Modes = {
     SongDebuff = { Stats = { MACC = 1, SINGING = 0.9, STRING = 0.9, WIND = 0.9, CHR = 0.5, SONG_DURATION_BONUS = 0.5 } },
     BluePhysical = { Stats = { STR = 1, DEX = 0.7, ATT = 0.5, ACC = 0.5, BLUE = 0.5 } },
     BlueMagical = { Stats = { MATT = 2, INT = 1, MACC = 0.7, BLUE = 0.3 } },
+    -- the rest of the blue spells by what they need (GetAwayCoxn's BLU.lua): landing, skill, MP, HP
+    BlueDebuff = { Stats = { MACC = 2, BLUE = 1, MND = 0.3, INT = 0.3 } },
+    BlueSkill = { Stats = { BLUE = 3, CONSERVE_MP = 0.3 } },
+    BlueBuff = { Stats = { CONSERVE_MP = 2, BLUE = 0.5, ENH_MAGIC_DURATION = 0.5 } },
+    WhiteWind = { Stats = { HP = 0.1, CURE_POTENCY = 2, BLUE = 0.3, MND = 0.2 }, Caps = { CURE_POTENCY = 50 } },
+    -- over a physical spell under Chain Affinity, a magical one under Burst Affinity (bluemagic.lua reads both)
+    -- the Scholar's (the SCH template): Sublimation's gear stores more MP each tick while it charges
+    -- (effects\sublimation_activated.lua); Rapture and Ebullience gear is read on the spell they strengthen
+    -- (magic.lua, damage_spell.lua)
+    Sublimation = { Stats = { SUBLIMATION_BONUS = 3 } },
+    Stratagem = { Stats = { RAPTURE_AMOUNT = 3, EBULLIENCE_AMOUNT = 3 } },
+    ChainAffinity = { Stats = { ENHANCES_CHAIN_AFFINITY = 3 } },
+    BurstAffinity = { Stats = { ENHANCES_BURST_AFFINITY = 3 } },
     Geomancy = { Stats = { GEOMANCY_SKILL = 1, HANDBELL_SKILL = 1, GEOMANCY_BONUS = 4, INDI_DURATION = 2, CONSERVE_MP = 0.2 } },
+    -- an Indi spell: its duration is read only for Indi (job_utils\geomancer.lua), so it weighs more here
+    -- (GetAwayCoxn's GEO.lua Indi set)
+    Indi = { Stats = { GEOMANCY_SKILL = 1, HANDBELL_SKILL = 1, GEOMANCY_BONUS = 4, INDI_DURATION = 3, CONSERVE_MP = 0.2 } },
 
     -- shooting. Luck of the Draw (FFXIAH node 326): Snapshot to its 70% cap first, then Rapid
     -- Shot; in the shot itself ranged accuracy and Store TP come first, damage a distant second.
@@ -166,7 +182,9 @@ roles.Modes = {
     -- it frees go to Rapid Shot (GetAwayCoxn's RNG.lua: Preshot_FlurryI, Preshot_FlurryII)
     Preshot_Flurry = { Stats = { SNAPSHOT = 3, RAPID_SHOT = 1.5 }, Caps = { SNAPSHOT = 55 } },
     Preshot_FlurryII = { Stats = { SNAPSHOT = 3, RAPID_SHOT = 1.5 }, Caps = { SNAPSHOT = 40 } },
-    Midshot = { Stats = { RACC = 1.5, STORETP = 2, AGI = 0.4, RATT = 0.4, CRITHITRATE = 0.3, TRIPLE_SHOT_RATE = 1 } },
+    Midshot = { Stats = { RACC = 1.5, STORETP = 2, AGI = 0.4, RATT = 0.4, CRITHITRATE = 0.3 } },
+    -- the Corsair's shot under Triple Shot: the rate gear only counts while it is up (battle_entity.cpp)
+    TripleShot = { Stats = { TRIPLE_SHOT_RATE = 3, RACC = 1.5, STORETP = 1.5, AGI = 0.4, RATT = 0.5 } },
     -- with /vg tp acc: the shot for a monster you keep missing
     Midshot_Acc = { Stats = { RACC = 3, AGI = 0.8, STORETP = 0.5, RATT = 0.2 } },
     -- the Ranger's (the RNG template), each a whole shot set with the effect on top. The server reads
@@ -189,6 +207,11 @@ roles.Modes = {
     -- Summoner: blood pact delay on the press (Blood Pact Delay II caps at -15 s), the summoning
     -- skill and Blood Boon for wards (Summoner Guide by Lunareticc, FFXIAH node 245)
     BPDelay = { Stats = { BP_DELAY = 3, BP_DELAY_II = 3 }, Caps = { BP_DELAY = 15, BP_DELAY_II = 15 } },
+    -- the avatar out and standing by: the upkeep down (status_effect_container.cpp reads PERPETUATION_REDUCTION)
+    -- and MP back (GetAwayCoxn's SMN.lua Pet_Idle)
+    PetIdle = { Stats = { PERPETUATION_REDUCTION = 5, HALF_PERPETUATION_DAY = 1, HALF_PERPETUATION_WEATHER = 1, REFRESH = 3, SUMMONING = 0.3, PDT = -0.3 }, Caps = { PDT = -50 } },
+    -- calling an avatar: its level is set as it arrives (petutils.cpp reads AVATAR_LVL_BONUS), and the cast is long
+    Summoning = { Stats = { AVATAR_LVL_BONUS = 3, SPELLINTERRUPT = 1, SUMMONING = 0.3 }, Caps = { SPELLINTERRUPT = 102 } },
     BPWard = { Stats = { SUMMONING = 1, BLOOD_BOON = 1 }, Pet = { TP_BONUS = 0.01 } },
 
     -- Beastmaster abilities (Killer Instinct: The Beastmaster Compendium, FFXIAH node 227)
@@ -217,7 +240,12 @@ roles.Modes = {
         Stats = { PDT = -0.5 },
         Caps = DT,
     },
+    -- a wyvern's breath, healing or damage: the master's Wyvern Breath gear, capped at 64 (job_utils\dragoon.lua),
+    -- and breath accuracy for the damage ones (the DRG template)
+    Breath = { Stats = { WYVERN_BREATH = 3, WYVERN_BREATH_MACC = 1 }, Caps = { WYVERN_BREATH = 64 } },
     PetAtk = { Pet = { ATT = 1, ACC = 0.6, STR = 0.5, DOUBLE_ATTACK = 1, PET_TP_BONUS = 0.01, ALL_WSDMG_ALL_HITS = 2 } },
+    -- an automaton's ranged weapon skill (Arcuballista, Armor Piercer): worn ahead of it in the PUP template
+    PetRangedWS = { Pet = { RATT = 1, RACC = 0.8, AGI = 0.4, PET_TP_BONUS = 0.02 } },
     PetMab = { Pet = { MATT = 2, MACC = 1, INT = 0.5 } },
     PetAcc = { Pet = { ACC = 2, MACC = 1.5, ATT = 0.3 } },
 };

@@ -42,6 +42,27 @@ lists.BluePhysical = set({
     'Thrashing Assault', 'Sinker Drill', 'Sweeping Gouge', 'Saurian Slide',
 });
 
+-- The other blue spells by what they need (GetAwayCoxn's gcinclude.lua lists): the ones that have to
+-- land, stuns, buffs (MP saved), the ones whose strength is blue magic skill, cures, hate.
+lists.BlueDebuff = set({
+    'Filamented Hold', 'Cimicine Discharge', 'Demoralizing Roar', 'Venom Shell', 'Light of Penance', 'Sandspray',
+    'Auroral Drape', 'Frightful Roar', 'Enervation', 'Infrasonics', 'Lowing', 'CMain Wave', 'Awful Eye',
+    'Voracious Trunk', 'Sheep Song', 'Soporific', 'Yawn', 'Dream Flower', 'Chaotic Eye', 'Sound Blast', 'Blank Gaze',
+    'Stinking Gas', 'Geist Wall', 'Feather Tickle', 'Reaving Wind', 'Mortal Ray', 'Absolute Terror', 'Blistering Roar',
+    'Cruel Joke',
+    -- stuns: they have to land too
+    'Head Butt', 'Frypan', 'Tail Slap', 'Sub-zero Smash', 'Sudden Lunge',
+});
+lists.BlueBuff = set({
+    'Cocoon', 'Refueling', 'Feather Barrier', 'Memento Mori', 'Zephyr Mantle', 'Warm-Up', 'Amplification',
+    'Triumphant Roar', 'Saline Coat', 'Reactor Cool', 'Plasma Charge', 'Regeneration', 'Animating Wail',
+    'Battery Charge', 'Winds of Promy.', 'Barrier Tusk', 'Orcish Counterstance', 'Pyric Bulwark', 'Nat. Meditation',
+    'Restoral', 'Erratic Flutter', 'Carcharian Verve', 'Harden Shell', 'Mighty Guard',
+});
+lists.BlueSkill = set({ 'Metallic Body', 'Diamondhide', 'Magic Barrier', 'Occultation', 'Atra. Libations' });
+lists.BlueCure = set({ 'Pollen', 'Healing Breeze', 'Wild Carrot', 'Magic Fruit', 'Plenilune Embrace' });
+lists.BlueEnmity = set({ 'Actinic Burst', 'Exuviation', 'Fantod', 'Jettatura', 'Temporal Shift' });
+
 -- Blood pacts by what they need (GetAwayCoxn's gcinclude.lua lists).
 lists.BPMagical = set({
     'Searing Light', 'Meteorite', 'Holy Mist', 'Inferno', 'Fire II', 'Fire IV', 'Meteor Strike', 'Conflag Strike',

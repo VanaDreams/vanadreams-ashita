@@ -57,4 +57,19 @@ return {
         } },
     },
     -- Repair, Overdrive, Tactical Switch: their sets come from what the server reads on the press.
+    -- The automaton's level is set as it is activated (petutils.cpp, AUTOMATON_LVL_BONUS); each Maneuver adds
+    -- burden, and the overload threshold and suppression gear is read then (automaton_entity.cpp).
+    -- (MANEUVER_BONUS is on gear but the server never reads it: M430.)
+    Abilities = {
+        ['Activate'] = { Stats = { AUTOMATON_LVL_BONUS = 3 } },
+        ['Deus Ex Automata'] = { Stats = { AUTOMATON_LVL_BONUS = 3 } },
+        ['Fire Maneuver'] = { Stats = { OVERLOAD_THRESH = 2, SUPPRESS_OVERLOAD = 3 } },
+        ['Ice Maneuver'] = { Stats = { OVERLOAD_THRESH = 2, SUPPRESS_OVERLOAD = 3 } },
+        ['Wind Maneuver'] = { Stats = { OVERLOAD_THRESH = 2, SUPPRESS_OVERLOAD = 3 } },
+        ['Earth Maneuver'] = { Stats = { OVERLOAD_THRESH = 2, SUPPRESS_OVERLOAD = 3 } },
+        ['Thunder Maneuver'] = { Stats = { OVERLOAD_THRESH = 2, SUPPRESS_OVERLOAD = 3 } },
+        ['Water Maneuver'] = { Stats = { OVERLOAD_THRESH = 2, SUPPRESS_OVERLOAD = 3 } },
+        ['Light Maneuver'] = { Stats = { OVERLOAD_THRESH = 2, SUPPRESS_OVERLOAD = 3 } },
+        ['Dark Maneuver'] = { Stats = { OVERLOAD_THRESH = 2, SUPPRESS_OVERLOAD = 3 } },
+    },
 };

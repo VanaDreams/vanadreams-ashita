@@ -31,6 +31,7 @@ return {
     Tweaks = {
         Idle = { Stats = { REFRESH = 7, REGEN = 3 } },
         Geomancy = { Stats = { GEOMANCY_SKILL = 1.5, HANDBELL_SKILL = 1.5, CONSERVE_MP = 0.3 } },
+        Indi = { Stats = { GEOMANCY_SKILL = 1.5, HANDBELL_SKILL = 1.5, CONSERVE_MP = 0.3 } },
         PetDT = { Pet = { REGEN = 2, DMG = -5 } },
     },
     Bands = {
@@ -39,6 +40,7 @@ return {
         { To = 75, Tweaks = {} },
         { To = 99, Tweaks = {
             Geomancy = { Stats = { GEOMANCY_SKILL = 1.5, HANDBELL_SKILL = 1.5, CONSERVE_MP = 0.4, INDI_DURATION = 1.5 } }, -- Thought Bubble: 900 skill first, then Conserve MP and Indicolure duration
+            Indi = { Stats = { GEOMANCY_SKILL = 1.5, HANDBELL_SKILL = 1.5, CONSERVE_MP = 0.4, INDI_DURATION = 2.5 } },     -- the same, Indicolure duration counting for Indi spells
             PetDT = { Pet = { DMG = -5, REGEN = 4 }, PetCaps = { DMG = -37.5 } },                          -- Thought Bubble: the Luopan has -50% natively and caps at -87.5%; pet regen about 22
             Idle = { Stats = { REFRESH = 2, REGEN = 0.5, PDT = -4, MDT = -3 } },                            -- Thought Bubble: the Refresh and Regen idles rejected, the Luopan first; 29% PDT and 18% MDT on the GEO
             Precast = { Stats = { FASTCAST = 3.5 } },                                                       -- Thought Bubble: fast cast capped from gear
