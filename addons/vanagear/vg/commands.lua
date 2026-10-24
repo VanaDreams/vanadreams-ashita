@@ -63,7 +63,7 @@ commands.Lines = function()
     line('/vg lock <slot>|all, /vg unlock <slot>|all', 'keep a slot as you have it: nothing equips it, saved for this job (/vg disable and /vg enable are the same)');
     line('/vg why <set> <slot>', 'the piece that won and the three behind it');
     line('/vg upgrades', 'pieces in storage that would win a slot');
-    line('/vg underlay on | off', 'fill the slots your sets leave empty from the built sets (off: your sets as written, your rules only)');
+    line('/vg underlay on | off', 'fill the slots your sets leave empty from the built sets (off: your sets exactly as written)');
     line('/vg reload, /vg load <file>, /vg newlua [name]', 'read your profile again / load another / make a new one, in config\\addons\\vanagear\\profiles');
     line('/vg template', 'write this job\'s profile again from its job template, keeping your sets and commands (the old one goes to backups first)');
     line('/vg edit, /vg list [set]', 'open your profile in your editor / list every set worn, built ones included (/vg sets lists only yours)');
