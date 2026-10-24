@@ -173,6 +173,40 @@ profile.WriteBuilt({ Idle = { Head = 'Nyame Helm' } }, 'WAR')
 profile.SetSlot(warPath, 'Idle', 'Feet', 'Hermes\' Sandals')
 check('template takes built and your slots', profile.Run(warPath).Built.Idle.Head == 'Nyame Helm' and profile.Run(warPath).Sets.Idle.Feet == "Hermes' Sandals")
 
+-- /vg template: the pulled-over DNC profile written again from the DNC template
+local before = readAll(path)
+local beforeSets = profile.Run(path).Sets
+local saved, why = profile.Retemplate('DNC')
+check('rewritten, backup path given', saved ~= nil and saved:find('\\backups\\', 1, true) ~= nil)
+check('backup holds the old file exactly', saved ~= nil and readAll(saved) == before)
+local d = profile.Run(path)
+check('now the DNC template', d ~= nil and d.VgTemplate == true and readAll(path):find('vanagear template: Dancer', 1, true) ~= nil)
+check('old code gone', readAll(path):find('/alias /dnc', 1, true) == nil)
+local function same(a, b)
+    if type(a) ~= type(b) then return false end
+    if type(a) ~= 'table' then return a == b end
+    for k, v in pairs(a) do if not same(v, b[k]) then return false end end
+    for k in pairs(b) do if a[k] == nil then return false end end
+    return true
+end
+local allKept, count = true, 0
+for name, set in pairs(beforeSets) do
+    count = count + 1
+    if not same(set, d.Sets[name]) then allKept = false; print('changed: ' .. name) end
+end
+check('every one of your sets kept, slot by slot (' .. count .. ')', allKept and count > 3 and d.Sets.Engaged.Body == 'My Engaged Body')
+check('priority list kept', d.Sets.Idle_Priority.Head[1] == 'Glory Crown' and d.Sets.Idle_Priority.Head[2] == 'Old Hat')
+check('template\'s declared sets there', type(d.Sets.Climactic) == 'table' and type(d.Sets.Stoneskin_Precast) == 'table')
+check('your commands kept', d.Commands.reward ~= nil and d.Commands.reward[1] == '/ja "Reward" <me>')
+check('built table there', type(d.Built) == 'table')
+local untouched = readAll(warPath)
+check('no profile: nothing done', profile.Retemplate('GEO') == nil)
+os.remove(vgDir .. '\\profiles\\Ferrin_6971\\WAR.lua.bak')
+os.rename(install .. 'addons\\vanagear\\templates\\WAR.lua', install .. 'addons\\vanagear\\templates\\WAR.lua.off')
+local s2, why2 = profile.Retemplate('WAR')
+check('no template: nothing done, file as it was', s2 == nil and why2:find('no template', 1, true) ~= nil and readAll(warPath) == untouched)
+os.rename(install .. 'addons\\vanagear\\templates\\WAR.lua.off', install .. 'addons\\vanagear\\templates\\WAR.lua')
+
 -- trusts
 check('trust sets written', profile.WriteTrustSets('Shantotto II', { Idle = { Head = 'remove', Feet = 'Tandava Crackows' } }))
 local sent = profile.WriteTrust('Shantotto II', { Idle = { Head = 'Nyame Helm', Body = 'Nyame Mail' }, Cure = { Hands = 'Nyame Gauntlets' } })

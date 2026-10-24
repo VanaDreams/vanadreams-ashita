@@ -278,6 +278,62 @@ end
 
 -- ---------------------------------------------------------------- reading a profile
 
+-- The job's profile written again from its template (/vg template): your sets and your commands carried
+-- into the new file, everything else the template's (its sections, handlers and declared sets; built is
+-- rewritten at the next rebuild). The old file is copied into backups\ first, every time, whatever the
+-- backup setting; if anything after that fails the old file is put back. Returns the backup's path, or
+-- nil and why. Lee, 24 Oct 2026.
+profile.Retemplate = function(job)
+    local path = profile.Path(job);
+    local old = readFile(path);
+    if (old == nil) then
+        return nil, 'there is no ' .. job .. ' profile yet';
+    end
+    local template = readFile(profile.JobTemplatePath(job));
+    if (template == nil) then
+        return nil, 'vanagear has no template for ' .. job;
+    end
+    local p = profile.Run(path);
+    if (p == nil) then
+        return nil, 'your ' .. job .. ' profile does not load, so its sets cannot be read';
+    end
+    -- each of your sets as its own text in the old file, so it comes over exactly as written: lists of
+    -- pieces by level, augments, comments (written out again, LuAshitacast's set writer would drop a list)
+    local mine = {};
+    for _, opener in ipairs({ 'local sets = {', 'local Sets = {', 'profile.Sets = {', 'local sets = T{', 'local Sets = T{', 'profile.Sets = T{' }) do
+        local _, e = string.find(old, opener, 1, true);
+        if (e ~= nil) then
+            for _, key in ipairs(gFileTools.ParseTable(old, e + 1)) do
+                if (mine[key.Name] == nil) then mine[key.Name] = string.sub(old, key.StartIndex, key.EndIndex); end
+            end
+            break;
+        end
+    end
+    local words = (type(p.Commands) == 'table') and p.Commands or {};
+
+    local saved = string.format('%s\\backups\\%s_%s.lua', base(), os.date('%Y.%m.%d_%H.%M.%S'), job);
+    if (not write(saved, old)) then
+        return nil, 'the backup could not be written, so nothing was changed';
+    end
+    local function undo(why)
+        write(path, old);
+        return nil, why .. '; your old profile is back';
+    end
+    if (not write(path, template)) then
+        return undo('the template could not be written');
+    end
+    if (next(mine) ~= nil) and (not gFileTools.SaveSets(path, mine)) then
+        return undo('your sets could not be written in');
+    end
+    if (next(words) ~= nil) and (not profile.WriteCommands(path, words)) then
+        return undo('your commands could not be written in');
+    end
+    if (profile.Run(path) == nil) then
+        return undo('the new file would not load');
+    end
+    return saved;
+end
+
 -- The file run as a profile is run, for its tables. nil when it will not load.
 local function run(path)
     local chunk = loadfile(path);

@@ -364,6 +364,9 @@ local SaveSets = function(path, sets, starts)
                 if (string.sub(wholeFile, pos, pos) == ',') then
                     pos = pos + 1;
                 end
+            elseif (type(set) == 'string') then
+                -- the set's own text, copied whole (vanagear: /vg template carries your sets over as written)
+                out:write(set);
             else
                 WriteSet(out, key.Name, set);
             end
@@ -388,7 +391,7 @@ local SaveSets = function(path, sets, starts)
     out:write(string.sub(wholeFile, pos, tableEnd - 1));
     for _,name in ipairs(names) do
         out:write('\n    ');
-        WriteSet(out, name, sets[name]);
+        if (type(sets[name]) == 'string') then out:write(sets[name]); else WriteSet(out, name, sets[name]); end
         out:write(',');
     end
     if (#names > 0) then

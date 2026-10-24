@@ -66,6 +66,7 @@ commands.Lines = function()
     line('/vg underlay on | off', 'fill the slots your sets leave empty from the built sets (off: your sets as written, your rules only)');
     line('/vg addset <name>', 'write what you are wearing into your profile as a set');
     line('/vg reload, /vg load <file>, /vg newlua [name]', 'read your profile again / load another / make a new one, in config\\addons\\vanagear\\profiles');
+    line('/vg template', 'write this job\'s profile again from its job template, keeping your sets and commands (the old one goes to backups first)');
     line('/vg edit, /vg list [set]', 'open your profile in your editor / list its sets');
     line('/vg set <set> [seconds], /vg equip <slot> <item>', 'keep a set on for a while / put one piece on');
     line('/vg fwd <args>', 'hand a command to your profile\'s own HandleCommand');
@@ -313,6 +314,21 @@ commands.Vg = function(args)
         end
         core.Request(true);
         say('Reloaded your profile; rebuilding.');
+    elseif (cmd == 'template') then
+        -- this job's profile written again from its template, your sets and commands kept, a backup first
+        local job = (gProfile ~= nil) and gProfile.VgJob or (gVana.Who and gVana.Who.JobName);
+        if (job == nil) then
+            say('No job loaded yet.');
+        else
+            local saved, why = require('vg.profile').Retemplate(job);
+            if (saved == nil) then
+                say('Not rewritten: ' .. why .. '.');
+            else
+                gState.LoadProfileEx(require('vg.profile').Path(job));
+                core.Request(true);
+                say('Your ' .. job .. ' profile is the ' .. job .. ' template now, with your sets and commands; rebuilding. The old one is at ' .. saved .. '.');
+            end
+        end
     elseif (cmd == 'build') then
         core.Request(true);
         say('Rebuilding.');
