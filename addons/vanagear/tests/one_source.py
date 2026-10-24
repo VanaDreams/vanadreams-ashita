@@ -51,6 +51,13 @@ gProfile.Sets.Idle = { Body = 'New File Body' }
 use.WearOnce('Idle')
 check('Wear it after a change wears the changed set', forced[2].Body == 'New File Body')
 
+-- Put the built set on me: the profile's built table alone, your picks left out, nothing held
+gVana = gVana or {}
+gVana.Built = { Idle = { Body = 'Built Body', Hands = 'Built Hands' } }
+check('built set on', use.WearBuilt('Idle') and forced[3] == gVana.Built.Idle and forced[3].Body == 'Built Body')
+check('no built set: nothing put on', use.WearBuilt('Nothing') == false and #forced == 3)
+check('nothing held after the built set', #held == 0)
+
 -- /vg wear: the explicit hold, and off
 use.Wear('Idle', gProfile.Sets.Idle)
 use.Tick('HandleDefault')

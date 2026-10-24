@@ -3,7 +3,7 @@
 
     The file is in sections, in the order a profile runs, so each thing has an obvious place:
       1. built       the sets vanagear builds from your bags (it rewrites this; leave it alone)
-      2. sets        your sets: the /vg window's drop-downs, "Take what I wear" and /vg addset write here
+      2. sets        your sets: the /vg window's drop-downs, "Save what I'm wearing to this set" and /vg addset write here
       3. lists       names your own rules look things up in
       4. state       your toggles and modes
       5. commands    /vg <word> lines, made in the window's Your commands tab
@@ -97,7 +97,7 @@ local skillSets = {
 
 -- vanagear's helpers, the same in every job -------------------------------------------------------------
 
--- a set you have put gear in yourself (the /vg window, Take what I wear, /vg addset)
+-- a set you have put gear in yourself (the /vg window, Save what I'm wearing to this set, /vg addset)
 local function yours(name)
     return (gVana.Own ~= nil) and (gVana.Own[name] ~= nil) and (next(gVana.Own[name]) ~= nil);
 end

@@ -12,7 +12,7 @@
     The profile file is the only store. It holds two tables of gear:
       built  the sets vanagear builds from your bags with the job template (jobs\<JOB>.lua, the band for
              your level); vanagear rewrites this table, and only this one, at each rebuild
-      sets   yours: the /vg window's drop-downs, "Take what I wear", /vg addset, and the sets of a
+      sets   yours: the /vg window's drop-downs, "Save what I'm wearing to this set", /vg addset, and the sets of a
              LuAshitacast profile pulled over
     What is worn is your sets with any empty slot filled from built. A set of yours named Engaged, WS,
     FastCast or DT (mine.Aliases) is the built set it means, so a pulled-over profile's own code wears
@@ -88,7 +88,7 @@ profile.JobTemplate = function(name, job)
         '};',
         'profile.Built = built;',
         '',
-        '-- Your sets: the /vg window, "Take what I wear" and /vg addset write here. A slot you leave out is',
+        '-- Your sets: the /vg window, "Save what I\'m wearing to this set" and /vg addset write here. A slot you leave out is',
         '-- filled from built.',
         'local sets = {',
         '};',
@@ -625,7 +625,7 @@ profile.SetSlot = function(path, setName, slot, piece, noBackup)
     return write(path, text);
 end
 
--- A whole set of yours into the file (Take what I wear), or out of it with set = false.
+-- A whole set of yours into the file (Save what I'm wearing to this set), or out of it with set = false.
 profile.SaveSet = function(path, setName, set)
     backup(path);
     local text = readFile(path);

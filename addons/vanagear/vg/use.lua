@@ -230,6 +230,17 @@ use.WearOnce = function(name, set)
     return now ~= nil;
 end
 
+-- The window's Put the built set on me: the built set alone, without your picks, put on once. Read out
+-- of the profile's built table (profile.Refresh); nothing held, as WearOnce.
+use.WearBuilt = function(name)
+    local now = (type(gVana.Built) == 'table') and gVana.Built[name] or nil;
+    if (type(now) ~= 'table') then
+        return false;
+    end
+    gFunc.ForceEquipSet(now);
+    return true;
+end
+
 use.Worn = function()
     return worn and worn.name;
 end

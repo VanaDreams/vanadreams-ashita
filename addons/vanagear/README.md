@@ -142,7 +142,7 @@ it lists the item names in `gVana.WeaponAllow` and vanagear lets those through.
   Untick, or `/vg look off`, to unlock.
 - `/vg set <name> <slot> <item>` changes one slot from chat; `/vg sets` lists yours.
 - Kept in your job's profile, `config\addons\vanagear\profiles\<Name>_<id>\<JOB>.lua`, in its sets table.
-- **Wear it** in the window puts a set on once; your profile's own swaps carry on from there.
+- **Put this set on me** in the window puts a set on once (your picks, built filling the rest); **Put the built set on me** puts the built set on alone; **Save what I'm wearing to this set** writes what you wear into the set; **Undo my last change** takes back your last change to it. Your profile's own swaps carry on from there.
   `/vg wear <name>` is the one that keeps it on.
 
 ## Settings

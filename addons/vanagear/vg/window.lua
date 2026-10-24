@@ -436,13 +436,20 @@ renderSlots = function(name)
         end
     end
     imgui.Separator();
-    if (vd.Button('Wear it', nil, true)) then
+    if (vd.Button('Put this set on me', nil, true)) then
         -- on once, from your profile; your profile's own swaps carry on from there
         require('vg.use').WearOnce(name, set);
         setNote = 'Put ' .. name .. ' on. Your profile swaps as usual from here (/vg wear ' .. name .. ' keeps it on).';
     end
+    if (gVana.Built[name] ~= nil) then
+        imgui.SameLine();
+        if (vd.Button('Put the built set on me')) then
+            require('vg.use').WearBuilt(name);
+            setNote = 'Put the built ' .. name .. ' on, without your picks. Your sets are as they were.';
+        end
+    end
     imgui.SameLine();
-    if (vd.Button('Take what I wear')) then
+    if (vd.Button("Save what I'm wearing to this set")) then
         mine.SaveSet(name);
         setNote = name .. ' now holds what you wear.';
     end
@@ -455,9 +462,9 @@ renderSlots = function(name)
     end
     if (yours) then
         imgui.SameLine();
-        if (vd.Button(gVana.Built[name] and 'Back to the built set' or 'Delete this set')) then
+        if (vd.Button(gVana.Built[name] and 'Clear my picks' or 'Delete this set')) then
             mine.RemoveSet(name);
-            setNote = gVana.Built[name] and (name .. ' is back to the built set.') or (name .. ' deleted.');
+            setNote = gVana.Built[name] and ('Your picks in ' .. name .. ' are cleared; the built set fills it. Undo brings them back.') or (name .. ' deleted.');
         end
     end
     imgui.TextDisabled('* = your pick. Name a set after an ability, weaponskill or spell and it goes on for it.');
