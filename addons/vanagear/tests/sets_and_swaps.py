@@ -1,7 +1,7 @@
 r"""Off-game test of three vanagear behaviours (Ferrin, 18 Oct 2026):
 - a slot you change from the equipment menu is left alone until the next zone;
 - the fighting set answers to "Engaged" (and the window lists it so);
-- /vg takeover copies a LuAshitacast profile's sets into your own vanagear sets.
+- (pulling a LuAshitacast profile over is tests\profiles.py).
 
     python addons/vanagear/tests/sets_and_swaps.py
 """
@@ -43,19 +43,6 @@ out[#out + 1] = 'after zone ' .. tostring(gState.Disabled[16]) .. ' ' .. tostrin
 
 out[#out + 1] = 'names ' .. mine.SetName('Engaged') .. ' ' .. mine.SetName('TP') .. ' ' .. mine.Label('Tp_Default') .. ' ' .. mine.SetName('Seigan')
 
-local count = mine.ImportProfile({
-    Engaged = { Head = 'Flamma Zucchetto +2', Back = { Name = "Takaha Mantle", Augment = 'STR+5' } },
-    ['Idle'] = { Body = 'Sacro Breastplate' },
-    ['Tachi: Fudo'] = { Neck = 'Samurai\'s Nodowa +2' },
-    Empty = {},
-})
-local sets = mine.Sets()
-out[#out + 1] = 'imported ' .. count .. ' ' .. tostring(sets.Tp_Default and sets.Tp_Default.Head) .. ' / '
-    .. tostring(sets.Tp_Default and sets.Tp_Default.Back) .. ' / ' .. tostring(sets.Idle and sets.Idle.Body) .. ' / '
-    .. tostring(sets.TachiFudo and sets.TachiFudo.Neck) .. ' / ' .. tostring(sets.Empty)
--- and the built Tp_Default gets them laid over it
-local merged = mine.Overlay({ Tp_Default = { Head = 'Built Helm', Body = 'Built Body' } })
-out[#out + 1] = 'overlay ' .. merged.Tp_Default.Head .. ' / ' .. merged.Tp_Default.Body
 return table.concat(out, '\n')
 """, str(ADDON), TMP)
 print(result)
@@ -63,8 +50,6 @@ expect = [
     'held true',
     'after zone false true',
     'names Tp_Default Tp_Default Engaged Seigan',
-    "imported 3 Flamma Zucchetto +2 / Takaha Mantle / Sacro Breastplate / Samurai's Nodowa +2 / nil",
-    'overlay Flamma Zucchetto +2 / Built Body',
 ]
 lines = result.split('\n')
 assert lines == expect, '\n'.join(f'{a!r} vs {b!r}' for a, b in zip(lines, expect) if a != b)

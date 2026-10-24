@@ -63,9 +63,15 @@ commands.Lines = function()
     line('/vg lock <slot>, /vg unlock <slot>', 'keep a slot as you have it');
     line('/vg why <set> <slot>', 'the piece that won and the three behind it');
     line('/vg upgrades', 'pieces in storage that would win a slot');
-    line('/vg underlay on | off', 'built sets under your own profile\'s sets for this job');
-    line('/vg takeover', 'copy your LuAshitacast profile\'s sets for this job into vanagear\'s own and stop using the profile');
-    line('/vg profile on | off', 'use your LuAshitacast profile for this job again, or leave it alone');
+    line('/vg underlay on | off', 'fill the slots your sets leave empty from the built sets (off: your sets as written, your rules only)');
+    line('/vg addset <name>', 'write what you are wearing into your profile as a set');
+    line('/vg reload, /vg load <file>, /vg newlua [name]', 'read your profile again / load another / make a new one, in config\\addons\\vanagear\\profiles');
+    line('/vg edit, /vg list [set]', 'open your profile in your editor / list its sets');
+    line('/vg set <set> [seconds], /vg equip <slot> <item>', 'keep a set on for a while / put one piece on');
+    line('/vg fwd <args>', 'hand a command to your profile\'s own HandleCommand');
+    line('/vg lockstyle <set>, /vg naked, /vg disable|enable [slot]', 'the engine\'s look lock, strip and slot locks');
+    line('/vg gear, /vg packvalidate, /vg pack|unpack', 'Packer: fetch, check and put away the gear your profile names');
+    line('/vg config, /vg debug, /vg exec <lua>', 'the engine\'s settings window, debug output, run a line of Lua');
     line('/vg trusts on | off', 'give your called trusts the stats of a set from your bags (a tab each in /vg); off stops sending');
     for word, p in pairs(use.Words()) do
         line('/vg ' .. word, 'equip ' .. p.Name .. ', wait it out, use it, give the slot back');
@@ -214,8 +220,8 @@ end
 
 -- /gs validate: pieces the profile's sets name that are not in a bag you can equip from.
 commands.Validate = function()
-    if (gProfile == nil) or (type(gProfile.Sets) ~= 'table') or (gProfile.IsVanagearStock) then
-        say('Your sets are built from what you carry, so every piece is there.');
+    if (gProfile == nil) or (type(gProfile.Sets) ~= 'table') then
+        say('No profile loaded.');
         return;
     end
     local have = {};
@@ -266,13 +272,48 @@ commands.Vg = function(args)
     local cmd = string.lower(args[1] or '');
     local arg = string.lower(args[2] or '');
 
+    -- The engine's commands (LuAshitacast's, carried as vanagear's own in commandhandlers.lua), typed as
+    -- /vg <command>. Where a word is vanagear's too, the shape decides: /vg set <set> [seconds] locks a set
+    -- on and /vg set <set> <slot> <item> changes your set; /vg equip <slot> <item> is the engine's and
+    -- /vg equip <set> vanagear's. The engine's Packer validate is /vg packvalidate; /vg config opens its settings.
+    local engineWords = { addset = true, debug = true, disable = true, enable = true, edit = true, fwd = true, gear = true,
+        list = true, load = true, lockstyle = true, naked = true, newlua = true, pack = true, unpack = true, preppack = true,
+        prepunpack = true, safecall = true, unload = true, exec = true };
+    local engine = nil;
+    if (engineWords[cmd]) then engine = cmd;
+    elseif (cmd == 'packvalidate') then engine = 'validate';
+    elseif (cmd == 'config') then engine = '';
+    elseif (cmd == 'set') and (args[2] ~= nil) and (slotNames[string.lower(args[3] or '')] == nil) then engine = 'set';
+    elseif (cmd == 'equip') and (args[3] ~= nil) and (slotNames[arg] ~= nil) then engine = 'equip';
+    end
+    if (engine ~= nil) then
+        local rest;
+        local raw = commands.Raw;
+        if (raw ~= nil) then
+            -- as typed, so quoted item names keep their spaces: drop "/vg" and the word
+            rest = string.match(raw, '^%S+%s+%S+%s*(.*)$') or '';
+        else
+            rest = table.concat(args, ' ', 2);
+        end
+        local line = (engine == '') and '/vg' or ('/vg ' .. engine .. ((rest ~= '') and (' ' .. rest) or ''));
+        gCommandHandlers.HandleCommand({ command = line, blocked = false });
+        return;
+    end
+
     if (cmd == '') then
         gVana.Window.Open = not gVana.Window.Open;
     elseif (cmd == 'help') or (cmd == 'commands') then
         help();
     elseif (cmd == 'status') then
         commands.Status();
-    elseif (cmd == 'build') or (cmd == 'reload') then
+    elseif (cmd == 'reload') then
+        -- the profile file read again (as the engine's reload did), then the sets rebuilt into it
+        if (gProfile ~= nil) and (gProfile.FilePath ~= nil) then
+            gState.LoadProfileEx(gProfile.FilePath);
+        end
+        core.Request(true);
+        say('Reloaded your profile; rebuilding.');
+    elseif (cmd == 'build') then
         core.Request(true);
         say('Rebuilding.');
     elseif (cmd == 'dt') then
@@ -307,25 +348,6 @@ commands.Vg = function(args)
     elseif (cmd == 'weapons') then
         p.Weapons = onOff(arg, p.Weapons); save(); core.Request();
         say('vanagear ' .. (p.Weapons and 'chooses your weapons' or 'leaves your weapons alone') .. '.');
-    elseif (cmd == 'takeover') then
-        if (gProfile == nil) or (gProfile.IsVanagearStock) or (type(gProfile.Sets) ~= 'table') then
-            say('No LuAshitacast profile of yours is running for this job.');
-        else
-            local name = tostring(gProfile.FileName);
-            local count = mine.ImportProfile(gProfile.Sets);
-            p.Forgot = p.Forgot or {};
-            p.Forgot[job()] = true;
-            save();
-            gState.PendingAutoLoad = true;
-            say(string.format('Copied %d sets from %s into your vanagear sets; vanagear runs %s now. %s is untouched: /vg profile on uses it again.',
-                count, name, job(), name));
-        end
-    elseif (cmd == 'profile') then
-        p.Forgot = p.Forgot or {};
-        p.Forgot[job()] = (arg == 'off') or nil;
-        save();
-        gState.PendingAutoLoad = true;
-        say((arg == 'off') and ('Your profile is left alone for ' .. job() .. '.') or ('Your own profile runs again for ' .. job() .. ' if you have one.'));
     elseif (cmd == 'trusts') then
         p.TrustGear = onOff(arg, p.TrustGear ~= false); save();
         say('Trust gear: ' .. (p.TrustGear and 'your called trusts get their sets' or 'nothing is sent to your trusts') .. '.');
@@ -542,7 +564,7 @@ commands.Gs = function(args)
     end
 end
 
--- Called from the command event before LuAshitacast's own /lac handling. Returns true if the
+-- Called from the command event: /vg, /gs and your own words typed straight. Returns true if the
 -- command was ours.
 commands.Handle = function(e)
     local args = e.command:args();

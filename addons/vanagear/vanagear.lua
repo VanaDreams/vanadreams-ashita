@@ -116,16 +116,7 @@ end);
 
 ashita.events.register('command', 'vanagear_command_cb', function (e)
     guard('command', function ()
-        if (gVanaCommands.Handle(e)) then
-            return;
-        end
-        -- another LuAshitacast is loaded and swapping: its /lac commands are its own, not run a second time here
-        if (gVanaCore.StandingDown()) then
-            local word = string.lower((e.command or ''):match('^%S+') or '');
-            if (word == '/lac') or (word == '/luashitacast') then
-                return;
-            end
-        end
-        gCommandHandlers.HandleCommand(e);
+        -- vanagear answers /vg (and /gs) only; the engine's commands are /vg commands (vg\commands.lua)
+        gVanaCommands.Handle(e);
     end);
 end);

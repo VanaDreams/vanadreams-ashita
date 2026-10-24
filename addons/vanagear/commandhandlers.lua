@@ -2,18 +2,17 @@
 -- Copyright (c) 2021 ThornyFFXI; see LICENSE-LuAshitacast. Lines marked "vanagear:" are Vanadreams changes.
 local commands = {}
 
+-- vanagear: these are vanagear's own commands now, typed as /vg <command> (vg\commands.lua hands them
+-- here as "/vg ..."); /lac is not answered at all.
 commands.HandleCommand = function(e)
-    if string.lower(string.sub(e.command, 1, 9)) == '/lac exec' or string.lower(string.sub(e.command,1,18)) == '/luashitacast exec' then
+    if string.lower(string.sub(e.command, 1, 8)) == '/vg exec' then
         e.blocked = true;
-        local command = string.sub(e.command, 10, string.len(e.command));
-        if (string.sub(e.command, 1, 9) == '/luashitacast exec') then
-            command = string.sub(e.command, 19, string.len(e.command));
-        end
+        local command = string.sub(e.command, 9, string.len(e.command));
         local func = assert(loadstring(command));
         local success,error = pcall(func);
         if (not success) then
-            print (chat.header('LuAshitacast') .. chat.error('Error in execute: ') .. chat.color1(2,command));
-            print (chat.header('LuAshitacast') .. chat.error(error));
+            print (chat.header('vanagear') .. chat.error('Error in execute: ') .. chat.color1(2,command));
+            print (chat.header('vanagear') .. chat.error(error));
         end
         return;
     end
@@ -23,7 +22,7 @@ commands.HandleCommand = function(e)
         return;
     end
     args[1] = string.lower(args[1]);
-    if (args[1] ~= '/lac') and (args[1] ~= '/luashitacast') then
+    if (args[1] ~= '/vg') then
         return;
     end
     e.blocked = true;
@@ -35,24 +34,24 @@ commands.HandleCommand = function(e)
 
     if (args[2] == 'addset') then
         if (#args == 2) then
-            print(chat.header('LuAshitacast') .. chat.error('You must specify a set name for addset.'));
+            print(chat.header('vanagear') .. chat.error('You must specify a set name for addset.'));
             return;
         end
 
         local setName = AshitaCore:GetChatManager():ParseAutoTranslate(args[3], false);
         local cleanSetName = setName:gsub('[^%w%s_]+', '');
         if (setName ~= cleanSetName) then
-            print(chat.header('LuAshitacast') .. chat.error('Invalid characters located in set name.  Set must be only letters, numbers and underscores.'));
+            print(chat.header('vanagear') .. chat.error('Invalid characters located in set name.  Set must be only letters, numbers and underscores.'));
             return;
         end
 
         if (string.sub(setName, 1, 1) == '_') then
-            print(chat.header('LuAshitacast') .. chat.error('Set name should not start with an underscore.'));            
+            print(chat.header('vanagear') .. chat.error('Set name should not start with an underscore.'));            
             return;
         end
         
         if (tonumber(string.sub(setName, 1, 1)) ~= nil) then
-            print(chat.header('LuAshitacast') .. chat.error('Set name cannot start with a number.'));            
+            print(chat.header('vanagear') .. chat.error('Set name cannot start with a number.'));            
             return;
         end
 
@@ -73,9 +72,9 @@ commands.HandleCommand = function(e)
             gSettings.Debug = false;
         end
         if (gSettings.Debug) then
-            print(chat.header('LuAshitacast') .. chat.message('Debug mode ') .. chat.color1(2, 'enabled') .. chat.message('.'));
+            print(chat.header('vanagear') .. chat.message('Debug mode ') .. chat.color1(2, 'enabled') .. chat.message('.'));
         else
-            print(chat.header('LuAshitacast') .. chat.message('Debug mode ') .. chat.color1(2, 'disabled') .. chat.message('.'));
+            print(chat.header('vanagear') .. chat.message('Debug mode ') .. chat.color1(2, 'disabled') .. chat.message('.'));
         end
     end
 
@@ -100,7 +99,7 @@ commands.HandleCommand = function(e)
     if (args[2] == 'equip') then
         local argCount = #args;
         if (argCount < 4) or (argCount % 2) ~= 0 then  
-            print(chat.header('LuAshitacast') .. chat.error("Correct syntax is:  /lac equip [slot] [item] [optional: slot2] [optional: item2] [repeating]"));
+            print(chat.header('vanagear') .. chat.error("Correct syntax is:  /lac equip [slot] [item] [optional: slot2] [optional: item2] [repeating]"));
             return;
         elseif (argCount == 4) then
             local slot = gData.GetEquipSlot(args[3]);
@@ -171,12 +170,13 @@ commands.HandleCommand = function(e)
     
     if (args[2] == 'safecall') then
         gSettings.SafeCall = not gSettings.SafeCall;
-        print(chat.header('LuAshitacast') .. chat.message('Safecall ') .. chat.color1(2, gSettings.SafeCall and 'enabled' or 'disabled') .. chat.message('.'));
+        print(chat.header('vanagear') .. chat.message('Safecall ') .. chat.color1(2, gSettings.SafeCall and 'enabled' or 'disabled') .. chat.message('.'));
         return;
     end
     
     if (args[2] == 'newlua') then
-        local path = ('%sconfig\\addons\\luashitacast\\%s_%u\\'):fmt(AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId);
+        -- vanagear: a new profile is vanagear's template, in vanagear's profiles folder
+        local path = ('%sconfig\\addons\\vanagear\\profiles\\%s_%u\\'):fmt(AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId);
         if (#args == 2) then
             local job = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", gState.PlayerJob);
             if (type(job) == 'string') then
@@ -190,9 +190,20 @@ commands.HandleCommand = function(e)
                 path = path .. args[3] .. '.lua';
             end
         end
-        if (gFileTools.CreateProfile(path) == true) then
-            gState.LoadProfileEx(path);
-        end        
+        if ashita.fs.exists(path) then
+            gFunc.Error('Profile already exists: ' .. path);
+            return;
+        end
+        gFileTools.CreateDirectories(path);
+        local file = io.open(path, 'w');
+        if (file == nil) then
+            gFunc.Error('Failed to access file: ' .. path);
+            return;
+        end
+        local name = string.match(path, '([^\\]+)%.lua$') or 'profile';
+        file:write(require('vg.profile').JobTemplate(gState.PlayerName, name));
+        file:close();
+        gState.LoadProfileEx(path);
         return;
     end
 
@@ -201,7 +212,7 @@ commands.HandleCommand = function(e)
         if (gProfile ~= nil) then
             ashita.misc.execute(gProfile.FilePath, '');
         else
-            print(chat.header('LuAshitacast') .. chat.error("No profile loaded."));
+            print(chat.header('vanagear') .. chat.error("No profile loaded."));
         end
         return;
     end
@@ -210,7 +221,7 @@ commands.HandleCommand = function(e)
         if (gProfile ~= nil) then
             gState.LoadProfileEx(gProfile.FilePath);
         else
-            print(chat.header('LuAshitacast') .. chat.error("No profile loaded."));
+            print(chat.header('vanagear') .. chat.error("No profile loaded."));
         end
         return;
     end
@@ -229,16 +240,16 @@ commands.HandleCommand = function(e)
     
     if (args[2] == 'unload') then
         if (gProfile == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('No profile loaded.'));
+            print(chat.header('vanagear') .. chat.error('No profile loaded.'));
         else
             gState.UnloadProfile();
-            print(chat.header('LuAshitacast') .. chat.message('Profile unloaded.'));
+            print(chat.header('vanagear') .. chat.message('Profile unloaded.'));
         end
     end
     
     if (args[2] == 'gear') then
         if (gProfile == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('Could not perform gear.  No profile loaded.'));            
+            print(chat.header('vanagear') .. chat.error('Could not perform gear.  No profile loaded.'));            
         elseif not AshitaCore:GetPluginManager():IsLoaded('Packer') then
             gFunc.Error('Could not perform gear.  Packer is not loaded.');
             return;
@@ -249,7 +260,7 @@ commands.HandleCommand = function(e)
     
     if (args[2] == 'validate') then
         if (gProfile == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('Could not perform validate.  No profile loaded.'));            
+            print(chat.header('vanagear') .. chat.error('Could not perform validate.  No profile loaded.'));            
         elseif not AshitaCore:GetPluginManager():IsLoaded('Packer') then
             gFunc.Error('Could not perform validate.  Packer is not loaded.');
             return;
@@ -260,7 +271,7 @@ commands.HandleCommand = function(e)
     
     if (args[2] == 'pack') then
         if (gProfile == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('Could not perform pack.  No profile loaded.'));
+            print(chat.header('vanagear') .. chat.error('Could not perform pack.  No profile loaded.'));
         else
             gIntegration.HandleEvent('porter_pack');
         end
@@ -268,7 +279,7 @@ commands.HandleCommand = function(e)
     
     if (args[2] == 'unpack') then
         if (gProfile == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('Could not perform unpack.  No profile loaded.'));
+            print(chat.header('vanagear') .. chat.error('Could not perform unpack.  No profile loaded.'));
         else
             gIntegration.HandleEvent('porter_unpack');
         end
@@ -276,7 +287,7 @@ commands.HandleCommand = function(e)
     
     if (args[2] == 'preppack') then
         if (gProfile == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('Could not perform preppack.  No profile loaded.'));
+            print(chat.header('vanagear') .. chat.error('Could not perform preppack.  No profile loaded.'));
         else
             gIntegration.HandleEvent('porter_preppack');
         end
@@ -284,7 +295,7 @@ commands.HandleCommand = function(e)
     
     if (args[2] == 'prepunpack') then
         if (gProfile == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('Could not perform prepunpack.  No profile loaded.'));
+            print(chat.header('vanagear') .. chat.error('Could not perform prepunpack.  No profile loaded.'));
         else
             gIntegration.HandleEvent('porter_prepunpack');
         end

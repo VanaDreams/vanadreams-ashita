@@ -20,7 +20,15 @@ package.path = addon_path .. '/?.lua;' .. package.path
 bit = require('bit')
 chat = setmetatable({}, { __index = function() return function(...) return table.concat({...}, ' ') end end })
 string.trimend = function(s, c) return (s:gsub(c .. '+$', '')) end
-ashita = { fs = { exists = function() return true end, create_directory = function() end } }
+ashita = { fs = {
+    exists = function(p) local f = io.open(p, 'r'); if f then f:close(); return true end return false end,
+    create_directory = function(p) os.execute('mkdir "' .. p:gsub('/', '\\') .. '" 2>nul'); return true end,
+} }
+-- the trust profiles (vg\profile.lua) are named by the player; tests\profiles.py covers writing them
+gState = { PlayerName = 'Me', PlayerId = 1000 }
+function T(t) return setmetatable(t or {}, { __index = { append = function(self, v) self[#self + 1] = v end } }) end
+gFileTools = require('filetools')
+gSettings = { AddSetEquipScreenOrder = false }
 
 local mods = dofile(addon_path .. '/data/mods.lua')
 local ids = {}

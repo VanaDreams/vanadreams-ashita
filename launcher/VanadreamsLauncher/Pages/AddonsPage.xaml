@@ -40,7 +40,7 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Style="{StaticResource Hand}" FontSize="18" Margin="0,-3,0,0" Visibility="{Binding HandVisibility}"/>
-                                    <CheckBox Grid.Column="1" IsChecked="{Binding Enabled, Mode=TwoWay}" IsEnabled="{Binding HasV4}" VerticalAlignment="Center" Click="Check_Click" Tag="{Binding}"/>
+                                    <CheckBox Grid.Column="1" IsChecked="{Binding Enabled, Mode=TwoWay}" IsEnabled="{Binding CanTick}" VerticalAlignment="Center" Click="Check_Click" Tag="{Binding}"/>
                                     <TextBlock Grid.Column="2" Text="{Binding Label}" VerticalAlignment="Center" Opacity="{Binding Opacity}" TextWrapping="Wrap" Margin="0,3"/>
                                     <TextBlock Grid.Column="3" Text="{Binding Tag}" FontSize="11" FontWeight="ExtraBold" Foreground="{Binding TagBrush}" VerticalAlignment="Center" Typography.Capitals="AllSmallCaps" Margin="4,0,0,0"/>
                                 </Grid>

@@ -31,6 +31,7 @@ AshitaCore = {
         } end,
         GetPlayer = function() return {
             GetMainJob = function() return 9 end, GetJobLevel = function() return 99 end, GetMainJobLevel = function() return 99 end,
+            GetSubJob = function() return 19 end,
         } end,
     } end,
     GetResourceManager = function() return { GetItemById = function(_, id) return res[id] end } end,

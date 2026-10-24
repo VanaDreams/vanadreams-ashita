@@ -78,13 +78,13 @@ local function renderHowTo()
         .. 'slot and call it; /vg jugs lists the ones you carry.');
     imgui.Separator();
 
-    vd.Eyebrow('4. Going further: a LuAshitacast profile in Lua');
-    imgui.TextWrapped('vanagear is LuAshitacast underneath, so a profile of your own at '
-        .. 'config\\addons\\LuAshitacast\\<Name>_<id>\\<JOB>.lua runs as it always did, and its sets win over the built ones. '
-        .. 'A profile is a Lua file returning a table with these functions; LuAshitacast calls each one at that moment:');
+    vd.Eyebrow('4. Going further: your profile in Lua');
+    imgui.TextWrapped('Each job runs a profile file at config\\addons\\vanagear\\profiles\\<Name>_<id>\\<JOB>.lua (/vg edit opens it). '
+        .. 'It holds the built sets (rewritten at each rebuild), your sets (what the window and /vg addset write), your commands, '
+        .. 'and these functions, each called at that moment:');
     imgui.BulletText('OnLoad / OnUnload          when the profile starts and stops');
     imgui.BulletText('HandleDefault              every time nothing is in flight: idle, engaged, resting; chains tick here');
-    imgui.BulletText('HandleCommand(args)        /lac <word> ... reaches here: your own commands in Lua');
+    imgui.BulletText('HandleCommand(args)        /vg fwd <word> ... reaches here: your own commands in Lua');
     imgui.BulletText('HandlePrecast / HandleMidcast   a spell: gear before it starts, gear while it casts');
     imgui.BulletText('HandleWeaponskill / HandleAbility / HandleItem   a weaponskill, job ability or item, as it goes off');
     imgui.BulletText('HandlePreshot / HandleMidshot   a ranged attack, before and during');
@@ -523,13 +523,10 @@ window.Render = function()
             vd.Eyebrow(string.format('%s%d/%s%d', who.JobName, who.Level, who.SubName, who.SubLevel));
             imgui.SameLine();
             imgui.TextDisabled(string.format('  built from your inventory and wardrobes at %s', os.date('%H:%M', gVana.BuiltAt or os.time())));
-            if (gProfile ~= nil) and (not gProfile.IsVanagearStock) then
-                imgui.TextDisabled(string.format('Your profile %s runs; its own sets win. Built sets under it: %s.',
-                    tostring(gProfile.FileName), require('vg.core').Underlay() and 'on' or 'off'));
-                imgui.SameLine();
-                if (vd.SmallButton('Copy its sets into vanagear and stop using it')) then
-                    require('vg.commands').Vg({ 'takeover' });
-                end
+            if (gProfile ~= nil) and (gProfile.FilePath ~= nil) then
+                -- the profile file the sets are written into and worn from (vg\profile.lua)
+                imgui.TextDisabled(string.format('Profile: %s  (your sets are written into it)',
+                    string.match(gProfile.FilePath, 'profiles\\.*$') or gProfile.FilePath));
             end
             imgui.Separator();
 

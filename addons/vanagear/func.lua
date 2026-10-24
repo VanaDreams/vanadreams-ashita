@@ -29,17 +29,17 @@ end
 
 local AddSet = function(setName)
     if (gSettings.AllowAddSet == false) then
-        print(chat.header('LuAshitacast') .. chat.error('Your profile has addset disabled.'));
+        print(chat.header('vanagear') .. chat.error('Your profile has addset disabled.'));
         return;
     end
 
     if (gProfile == nil) then
-        print(chat.header('LuAshitacast') .. chat.error('You must have a profile loaded to use addset.'));
+        print(chat.header('vanagear') .. chat.error('You must have a profile loaded to use addset.'));
         return;
     end
     
     if (gProfile.Sets == nil) then
-        print(chat.header('LuAshitacast') .. chat.error('Your profile must have a sets table to use addset.'));
+        print(chat.header('vanagear') .. chat.error('Your profile must have a sets table to use addset.'));
         return;
     end
 
@@ -140,7 +140,7 @@ local ChangeActionId = function(id)
             action.Completion = (os.clock() * 1000) + gSettings.AbilityDelay;
         end
     else
-        print(chat.header('LuAshitacast') .. chat.error('ChangeId cannot be used for action of type: ' .. chat.color1(2, gState.PlayerAction.Type)));
+        print(chat.header('vanagear') .. chat.error('ChangeId cannot be used for action of type: ' .. chat.color1(2, gState.PlayerAction.Type)));
     end
 end
 
@@ -226,20 +226,20 @@ local Disable = function(slot)
         for i = 1,16,1 do
             gState.Disabled[i] = true;
         end            
-        print(chat.header('LuAshitacast') .. chat.message('All slots disabled.'));
+        print(chat.header('vanagear') .. chat.message('All slots disabled.'));
         return;
     end
     local slotIndex = gData.GetEquipSlot(slot);
     if (slotIndex ~= 0) then
         gState.Disabled[slotIndex] = true;
-        print(chat.header('LuAshitacast') .. chat.color1(2, gData.Constants.EquipSlotNames[slotIndex]) .. chat.message(' disabled.'));
+        print(chat.header('vanagear') .. chat.color1(2, gData.Constants.EquipSlotNames[slotIndex]) .. chat.message(' disabled.'));
     else
-        print(chat.header('LuAshitacast') .. chat.error('Could not identify slot: ' .. chat.color1(2, slot)));
+        print(chat.header('vanagear') .. chat.error('Could not identify slot: ' .. chat.color1(2, slot)));
     end
 end
 
 local Echo = function(color, text)
-    print(chat.header('LuAshitacast') .. chat.color1(color, text));
+    print(chat.header('vanagear') .. chat.color1(color, text));
 end
 
 local Enable = function(slot)
@@ -247,22 +247,22 @@ local Enable = function(slot)
         for i = 1,16,1 do
             gState.Disabled[i] = false;
         end
-        print(chat.header('LuAshitacast') .. chat.message('All slots enabled.'));
+        print(chat.header('vanagear') .. chat.message('All slots enabled.'));
         return;
     end
     local slotIndex = gData.GetEquipSlot(slot);
     if (slotIndex ~= 0) then
         gState.Disabled[slotIndex] = false;
-        print(chat.header('LuAshitacast') .. chat.color1(2, gData.Constants.EquipSlotNames[slotIndex]) .. chat.message(' enabled.'));
+        print(chat.header('vanagear') .. chat.color1(2, gData.Constants.EquipSlotNames[slotIndex]) .. chat.message(' enabled.'));
     else
-        print(chat.header('LuAshitacast') .. chat.error('Could not identify slot: ' .. chat.color1(2, slot)));
+        print(chat.header('vanagear') .. chat.error('Could not identify slot: ' .. chat.color1(2, slot)));
     end
 end
 
 local Equip = function(slot, item)
     local equipSlot = gData.GetEquipSlot(slot);
     if (equipSlot == 0) then
-        print(chat.header('LuAshitacast') .. chat.error("Invalid slot specified: ") .. chat.color1(2, slot));
+        print(chat.header('vanagear') .. chat.error("Invalid slot specified: ") .. chat.color1(2, slot));
         return;
     end
 
@@ -276,12 +276,12 @@ end
 local EquipSet = function(set)
     if (type(set) == 'string') then
         if (gProfile == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('You must have a profile loaded to use EquipSet(string).'));
+            print(chat.header('vanagear') .. chat.error('You must have a profile loaded to use EquipSet(string).'));
             return;
         end
         
         if (gProfile.Sets == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('Your profile must have a sets table to use EquipSet(string).'));
+            print(chat.header('vanagear') .. chat.error('Your profile must have a sets table to use EquipSet(string).'));
             return;
         end
         
@@ -293,7 +293,7 @@ local EquipSet = function(set)
             return;
         end
         
-        print(chat.header('LuAshitacast') .. chat.error('Set not found: ' .. set));
+        print(chat.header('vanagear') .. chat.error('Set not found: ' .. set));
     elseif (type(set) == 'table') then
         for k, v in pairs(set) do
             Equip(k, v);
@@ -302,7 +302,7 @@ local EquipSet = function(set)
 end
 
 local Error = function(text)
-    print(chat.header('LuAshitacast') .. chat.error(text));
+    print(chat.header('vanagear') .. chat.error(text));
 end
 
 local function EvaluateItem(item, level)
@@ -359,7 +359,7 @@ end
 local ForceEquip = function(slot, item)
     local equipSlot = gData.GetEquipSlot(slot);
     if (equipSlot == 0) then
-        print(chat.header('LuAshitacast') .. chat.error("Invalid slot specified: ") .. chat.color1(2, slot));
+        print(chat.header('vanagear') .. chat.error("Invalid slot specified: ") .. chat.color1(2, slot));
         return;
     end
 
@@ -375,19 +375,19 @@ local ForceEquipSet = function(set)
     local setTable = nil;
     if (type(set) == 'string') then
         if (gProfile == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('You must have a profile loaded to use ForceEquipSet(string).'));
+            print(chat.header('vanagear') .. chat.error('You must have a profile loaded to use ForceEquipSet(string).'));
             return;
         end
         
         if (gProfile.Sets == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('Your profile must have a sets table to use ForceEquipSet(string).'));
+            print(chat.header('vanagear') .. chat.error('Your profile must have a sets table to use ForceEquipSet(string).'));
             return;
         end
         
         setTable = StringToSet(set);
         
         if (setTable == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('Set not found: ' .. set));
+            print(chat.header('vanagear') .. chat.error('Set not found: ' .. set));
             return;
         end
     elseif (type(set) == 'table') then
@@ -399,7 +399,7 @@ local ForceEquipSet = function(set)
     for k,v in pairs(setTable) do
         local equipSlot = gData.GetEquipSlot(k);
         if (equipSlot == 0) then
-            print(chat.header('LuAshitacast') .. chat.error("Invalid slot specified: ") .. chat.color1(2, k));
+            print(chat.header('vanagear') .. chat.error("Invalid slot specified: ") .. chat.color1(2, k));
             return;
         end
 
@@ -414,7 +414,7 @@ end
 local InterimEquip = function(slot, item)
     local equipSlot = gData.GetEquipSlot(slot);
     if (equipSlot == 0) then
-        print(chat.header('LuAshitacast') .. chat.error("Invalid slot specified: ") .. chat.color1(2, slot));
+        print(chat.header('vanagear') .. chat.error("Invalid slot specified: ") .. chat.color1(2, slot));
         return;
     end
 
@@ -428,12 +428,12 @@ end
 local InterimEquipSet = function(set)
     if (type(set) == 'string') then
         if (gProfile == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('You must have a profile loaded to use InterimEquipSet(string).'));
+            print(chat.header('vanagear') .. chat.error('You must have a profile loaded to use InterimEquipSet(string).'));
             return;
         end
         
         if (gProfile.Sets == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('Your profile must have a sets table to use InterimEquipSet(string).'));
+            print(chat.header('vanagear') .. chat.error('Your profile must have a sets table to use InterimEquipSet(string).'));
             return;
         end
         
@@ -445,7 +445,7 @@ local InterimEquipSet = function(set)
             return;
         end
         
-        print(chat.header('LuAshitacast') .. chat.error('Set not found: ' .. set));
+        print(chat.header('vanagear') .. chat.error('Set not found: ' .. set));
     elseif (type(set) == 'table') then
         for k, v in pairs(set) do
             InterimEquip(k, v);
@@ -454,17 +454,18 @@ local InterimEquipSet = function(set)
 end
 
 local Message = function(text)
-    print(chat.header('LuAshitacast') .. chat.message(text));
+    print(chat.header('vanagear') .. chat.message(text));
 end
 
 local LoadFile = function(path)
     local paths = T{
         path,
         string.format('%s.lua', path),
-        string.format('%sconfig\\addons\\luashitacast\\%s_%u\\%s', AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId, path),
-        string.format('%sconfig\\addons\\luashitacast\\%s_%u\\%s.lua', AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId, path),
-        string.format('%sconfig\\addons\\luashitacast\\%s', AshitaCore:GetInstallPath(), path),
-        string.format('%sconfig\\addons\\luashitacast\\%s.lua', AshitaCore:GetInstallPath(), path),
+        -- vanagear: files a profile loads live in vanagear's profiles folder
+        string.format('%sconfig\\addons\\vanagear\\profiles\\%s_%u\\%s', AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId, path),
+        string.format('%sconfig\\addons\\vanagear\\profiles\\%s_%u\\%s.lua', AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId, path),
+        string.format('%sconfig\\addons\\vanagear\\profiles\\%s', AshitaCore:GetInstallPath(), path),
+        string.format('%sconfig\\addons\\vanagear\\profiles\\%s.lua', AshitaCore:GetInstallPath(), path),
     };
     for token in string.gmatch(package.path, "[^;]+") do
         paths:append(string.gsub(token, '?', path));
@@ -479,14 +480,14 @@ local LoadFile = function(path)
     end
 
     if (filePath == nil) then
-        print(chat.header('LuAshitacast') .. chat.error('File not found matching: ') .. chat.color1(2, path));
+        print(chat.header('vanagear') .. chat.error('File not found matching: ') .. chat.color1(2, path));
         return nil;
     end
 
     local func, loadError = loadfile(filePath);
     if (not func) then
-        print (chat.header('LuAshitacast') .. chat.error('Failed to load file: ') .. chat.color1(2,filePath));
-        print (chat.header('LuAshitacast') .. chat.error(loadError));
+        print (chat.header('vanagear') .. chat.error('Failed to load file: ') .. chat.color1(2,filePath));
+        print (chat.header('vanagear') .. chat.error(loadError));
         return nil;
     end
 
@@ -495,8 +496,8 @@ local LoadFile = function(path)
         fileValue = func();
     end);
     if (not success) then
-        print (chat.header('LuAshitacast') .. chat.error('Failed to execute file: ') .. chat.color1(2,filePath));
-        print (chat.header('LuAshitacast') .. chat.error(execError));
+        print (chat.header('vanagear') .. chat.error('Failed to execute file: ') .. chat.color1(2,filePath));
+        print (chat.header('vanagear') .. chat.error(execError));
         return nil;
     end
 
@@ -508,19 +509,19 @@ local LockSet = function(set, seconds)
     local setTable = nil;
     if (type(set) == 'string') then
         if (gProfile == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('You must have a profile loaded to use LockSet(string).'));
+            print(chat.header('vanagear') .. chat.error('You must have a profile loaded to use LockSet(string).'));
             return;
         end
         
         if (gProfile.Sets == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('Your profile must have a sets table to use LockSet(string).'));
+            print(chat.header('vanagear') .. chat.error('Your profile must have a sets table to use LockSet(string).'));
             return;
         end
 
         setTable = StringToSet(set);
 
         if (setTable == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('Set not found: ' .. set));
+            print(chat.header('vanagear') .. chat.error('Set not found: ' .. set));
             return;
         end
     elseif (type(set) == 'table') then
@@ -536,7 +537,7 @@ local LockSet = function(set, seconds)
     for k,v in pairs(setTable) do
         local equipSlot = gData.GetEquipSlot(k);
         if (equipSlot == 0) then
-            print(chat.header('LuAshitacast') .. chat.error("Invalid slot specified: ") .. chat.color1(2, k));
+            print(chat.header('vanagear') .. chat.error("Invalid slot specified: ") .. chat.color1(2, k));
             return;
         end
     

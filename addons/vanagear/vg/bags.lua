@@ -15,9 +15,47 @@ local bags = {};
 -- Bags that can only be looked at, never equipped from.
 local storageBags = { 1, 2, 4, 5, 6, 7, 9 };
 
+-- Mezzotint (Delve, Geas Fete) augments as the server applies them (src/map/items/item_equipment.cpp
+-- ApplyMezzotint): three slots of client index and value; the value is the number shown less one, an
+-- _II index adds 256, and an index the server has no stat for does nothing.
+local mezzotint = {
+    [2] = { 'HP' }, [3] = { 'HP', 256 }, [4] = { 'MP' }, [5] = { 'MP', 256 }, [8] = { 'ATT' }, [9] = { 'ATT', 256 },
+    [10] = { 'RATT' }, [11] = { 'RATT', 256 }, [12] = { 'ACC' }, [13] = { 'ACC', 256 }, [14] = { 'RACC' }, [15] = { 'RACC', 256 },
+    [16] = { 'DEF' }, [17] = { 'DEF', 256 }, [18] = { 'EVA' }, [19] = { 'EVA', 256 }, [20] = { 'MATT' }, [21] = { 'MATT', 256 },
+    [22] = { 'MDEF' }, [23] = { 'MDEF', 256 }, [24] = { 'MACC' }, [25] = { 'MACC', 256 }, [26] = { 'MEVA' }, [27] = { 'MEVA', 256 },
+    [28] = { 'DMG_RATING' }, [29] = { 'DMG_RATING', 256 },
+    [128] = { 'MATT', 0, 1, true }, [129] = { 'MACC', 0, 1, true }, [130] = { 'ATT', 0, 1, true }, [131] = { 'ACC', 0, 1, true },
+    [185] = { 'STORETP' }, [186] = { 'DOUBLE_ATTACK' }, [187] = { 'SNAPSHOT' },
+    [188] = { 'DMGPHYS', 0, -100 }, [189] = { 'DMGMAGIC', 0, -100 },
+    [191] = { 'STR' }, [192] = { 'DEX' }, [193] = { 'VIT' }, [194] = { 'AGI' }, [195] = { 'INT' }, [196] = { 'MND' }, [197] = { 'CHR' },
+};
+
+local function mezzotintMods(extra)
+    local mods, pet = {}, {};
+    for i = 0, 2 do
+        local index = struct.unpack('B', extra, 7 + i * 2);
+        local value = struct.unpack('B', extra, 8 + i * 2) + 1;
+        local m = mezzotint[index];
+        local id = (m ~= nil) and vdata.ModId(m[1]) or nil;
+        if (id ~= nil) and (index ~= 0) then
+            local v = (value + (m[2] or 0)) * (m[3] or 1);
+            if (m[4]) then
+                pet[0] = pet[0] or {};
+                pet[0][id] = (pet[0][id] or 0) + v;
+            else
+                mods[id] = (mods[id] or 0) + v;
+            end
+        end
+    end
+    return { mods = mods, pet = pet };
+end
+bags.MezzotintMods = mezzotintMods;
+
 local function augmentMods(item)
-    -- Same bit layout LuAshitacast's gData.GetAugment reads; only the plain (Oseem style) and
-    -- Magian augments are numbers we can score.
+    -- Same bit layout LuAshitacast's gData.GetAugment reads: the plain (Oseem style) and Magian
+    -- augments, and the mezzotint ones, are what the server applies and so what is scored. Odyssey
+    -- and other bundled augments are stored but not applied by this server (scripts/globals/
+    -- oboro_jse_neck.lua: "which this server does not apply"), so they count for nothing here too.
     if (item.Extra == nil) or (#item.Extra < 12) then
         return nil;
     end
@@ -26,6 +64,9 @@ local function augmentMods(item)
         return nil;
     end
     local augFlag = struct.unpack('B', item.Extra, 2);
+    if (augType == 2) and (bit.band(augFlag, 0x20) ~= 0) then
+        return mezzotintMods(item.Extra);
+    end
     if (bit.band(augFlag, 0x20) ~= 0) or (augFlag == 131) or (bit.band(augFlag, 0x08) ~= 0) or (bit.band(augFlag, 0x80) ~= 0) then
         return nil;
     end
@@ -160,6 +201,10 @@ bags.Who = function()
         SubName = abbr(player:GetSubJob()),
         SubLevel = player:GetSubJobLevel(),
         Race = entity:GetRace(myIndex) or 0,
+        -- job points spent on the main job, for its gifts (vg\plan.lua Bonus)
+        JobPoints = (player.GetJobPointsSpent ~= nil) and (player:GetJobPointsSpent(player:GetMainJob()) or 0) or 0,
+        -- the zone, for gear that works only in one (vg\score.lua latents)
+        Zone = (party.GetMemberZone ~= nil) and (party:GetMemberZone(0) or 0) or 0,
     };
 end
 

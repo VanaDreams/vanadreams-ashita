@@ -238,7 +238,7 @@ end
 local SaveSet = function(name, set)
     local file = io.open(gProfile.FilePath, 'r');
     if (file == nil) then
-        print(chat.header('LuAshitacast') .. chat.error('Failed to open profile in read mode: ') .. chat.color1(2, gProfile.FilePath));
+        print(chat.header('vanagear') .. chat.error('Failed to open profile in read mode: ') .. chat.color1(2, gProfile.FilePath));
         return false;
     end
     local wholeFile = file:read('*all');
@@ -262,17 +262,18 @@ local SaveSet = function(name, set)
     end
     
     if not setsStart then
-        print(chat.header('LuAshitacast') .. chat.error('SaveSet could not locate sets table in: ' .. gProfile.FilePath));
+        print(chat.header('vanagear') .. chat.error('SaveSet could not locate sets table in: ' .. gProfile.FilePath));
         return false;
     end
 
     if gSettings.AddSetBackups then
         local copyName = string.format('%s_%s', os.date("%Y.%m.%d_%H.%M.%S"), gProfile.FileName);
-        local copyPath = string.format('%sconfig\\addons\\luashitacast\\%s_%u\\backups\\%s', AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId, copyName);
+        -- vanagear: backups go beside vanagear's profiles
+        local copyPath = string.format('%sconfig\\addons\\vanagear\\profiles\\%s_%u\\backups\\%s', AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId, copyName);
         CreateDirectories(copyPath);
         local backup = io.open(copyPath, 'w');
         if (backup == nil) then
-            print(chat.header('LuAshitacast') .. chat.error('Failed to open backup file in write mode: ') .. chat.color1(2, gProfile.FilePath));
+            print(chat.header('vanagear') .. chat.error('Failed to open backup file in write mode: ') .. chat.color1(2, gProfile.FilePath));
             return false;
         end
         backup:write(wholeFile);
@@ -282,7 +283,7 @@ local SaveSet = function(name, set)
     local keys, tableEnd = ParseTable(wholeFile, setsEnd + 1);
     file = io.open(gProfile.FilePath, 'w');
     if (file == nil) then
-        print(chat.header('LuAshitacast') .. chat.error('Failed to open profile in write mode: ') .. chat.color1(2, gProfile.FilePath));
+        print(chat.header('vanagear') .. chat.error('Failed to open profile in write mode: ') .. chat.color1(2, gProfile.FilePath));
         return false;
     end
 
@@ -295,7 +296,7 @@ local SaveSet = function(name, set)
             file:write(string.sub(wholeFile, tableEnd));
         end
         file:close();
-        print(chat.header('LuAshitacast') .. chat.message('Added the set ') .. chat.color1(2, name) .. chat.message(' to file: ') .. chat.color1(2, gProfile.FilePath));
+        print(chat.header('vanagear') .. chat.message('Added the set ') .. chat.color1(2, name) .. chat.message(' to file: ') .. chat.color1(2, gProfile.FilePath));
         return true;
     end
 
@@ -307,7 +308,7 @@ local SaveSet = function(name, set)
                 file:write(string.sub(wholeFile, key.EndIndex + 1));
             end
             file:close();
-            print(chat.header('LuAshitacast') .. chat.message('Replaced the set ') .. chat.color1(2, name) .. chat.message(' in file: ') .. chat.color1(2, gProfile.FilePath));
+            print(chat.header('vanagear') .. chat.message('Replaced the set ') .. chat.color1(2, name) .. chat.message(' in file: ') .. chat.color1(2, gProfile.FilePath));
             return true;
         end
     end
@@ -320,13 +321,96 @@ local SaveSet = function(name, set)
         file:write(string.sub(wholeFile, offset + 1));
     end
     file:close();    
-    print(chat.header('LuAshitacast') .. chat.message('Added the set ') .. chat.color1(2, name) .. chat.message(' to file: ') .. chat.color1(2, gProfile.FilePath));
+    print(chat.header('vanagear') .. chat.message('Added the set ') .. chat.color1(2, name) .. chat.message(' to file: ') .. chat.color1(2, gProfile.FilePath));
+    return true;
+end
+
+-- vanagear: many sets into one profile's sets table with one read and one write, as SaveSet writes
+-- one (vg\profile.lua). A set already there is replaced where it stands, a new one goes at the end,
+-- and a set given as false is taken out. Nothing else in the file changes. No chat line per set.
+-- starts: the lines that open the table, when it is not the sets table (a trust's picks).
+local SaveSets = function(path, sets, starts)
+    local file = io.open(path, 'r');
+    if (file == nil) then
+        return false;
+    end
+    local wholeFile = file:read('*all');
+    file:close();
+
+    local setsStart, setsEnd;
+    for _,match in ipairs(starts or { 'local sets = {', 'local Sets = {', 'profile.Sets = {', 'local sets = T{', 'local Sets = T{', 'profile.Sets = T{' }) do
+        setsStart, setsEnd = string.find(wholeFile, match, 1, true);
+        if setsStart then
+            break;
+        end
+    end
+    if not setsStart then
+        return false;
+    end
+
+    local keys, tableEnd = ParseTable(wholeFile, setsEnd + 1);
+    local buffer = {};
+    local out = { write = function(self, text) buffer[#buffer + 1] = text; end };
+    local done = {};
+    local pos = 1;
+    for _,key in ipairs(keys) do
+        local set = sets[key.Name];
+        if (set ~= nil) and (not done[key.Name]) then
+            done[key.Name] = true;
+            out:write(string.sub(wholeFile, pos, key.StartIndex - 1));
+            pos = key.EndIndex + 1;
+            if (set == false) then
+                -- out, with the comma after it
+                if (string.sub(wholeFile, pos, pos) == ',') then
+                    pos = pos + 1;
+                end
+            else
+                WriteSet(out, key.Name, set);
+            end
+        end
+    end
+
+    local names = {};
+    for name,set in pairs(sets) do
+        if (set ~= false) and (not done[name]) then
+            names[#names + 1] = name;
+        end
+    end
+    table.sort(names);
+
+    local last = keys[#keys];
+    if (#names > 0) and (last ~= nil) and (not (done[last.Name] and sets[last.Name] == false)) and (string.sub(wholeFile, last.EndIndex + 1, last.EndIndex + 1) ~= ',') then
+        -- the last set has no comma after it: one goes in before the new ones
+        out:write(string.sub(wholeFile, pos, last.EndIndex));
+        out:write(',');
+        pos = last.EndIndex + 1;
+    end
+    out:write(string.sub(wholeFile, pos, tableEnd - 1));
+    for _,name in ipairs(names) do
+        out:write('\n    ');
+        WriteSet(out, name, sets[name]);
+        out:write(',');
+    end
+    if (#names > 0) then
+        out:write('\n');
+    end
+    out:write(string.sub(wholeFile, tableEnd));
+
+    file = io.open(path, 'w');
+    if (file == nil) then
+        return false;
+    end
+    file:write(table.concat(buffer));
+    file:close();
     return true;
 end
 
 local exports = {
     CreateDirectories = CreateDirectories,
     CreateProfile = CreateProfile,
-    SaveSet = SaveSet
+    SaveSet = SaveSet,
+    SaveSets = SaveSets,
+    ParseTable = ParseTable,
+    WriteSet = WriteSet
 };
 return exports;

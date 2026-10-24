@@ -115,6 +115,65 @@ local function bandTweaks(job, level)
     end
     return out;
 end
+plan.BandTweaks = bandTweaks;
+
+--[[
+    What the player already has toward a stat without gear, by stat name: the job traits of the main
+    job at its level and of the support job at its level (each trait at its highest rank by then,
+    data\traits.lua), and the main job's job point gifts up to the points spent (data\gifts.lua).
+    Merits are not counted: the client does not show how a character spent them.
+]]--
+plan.Bonus = function(who)
+    local out = {};
+    local function addTraits(jobId, level)
+        local best = {};   -- trait..mod -> the highest rank held at this level
+        for _, t in ipairs((vdata.Traits() or {})[jobId] or {}) do
+            if (t.level <= level) then
+                local key = t.trait .. ':' .. t.mod;
+                if (best[key] == nil) or (t.rank > best[key].rank) then best[key] = t; end
+            end
+        end
+        for _, t in pairs(best) do
+            local name = vdata.ModName(t.mod);
+            if (name ~= nil) then out[name] = (out[name] or 0) + t.v; end
+        end
+    end
+    if (who.Job ~= nil) and (who.Job > 0) then addTraits(who.Job, who.Level or 99); end
+    if (who.Sub ~= nil) and (who.Sub > 0) then addTraits(who.Sub, who.SubLevel or 0); end
+    for _, g in ipairs((vdata.Gifts() or {})[who.Job or 0] or {}) do
+        if (g.jp <= (who.JobPoints or 0)) then
+            local name = vdata.ModName(g.mod);
+            if (name ~= nil) then out[name] = (out[name] or 0) + g.v; end
+        end
+    end
+    return out;
+end
+
+-- A cap gear works toward, less what the job already has toward it (a Red Mage's Fast Cast trait
+-- leaves gear less to reach the 80% fast cast cap). Caps are in the units players read, bonuses in
+-- the server's.
+local function lowerCaps(m, bonus)
+    if (m.Caps == nil) then return; end
+    local score = require('vg.score');
+    local caps = {};
+    for stat, cap in pairs(m.Caps) do
+        local have = bonus[stat] or 0;
+        for _, part in ipairs(score.Virtual[stat] or {}) do have = have + (bonus[part] or 0); end
+        have = have / (score.Unit[stat] or 1);
+        if (cap < 0) then caps[stat] = math.min(0, cap + have); else caps[stat] = math.max(0, cap - have); end
+    end
+    m.Caps = caps;
+end
+plan.LowerCaps = lowerCaps;
+
+-- Job effects with a set of their own, by the job and level that give them (abilities from the job
+-- guides; mainOnly where a support job never reaches it).
+plan.EffectSets = {
+    { set = 'Saboteur', job = 'RDM', level = 83, mainOnly = true },
+    { set = 'SneakAttack', job = 'THF', level = 15 },
+    { set = 'TrickAttack', job = 'THF', level = 30 },
+    { set = 'Cure_Solace', job = 'WHM', level = 40 },
+};
 
 plan.For = function(who, equipment, opts)
     local job = plan.Job(who.JobName);
@@ -275,6 +334,46 @@ plan.For = function(who, equipment, opts)
             local m = mode(kind, tweaks);
             m.Name = setName;
             out[#out + 1] = { Name = setName, Mode = m, Slots = slots, Spell = s.Name, SameAs = kind };
+        end
+    end
+
+    -- sets for the job effects the templates lay over a phase while they are up (M419), when the
+    -- player has what gives them: the ability at their main or support job level, or a spell they know
+    local function addEffect(name, onlySlots)
+        if (not have[string.lower(name)]) then
+            have[string.lower(name)] = true;
+            out[#out + 1] = { Name = name, Mode = mode(name, tweaks), Slots = onlySlots or slots };
+        end
+    end
+    -- the obi sets, waist only, for anyone with a spell to cast (the templates wear Obi_<element>,
+    -- else Obi, over a spell whose element is the day's or the weather's)
+    if (okSpells) and (known ~= nil) and (#known > 0) then
+        for _, n in ipairs({ 'Obi', 'Obi_Fire', 'Obi_Ice', 'Obi_Wind', 'Obi_Earth', 'Obi_Thunder', 'Obi_Water', 'Obi_Light', 'Obi_Dark' }) do
+            addEffect(n, { 11 });
+        end
+    end
+    for _, e in ipairs(plan.EffectSets) do
+        local main = (who.JobName == e.job) and (who.Level >= e.level);
+        local sub = (who.SubName == e.job) and ((who.SubLevel or 0) >= e.level);
+        if (main) or (sub and not e.mainOnly) then addEffect(e.set); end
+    end
+    for _, s in ipairs(okSpells and known or {}) do
+        if (s.Skill == 'Enhancing Magic') and ((string.find(s.Name, '^En%a+$')) or (string.find(s.Name, '^En%a+ II$'))) then addEffect('Enspell'); end
+        if (string.find(s.Name, 'helix')) then addEffect('Helix'); end
+    end
+
+    -- every cap less what the job's traits and gifts already give
+    local bonus = plan.Bonus(who);
+    for _, o in ipairs(out) do lowerCaps(o.Mode, bonus); end
+
+    -- weapon drawn for the fighting and weapon skill sets, sheathed for the standing ones, so gear
+    -- that works only one way counts only there (vg\score.lua latents)
+    local standing = { Idle = true, Idle_Regen = true, Idle_Refresh = true, Resting = true, Movement = true };
+    for _, o in ipairs(out) do
+        if (string.sub(o.Name, 1, 3) == 'Tp_') or (string.sub(o.Name, 1, 3) == 'Ws_') or (o.Weaponskill ~= nil) then
+            o.Mode.Drawn = true;
+        elseif (standing[o.Name]) then
+            o.Mode.Drawn = false;
         end
     end
 

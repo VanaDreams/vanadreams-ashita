@@ -21,7 +21,8 @@
     - BG-wiki, Community Corsair Guide (Oct 2026, level 99): Snapshot then Rapid Shot, Triple
       Shot and Store TP in the shot, magic accuracy for Quick Draw, roll duration and recast.
     - Earlier (M381): Luck of the Draw (FFXIAH 326), which set the Preshot cap (10% of the 70%
-      comes from job points) and the idle below.
+      comes from job points) and the idle below. The job point Snapshot is now counted from the
+      server's gifts for the points the player has spent (vg\plan.lua Bonus), so the cap here is 70.
 ]]--
 
 return {
@@ -29,7 +30,6 @@ return {
     Modes = { 'PhantomRoll', 'QuickDraw', 'QuickDrawAcc' },
     Tweaks = {
         Idle = { Stats = { MEVA = 0.08, PDT = -4, MDT = -3, REFRESH = 1 } },
-        Preshot = { Caps = { SNAPSHOT = 60 } },
     },
     Bands = {
         { To = 30, Tweaks = {

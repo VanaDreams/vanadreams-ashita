@@ -30,6 +30,8 @@ local virtual = {
     PDT = { 'DMG', 'DMGPHYS' },
     MDT = { 'DMG', 'DMGMAGIC' },
 };
+score.Unit = unit;
+score.Virtual = virtual;
 
 -- Weights and caps by stat name -> by key, in server units. Keys: 'm<mod id>' for the player's
 -- stats, 'p<mod id>' for the pet's, 'v<NAME>' for a virtual stat.
@@ -75,7 +77,47 @@ score.Compile = function(mode)
         end
     end
     c.HasPet = (mode.Pet ~= nil) and (next(mode.Pet) ~= nil);
+
+    -- set bonuses that give a stat this set values (data\gearsets.lua): each piece of such a set
+    -- counts toward it, and the bonus for the pieces worn is added before caps
+    c.sets, c.setOf = {}, {};
+    for setId, s in pairs((vdata.GearSets ~= nil) and vdata.GearSets() or {}) do
+        local mods = {};
+        for _, m in ipairs(s.mods) do
+            local keys = {};
+            if (c.w['m' .. m.mod] ~= nil) then keys[#keys + 1] = 'm' .. m.mod; end
+            for _, vk in ipairs(c.parts[m.mod] or {}) do keys[#keys + 1] = vk; end
+            if (#keys > 0) then mods[#mods + 1] = { keys = keys, v = m.v }; end
+        end
+        if (#mods > 0) then
+            local members = {};
+            for _, itemId in ipairs(s.items) do members[itemId] = true; end
+            c.sets[#c.sets + 1] = { id = setId, min = s.min or 2, max = s.max or 17, req = s.req, mods = mods, members = members };
+            for _, itemId in ipairs(s.items) do
+                c.setOf[itemId] = c.setOf[itemId] or {};
+                table.insert(c.setOf[itemId], c.sets[#c.sets]);
+            end
+        end
+    end
+    c.Drawn = mode.Drawn;
     return c;
+end
+
+-- A latent stat holds for this set and this player when its condition is one a set can be built
+-- for and is true now (data\latents.lua): job, level, zone, Dynamis, weapon drawn or sheathed.
+local dynamis = { [39] = true, [40] = true, [41] = true, [42] = true, [134] = true, [135] = true, [185] = true,
+    [186] = true, [187] = true, [188] = true, [294] = true, [295] = true, [296] = true, [297] = true };
+local function latentHolds(l, mode, who)
+    if (who == nil) then return false; end
+    if (l.latent == 8) then return who.Sub == l.param; end
+    if (l.latent == 62) then return who.Job == l.param; end
+    if (l.latent == 50) then return (who.Level or 99) < l.param; end
+    if (l.latent == 51) then return (who.Level or 0) > l.param; end
+    if (l.latent == 23) then return who.Zone == l.param; end
+    if (l.latent == 48) then return dynamis[who.Zone or 0] == true; end
+    if (l.latent == 10) then return mode.Drawn == true; end
+    if (l.latent == 11) then return mode.Drawn == false; end
+    return false;
 end
 
 -- The weighted stats one piece gives in one slot: { [key] = value }.
@@ -108,13 +150,38 @@ local function vector(piece, slot, mode, petTypes)
             add(piece.Aug and piece.Aug.pet[t], 'p');
         end
     end
+    -- latent stats whose condition holds for this set
+    for _, l in ipairs(((vdata.Latents ~= nil) and vdata.Latents() or {})[piece.Id] or {}) do
+        if (latentHolds(l, mode, mode.Who)) then add({ [l.mod] = l.v }, 'm'); end
+    end
+    -- membership of a set whose bonus this set values, and the item a set may require
+    for _, st in ipairs((mode.setOf ~= nil) and mode.setOf[piece.Id] or {}) do
+        v['s' .. st.id] = 1;
+        if (st.req == piece.Id) then v['q' .. st.id] = 1; end
+    end
     return v;
 end
 score.Vector = vector;
 
 local function total(mode, totals)
+    -- set bonuses for the pieces worn, added to their stats before the caps
+    local all = totals;
+    for _, st in ipairs(mode.sets or {}) do
+        local count = totals['s' .. st.id] or 0;
+        if (count >= st.min) and ((st.req == nil) or ((totals['q' .. st.id] or 0) > 0)) then
+            local tier = math.min(count, st.max) - st.min;
+            if (all == totals) then
+                all = {};
+                for k, value in pairs(totals) do all[k] = value; end
+            end
+            for _, m in ipairs(st.mods) do
+                local value = m.v[tier + 1] or 0;   -- a tier the set gives no value for adds nothing
+                for _, k in ipairs(m.keys) do all[k] = (all[k] or 0) + value; end
+            end
+        end
+    end
     local sum = 0;
-    for k, value in pairs(totals) do
+    for k, value in pairs(all) do
         local w = mode.w[k];
         if (w ~= nil) then
             local cap = mode.cap[k];
@@ -138,6 +205,7 @@ end
 -- Builds one set over the given slots. Returns { [slot] = piece }, the ranked candidates per
 -- slot from the last round (for /vg why), the set's score and its stat totals.
 score.Build = function(mode, pieces, who, slots, petTypes)
+    mode.Who = who;   -- for latent stats that depend on the player (job, level, zone)
     local cands = {};
     for _, slot in ipairs(slots) do
         cands[slot] = {};
@@ -152,6 +220,7 @@ score.Build = function(mode, pieces, who, slots, petTypes)
     end
 
     local choice, used, totals, ranks = {}, {}, {}, {};
+    local function rounds()
     for round = 1, 8 do
         local changed = false;
         for _, slot in ipairs(slots) do
@@ -190,6 +259,39 @@ score.Build = function(mode, pieces, who, slots, petTypes)
             break;
         end
     end
+    end
+    rounds();
+
+    -- A set bonus that needs several pieces is never reached one slot at a time (no single piece of
+    -- it beats the best piece alone), so each set this set values is tried whole: its pieces put in
+    -- every slot they can fill, the rest kept, and the result kept when it scores higher.
+    local function trySets()
+        local improved = false;
+        for _, st in ipairs(mode.sets or {}) do
+            local trial, taken, placed = {}, {}, 0;
+            for _, slot in ipairs(slots) do
+                for _, c in ipairs(cands[slot]) do
+                    if (st.members[c.piece.Id]) and (not taken[c.piece]) then
+                        trial[slot] = c; taken[c.piece] = true; placed = placed + 1;
+                        break;
+                    end
+                end
+            end
+            if (placed >= st.min) then
+                for _, slot in ipairs(slots) do
+                    local c = choice[slot];
+                    if (trial[slot] == nil) and (c ~= nil) and (not taken[c.piece]) then trial[slot] = c; taken[c.piece] = true; end
+                end
+                local t = {};
+                for _, c in pairs(trial) do apply(t, c.v, 1); end
+                if (total(mode, t) > total(mode, totals) + 1e-9) then
+                    choice, used, totals, improved = trial, taken, t, true;
+                end
+            end
+        end
+        return improved;
+    end
+    if (trySets()) then rounds(); end
 
     local set = {};
     for slot, c in pairs(choice) do

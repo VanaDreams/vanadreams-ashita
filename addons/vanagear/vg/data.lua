@@ -25,6 +25,10 @@ data.Items = function() return load('items'); end
 data.Augments = function() return load('augments'); end
 data.Weaponskills = function() return load('weaponskills'); end
 data.Abilities = function() return load('abilities'); end
+data.Traits = function() return load('traits'); end
+data.Gifts = function() return load('gifts'); end
+data.GearSets = function() return load('gearsets'); end
+data.Latents = function() return load('latents'); end
 
 -- mod name -> server mod id, and back
 local modIds = nil;

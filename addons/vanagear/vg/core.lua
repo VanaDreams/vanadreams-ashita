@@ -211,7 +211,8 @@ local function stepBuild(budget)
     end
     if (q.i > #q.items) then
         -- swap in the new sets all at once, keeping the same table so profiles holding it see them
-        gVana.Built = q.sets;
+        -- written into the job's profile by ApplyOwn; gVana.Built is what the file holds
+        gVana.Fresh = { sets = q.sets, job = q.who.JobName };
         gVana.Explain = q.explain;
         gVana.Totals = q.totals;
         gVana.Held = q.held;
@@ -233,31 +234,22 @@ local function stepBuild(budget)
     end
 end
 
--- The sets the handlers wear: the built ones with the player's own laid over them (vg\mine.lua).
--- Filled in place, so profiles holding gVana.Sets see the change.
+-- The sets the handlers wear come out of the job's profile file (vg\profile.lua): a fresh build goes
+-- into its built table first, then the file is read back, your sets over built, into gVana.Sets and the
+-- profile's own sets table, filled in place so everything holding them sees the change.
 core.ApplyOwn = function()
-    local sets, own = require('vg.mine').Overlay(gVana.Built or {});
-    for k in pairs(gVana.Sets) do gVana.Sets[k] = nil; end
-    for k, v in pairs(sets) do gVana.Sets[k] = v; end
-    gVana.Own = own;
-    -- Weapons: with /vg weapons off no set, built or your own, carries a Main, Sub or Range; the
-    -- only weapons that go on are the ones picked in the window (or /vg weapon), worn in every set.
-    local picks = {};
-    if (not gVana.Prefs.Weapons) then
-        local job = gVana.Who and gVana.Who.JobName or '';
-        local chosen = (gVana.Prefs.WeaponPick or {})[job] or {};
-        for name, set in pairs(gVana.Sets) do
-            local copy = {};
-            for slot, piece in pairs(set) do copy[slot] = piece; end
-            for _, slot in ipairs({ 'Main', 'Sub', 'Range' }) do
-                copy[slot] = chosen[slot];
-                if (own[name] ~= nil) then own[name][slot] = nil; end
-                if (chosen[slot] ~= nil) then picks[string.lower(chosen[slot])] = true; end
-            end
-            gVana.Sets[name] = copy;
-        end
+    local vp = require('vg.profile');
+    local fresh = gVana.Fresh;
+    if (fresh ~= nil) and (not fresh.written) and (vp.WriteBuilt(fresh.sets, fresh.job)) then
+        fresh.written = true;
     end
-    gVana.WeaponPicks = picks;
+    if (not vp.Refresh()) and (fresh ~= nil) then
+        -- no profile file running yet: the sets just built, as they are
+        gVana.Built = fresh.sets;
+        for k in pairs(gVana.Sets) do gVana.Sets[k] = nil; end
+        for k, v in pairs(fresh.sets) do gVana.Sets[k] = v; end
+        gVana.Own = {};
+    end
 end
 
 -- The weapon worn in a slot whatever set is on, or nil to leave the slot alone.
@@ -383,43 +375,25 @@ core.Carries = function(name)
 end
 gVana.Carries = core.Carries;
 
--- Does the built-set layer run under this profile? Always for vanagear's own profile and for
--- profiles the launcher made from GearSwap or that only have empty sets; for a profile with
--- hand-made sets only when the player turned it on with /vg underlay on.
+-- Does the built table fill the slots your sets leave empty? Yes, unless you turned it off for the job
+-- with /vg underlay off: then your sets are worn as written and vanagear's own rules stay out, as a
+-- plain LuAshitacast-style profile runs.
 core.Underlay = function()
     if (gProfile == nil) then
         return false;
     end
-    if (gProfile.IsVanagearStock) then
-        return true;
-    end
-    local job = gVana.Who and gVana.Who.JobName or '';
+    local job = gProfile.VgJob or (gVana.Who and gVana.Who.JobName) or '';
     local pref = gVana.Prefs.Underlay[job];
     if (pref ~= nil) then
         return pref;
     end
-    if (gProfile.ImportedFromGearSwap) then
-        return true;
-    end
-    for _, set in pairs(gProfile.Sets or {}) do
-        if (type(set) == 'table') and (next(set) ~= nil) then
-            return false;
-        end
-    end
     return true;
 end
 
--- ---------------------------------------------------------------- LuAshitacast mode
-
--- A profile of the player's own with sets of its own, and the underlay off: vanagear stands aside and
--- LuAshitacast runs it exactly as LuAshitacast would. Weapons swap as the profile says, no built piece
--- fills a gap, and a piece put on from the menu is swapped off as usual. Only the zone wait stays: it
--- protects the server (Ferrin, 22 Oct 2026: "keep the wait").
+-- The underlay off: only the profile's own rules and sets run. The zone wait stays: it protects the
+-- server (Ferrin, 22 Oct 2026: "keep the wait").
 core.PureLac = function()
-    if (gProfile == nil) or (gProfile.IsVanagearStock) or (gProfile.ImportedFromGearSwap) then
-        return false;
-    end
-    return not core.Underlay();
+    return (gProfile ~= nil) and (not core.Underlay());
 end
 
 -- ---------------------------------------------------------------- another LuAshitacast loaded as well

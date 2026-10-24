@@ -200,12 +200,23 @@ use.Reward = function(word)
     ammoThen(piece, 'Reward');
 end
 
--- /vg wear <name>: one of your own sets, kept on over the built sets until /vg wear off.
+-- /vg wear <name>: one of your own sets, kept on over the built sets until /vg wear off. The set is
+-- read out of the profile file by name each time, as LuAshitacast reads a set (vg\profile.lua);
+-- the set handed in is used only when the profile has none by that name.
 local worn = nil;   -- { name, set }
+
+local function wornSet()
+    if (worn == nil) then return nil; end
+    if (gProfile ~= nil) and (type(gProfile.Sets) == 'table') and (type(gProfile.Sets[worn.name]) == 'table') then
+        return gProfile.Sets[worn.name];
+    end
+    return worn.set;
+end
 
 use.Wear = function(name, set)
     worn = (set ~= nil) and { name = name, set = set } or nil;
-    if (set ~= nil) then gFunc.ForceEquipSet(set); end
+    local now = wornSet();
+    if (now ~= nil) then gFunc.ForceEquipSet(now); end
 end
 
 use.Worn = function()
@@ -215,7 +226,8 @@ end
 -- Runs after the sets and the profile on every equip pass, so the slot stays held.
 use.Tick = function(event)
     if (worn ~= nil) and ((event == nil) or (event == 'HandleDefault') or (event == 'HandleItem') or (event == 'HandleAbility')) then
-        gFunc.EquipSet(worn.set);
+        local now = wornSet();
+        if (now ~= nil) then gFunc.EquipSet(now); end
     end
     local u = active;
     if (u == nil) then

@@ -13,8 +13,17 @@ local lists = require('vg.lists');
 
 local stock = {};
 
+-- The sets come out of the running profile file (vg\profile.lua), where vanagear writes them;
+-- from memory only when no vanagear profile could be made.
+local function sets()
+    if (gProfile ~= nil) and (type(gProfile.Sets) == 'table') then
+        return gProfile.Sets;
+    end
+    return gVana.Sets;
+end
+
 local function wear(name)
-    local set = gVana.Sets[name];
+    local set = sets()[name];
     if (set ~= nil) then
         gFunc.EquipSet(set);
         return true;
@@ -64,7 +73,7 @@ end
 -- An overlay the player asked for by a toggle (/vg idle speed, /vg kite) is not touched here.
 local function holdOwn(name, overlaysWorn)
     local own = gVana.Own and gVana.Own[name];
-    local set = gVana.Sets[name];
+    local set = sets()[name];
     if (own == nil) or (set == nil) then return; end
     local keep = {};
     for slot in pairs(own) do
@@ -93,7 +102,7 @@ stock.HandleDefault = function()
     local pet = gData.GetPet();
     local petAction = gData.GetPetAction();
 
-    if (petAction ~= nil) and (gVana.Sets.BPWard ~= nil) then
+    if (petAction ~= nil) and (sets().BPWard ~= nil) then
         -- a summoner's avatar: the blood pact decides the set
         local bp = petAction.Name or '';
         if (lists.BPBuff[bp]) then wear('BPWard');
@@ -102,7 +111,7 @@ stock.HandleDefault = function()
         else wear('PetAtk'); end
         return;
     end
-    if (petAction ~= nil) and (gVana.Sets.PetAtk ~= nil) then
+    if (petAction ~= nil) and (sets().PetAtk ~= nil) then
         if (lists.EnfeebleReady[petAction.Name or ''] or t.Pet == 'acc') then
             wear('PetAcc');
         elseif (lists.MagicReady[petAction.Name or '']) then
@@ -118,7 +127,7 @@ stock.HandleDefault = function()
     elseif (player.Status == 'Resting') then
         wear('Idle');
         wearOver('Resting', 'Idle');
-    elseif (pet ~= nil) and (pet.Status == 'Engaged') and (gVana.Sets.PetTP ~= nil) then
+    elseif (pet ~= nil) and (pet.Status == 'Engaged') and (sets().PetTP ~= nil) then
         wear((t.Pet == 'dt') and 'PetDT' or 'PetTP');
     else
         wear('Idle');
@@ -174,7 +183,7 @@ stock.HandlePrecast = function()
     elseif (spell.Skill == 'Singing') then
         wear('Song_Precast');
     end
-    if (gVana.Toggles.Stage) and (spell.CastTime ~= nil) and (gVana.Sets.Interim ~= nil) then
+    if (gVana.Toggles.Stage) and (spell.CastTime ~= nil) and (sets().Interim ~= nil) then
         -- the built Precast set's fast cast; a low guess would land the midcast gear late
         local fastCast = math.min(0.8, (gVana.FastCast or 0) / 100);
         local delay = ((spell.CastTime * (1 - fastCast)) / 1000) - 0.1;
@@ -187,8 +196,8 @@ end
 stock.HandleMidcast = function()
     local t = gVana.Toggles;
     local spell = gData.GetAction();
-    if (t.Stage) and (gVana.Sets.Interim ~= nil) then
-        gFunc.InterimEquipSet(gVana.Sets.Interim);
+    if (t.Stage) and (sets().Interim ~= nil) then
+        gFunc.InterimEquipSet(sets().Interim);
     end
     if (spell.Skill == 'Blue Magic') then
         wear(lists.BluePhysical[spell.Name or ''] and 'BluePhysical' or 'BlueMagical');
@@ -230,26 +239,6 @@ stock.HandleWeaponskill = function()
     if (not wear((string.gsub(ws.Name or '', '[^%w]', '')))) then
         wear('Ws_Default');
     end
-end
-
--- The profile a job with no profile file gets: the rules above, its sets the built ones.
-stock.Profile = function()
-    return {
-        Sets = gVana.Sets,
-        Packer = {},
-        IsVanagearStock = true,
-        OnLoad = function() end,
-        OnUnload = function() end,
-        HandleCommand = function() end,
-        HandleDefault = function() end,
-        HandleAbility = function() end,
-        HandleItem = function() end,
-        HandlePrecast = function() end,
-        HandleMidcast = function() end,
-        HandlePreshot = function() end,
-        HandleMidshot = function() end,
-        HandleWeaponskill = function() end,
-    };
 end
 
 return stock;

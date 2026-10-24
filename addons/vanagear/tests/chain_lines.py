@@ -41,6 +41,16 @@ AshitaCore = {
     GetChatManager = function() return { QueueCommand = function(_, _, line) sent[#sent + 1] = string.format('%.1f %s', clock, line) end } end,
 }
 gVana = { Who = { JobName = 'BST' } }
+-- commands are written into the job's profile file (vg\profile.lua): one from the template to write into
+gState = { PlayerName = 'Me', PlayerId = 1 }
+gSettings = { AddSetEquipScreenOrder = false }
+function T(t) return setmetatable(t or {}, { __index = { append = function(self, v) self[#self + 1] = v end } }) end
+ashita = { fs = {
+    exists = function(p) local f = io.open(p, 'r'); if f then f:close(); return true end return false end,
+    create_directory = function(p) os.execute('mkdir "' .. p:gsub('/', '\\') .. '" 2>nul'); return true end,
+} }
+gFileTools = require('filetools')
+require('vg.profile').Ensure('BST', nil)
 local mine = require('vg.mine')
 mine.LinkGap = 2
 mine.StepTimeout = 3

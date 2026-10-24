@@ -1,7 +1,6 @@
 r"""Off-game test of vg\core.lua's LuAshitacast mode and its watch for a second LuAshitacast.
 
-LuAshitacast mode (PureLac) is on only for a profile of the player's own with sets of its own and the
-underlay off. The watch stands vanagear down after injected equip packets it did not send, on three or
+Plain-profile mode (PureLac) is on only when the player turned the underlay off for the job. The watch stands vanagear down after injected equip packets it did not send, on three or
 more slots, and never for its own packets or for vanafish's rod and bait swaps (range and ammo).
 
     python addons/vanagear/tests/lac_mode.py
@@ -34,22 +33,16 @@ local function check(name, got, want)
     if got ~= want then out[#out + 1] = name .. ': got ' .. tostring(got) .. ', want ' .. tostring(want) end
 end
 
--- LuAshitacast mode
+-- the underlay: every vanagear profile fills empty slots from its built table, unless /vg underlay off
 local core = fresh()
 gVana.Who = { JobName = 'WAR' }
 gProfile = nil
 check('no profile', core.PureLac(), false)
-gProfile = { IsVanagearStock = true, Sets = {} }
-check('vanagear stock profile', core.PureLac(), false)
-gProfile = { ImportedFromGearSwap = true, Sets = { Idle = { Head = 'x' } } }
-check('GearSwap import', core.PureLac(), false)
-gProfile = { Sets = { Idle = { Head = 'Nyame Helm' } } }
-check('own profile with sets', core.PureLac(), true)
-gVana.Prefs.Underlay.WAR = true
-check('own profile, underlay on', core.PureLac(), false)
+gProfile = { VgJob = 'WAR', Sets = { Idle = { Head = 'Nyame Helm' } } }
+check('a profile with sets of its own', core.PureLac(), false)
+gVana.Prefs.Underlay.WAR = false
+check('underlay off', core.PureLac(), true)
 gVana.Prefs.Underlay.WAR = nil
-gProfile = { Sets = { Idle = {} } }
-check('own profile, empty sets', core.PureLac(), false)
 
 -- vanagear's own packets never count
 core = fresh()

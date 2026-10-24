@@ -20,7 +20,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 OUT = HERE.parent.parent / 'addons' / 'vanagear' / 'data'
 
-ROW = re.compile(r"^\s*(?:INSERT|REPLACE) INTO `(\w+)` VALUES\s*\((.*)\);", re.I)
+ROW = re.compile(r"^\s*(?:INSERT|REPLACE) INTO `(\w+)` VALUES\s*\((.*)\);\s*(?:--.*)?$", re.I)
 
 
 def values(text):
@@ -329,7 +329,23 @@ def main(server):
         if mods:
             abilities[ab_id] = {'key': snake, 'job': job, 'level': level, 'mods': mods}
 
+    # job traits and job point gifts: what a job already has at a level, so gear needs less to reach a
+    # cap (a Red Mage's Fast Cast trait, a Corsair's Snapshot gift). A trait's ranks replace each other,
+    # so each trait counts its highest rank at the player's level; traits opened by merits are left out.
+    traits = {}
+    for traitid, _name, job, level, rank, mod, value, _tag, meritid in rows(sql / 'traits.sql', 'traits'):
+        if meritid == 0 and mod != 0:
+            traits.setdefault(job, []).append({'trait': traitid, 'level': level, 'rank': rank, 'mod': mod, 'v': value})
+    gifts = {}
+    for job, jp, mod, value, _desc in rows(sql / 'job_point_gifts.sql', 'job_point_gifts'):
+        if mod != 0:
+            gifts.setdefault(job, []).append({'jp': jp, 'mod': mod, 'v': value})
+
     used = set()
+    for rows_ in traits.values():
+        used.update(t['mod'] for t in rows_)
+    for rows_ in gifts.values():
+        used.update(g['mod'] for g in rows_)
     for it in items.values():
         used.update(it.get('mods', {}))
         for p in it.get('pet', {}).values():
@@ -351,7 +367,11 @@ def main(server):
                                            'Adoulin weaponskill values, the server default.'], ws)
     write_table(OUT / 'abilities.lua', ['Job ability id = key, job, level, and the mods the server reads when it goes off',
                                         '(the ability script, the job_utils functions it calls and the effects it gives).'], abilities)
-    write_table(OUT / 'mods.lua', ['Server mod id = name (scripts/enum/mod.codegen.lua), for the mods any item uses.'],
+    write_table(OUT / 'traits.lua', ['Job id = list of { trait, level, rank, mod, v } (sql/traits.sql, merit traits left out).',
+                                     'Ranks of one trait replace each other: the highest rank at a level is the one held.'], traits)
+    write_table(OUT / 'gifts.lua', ['Job id = list of { jp (job points spent), mod, v } (sql/job_point_gifts.sql).',
+                                    'Every gift at or under the job points spent counts.'], gifts)
+    write_table(OUT / 'mods.lua', ['Server mod id = name (scripts/enum/mod.codegen.lua), for the mods any item, trait or gift uses.'],
                 {m: names.get(m, f'MOD_{m}') for m in sorted(used)})
     print(f'items {len(items)} (weapons {weapons}), augments {len(augments)}, weaponskills {len(ws)}, '
           f'abilities with gear {len(abilities)}, mods {len(used)}')
@@ -359,7 +379,91 @@ def main(server):
         print(f'  {f.name} {f.stat().st_size:,} bytes')
 
 
+LATENTS_KEPT = {
+    8: 'SUBJOB', 62: 'MAINJOB', 50: 'JOB_LEVEL_BELOW', 51: 'JOB_LEVEL_ABOVE', 23: 'ZONE', 48: 'IN_DYNAMIS',
+    10: 'WEAPON_DRAWN', 11: 'WEAPON_SHEATHED',
+}
+
+
+def extras(server):
+    """Set bonuses (scripts/globals/gear_sets.lua) and the conditional stats a set can be built for
+    (sql/item_latents.sql, only the conditions known when a set is built: job, level, zone, Dynamis,
+    weapon drawn or sheathed). Writes gearsets.lua and latents.lua, adds any mod names they use to
+    mods.lua, and leaves the other data files as they are."""
+    server = Path(server)
+    names = mod_names(server)
+    ids_by_name = {v: k for k, v in names.items()}
+    item_ids = {}
+    for m in re.finditer(r'^\s*([A-Z0-9_]+)\s*=\s*(\d+)', (server / 'scripts' / 'enum' / 'item.lua').read_text(encoding='utf-8', errors='replace'), re.M):
+        item_ids[m.group(1)] = int(m.group(2))
+
+    text = (server / 'scripts' / 'globals' / 'gear_sets.lua').read_text(encoding='utf-8', errors='replace')
+    body = text[text.index('local gearSets'):text.index('xi.gear_sets.createItemToSetId')]
+    sets = {}
+    for m in re.finditer(r'\[(\d+)\]\s*=\s*(?:--[^\n]*\n\s*)*\{', body):
+        set_id = int(m.group(1))
+        i, depth = m.end(), 1
+        while depth and i < len(body):
+            if body[i] == '{': depth += 1
+            elif body[i] == '}': depth -= 1
+            elif body.startswith('--', i):
+                i = body.index('\n', i)
+            i += 1
+        block = body[m.end():i - 1]
+        items_m = re.search(r'items\s*=\s*\{(.*?)\}', block, re.S)
+        if not items_m:
+            continue
+        items = []
+        for line in items_m.group(1).splitlines():
+            line = line.split('--')[0]
+            for tok in re.findall(r'xi\.item\.([A-Z0-9_]+)|(\d+)', line):
+                if tok[0]:
+                    if tok[0] in item_ids: items.append(item_ids[tok[0]])
+                elif tok[1]:
+                    items.append(int(tok[1]))
+        mods = []
+        mods_m = re.search(r'mods\s*=\s*\{(.*)\}', block, re.S)
+        for mm in re.finditer(r'\{\s*xi\.mod\.([A-Z0-9_]+)\s*,([^}]*)\}', mods_m.group(1) if mods_m else ''):
+            mod_id = ids_by_name.get(mm.group(1))
+            vals = [int(v) for v in re.findall(r'-?\d+', mm.group(2).split('--')[0])]
+            if mod_id is not None and vals:
+                mods.append({'mod': mod_id, 'v': vals})
+        if not items or not mods:
+            continue
+        entry = {'items': items, 'min': 2, 'mods': mods}
+        for key, field in (('minEquipped', 'min'), ('maxEquipped', 'max'), ('requiredItem', 'req')):
+            km = re.search(key + r'\s*=\s*(\d+)', block)
+            if km:
+                entry[field] = int(km.group(1))
+        sets[set_id] = entry
+
+    latents = {}
+    for item_id, mod, value, latent, param in rows(server / 'sql' / 'item_latents.sql', 'item_latents'):
+        if latent in LATENTS_KEPT and latent != 40:
+            latents.setdefault(item_id, []).append({'latent': latent, 'param': param, 'mod': mod, 'v': value})
+
+    write_table(OUT / 'gearsets.lua', ['Set id = { items, min (pieces needed), max (pieces counted, if set), req (an item that must be',
+                                       'one of them), mods = list of { mod, v = value by tier } } (scripts/globals/gear_sets.lua).',
+                                       'Tier = min(pieces worn, max) - min; the value is v[tier + 1].'], sets)
+    write_table(OUT / 'latents.lua', ['Item id = list of { latent, param, mod, v } (sql/item_latents.sql), only the conditions a set can',
+                                      'be built for: ' + ', '.join(f'{k} {v}' for k, v in sorted(LATENTS_KEPT.items())) + '.'], latents)
+
+    # the mod names these use, added to mods.lua without touching the rest of it
+    used = {m['mod'] for s in sets.values() for m in s['mods']} | {l['mod'] for ls in latents.values() for l in ls}
+    mods_path = OUT / 'mods.lua'
+    mods_text = mods_path.read_text(encoding='utf-8')
+    have = set(int(x) for x in re.findall(r'^t\[(\d+)\]=', mods_text, re.M))
+    add = [f"t[{m}]={lua_str(names.get(m, f'MOD_{m}'))};" for m in sorted(used - have)]
+    if add:
+        at = mods_text.rindex('end)()')
+        mods_path.write_text(mods_text[:at] + '\n'.join(add) + '\n' + mods_text[at:], encoding='utf-8', newline='\n')
+    print(f'gear sets {len(sets)}, items with kept latents {len(latents)}, mod names added {len(add)}')
+
+
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
+    if len(sys.argv) == 3 and sys.argv[1] == '--extras':
+        extras(sys.argv[2])
+    elif len(sys.argv) == 2:
+        main(sys.argv[1])
+    else:
         sys.exit(__doc__)
-    main(sys.argv[1])

@@ -1,16 +1,16 @@
 --[[
     vanagear: the player's own commands. /vg <word> runs the lines saved under that word, in order.
 
-    They live in config\addons\vanagear\commands\<JOB>.lua (and ALL.lua for every job), the same
-    folder style LuAshitacast profiles use, so a player can write them by hand. The /vg window and
-    /vg add write the same files. A line is any game command (/ja "Reward" <me>, /vg call fizzy);
-    "wait 2" pauses two seconds before the next line.
+    They live in the job's profile, config\addons\vanagear\profiles\<Name>_<id>\<JOB>.lua, in its
+    commands table (ALL.lua beside the profiles for every job), so a player can write them by hand.
+    The /vg window and /vg add write the same place. A line is any game command (/ja "Reward" <me>,
+    /vg call fizzy); "wait 2" pauses two seconds before the next line.
 
-    Your own sets live in config\addons\vanagear\sets\<JOB>.lua, made in the window slot by slot,
-    with /vg set <name> <slot> <item>, or from what you wear with /vg save <name>. One named like a
-    built set (Idle, Tp_Default, Reward, a weaponskill or spell) replaces the slots it names in that
-    set wherever it goes on; any other name is a set of its own for /vg wear <name>, your commands,
-    or /gs equip. /vg look <name> locks one as your appearance (/lockstyle).
+    Your own sets live in the same profile, in its sets table (vg\profile.lua), made in the window slot
+    by slot, with /vg set <name> <slot> <item>, from what you wear with /vg save <name>, or with /vg
+    addset. One named like a built set (Idle, Tp_Default, Reward, a weaponskill or spell) fills its
+    slots over the built set wherever it goes on; any other name is a set of its own for /vg wear
+    <name>, your commands, or /gs equip. /vg look <name> locks one as your appearance (/lockstyle).
 ]]--
 
 local mine = {};
@@ -34,56 +34,68 @@ local function job()
 end
 
 local cache = {};   -- file -> { word -> { line, ... } }
-local setCache = nil;   -- { job, sets = name -> { slot = item name } }
+
+-- A job's commands live in its profile file, in its commands table (vg\profile.lua; Lee, 24 Oct 2026:
+-- "they are supposed to be written into the fucking lua as well"). The words for every job live in
+-- profiles\<Name>_<id>\ALL.lua beside the profiles; what commands\ALL.lua held before is read the first time.
+local function allPath()
+    return require('vg.profile').Folder() .. '\\ALL.lua';
+end
+
+local function words(saved)
+    local out = {};
+    for word, lines in pairs(saved or {}) do
+        if (type(lines) == 'string') then lines = { lines }; end
+        if (type(word) == 'string') and (type(lines) == 'table') then
+            out[string.lower(word)] = lines;
+        end
+    end
+    return out;
+end
 
 local function load(file)
     if (cache[file] ~= nil) then
         return cache[file];
     end
-    local words = {};
-    local chunk, err = loadfile(path(file));
-    if (chunk ~= nil) then
-        local ok, saved = pcall(chunk);
-        if (ok) and (type(saved) == 'table') then
-            for word, lines in pairs(saved) do
-                if (type(lines) == 'string') then lines = { lines }; end
-                if (type(word) == 'string') and (type(lines) == 'table') then
-                    words[string.lower(word)] = lines;
-                end
-            end
-        else
-            say(string.format('%s.lua did not load: %s', file, tostring(saved)));
-        end
-    elseif (err ~= nil) and (not string.find(err, 'cannot open')) then
-        say(string.format('%s.lua did not load: %s', file, err));
+    local vp = require('vg.profile');
+    if (file == 'ALL') then
+        local chunk = loadfile(allPath()) or loadfile(path('ALL'));
+        local ok, saved = false, nil;
+        if (chunk ~= nil) then ok, saved = pcall(chunk); end
+        cache[file] = words((ok and type(saved) == 'table') and saved or nil);
+    else
+        cache[file] = words(vp.ReadCommands(vp.Path(file)));
     end
-    cache[file] = words;
-    return words;
+    return cache[file];
 end
 
 local function save(file)
-    local folder = mine.Folder();
-    if (not ashita.fs.exists(folder)) then
-        ashita.fs.create_directory(folder);
+    local vp = require('vg.profile');
+    local list = cache[file] or {};
+    if (file ~= 'ALL') then
+        if (not ashita.fs.exists(vp.Path(file))) or (not vp.WriteCommands(vp.Path(file), list)) then
+            say('Could not write your commands into ' .. vp.Path(file));
+        end
+        return;
     end
-    local words = cache[file] or {};
     local keys = {};
-    for word in pairs(words) do keys[#keys + 1] = word; end
+    for word in pairs(list) do keys[#keys + 1] = word; end
     table.sort(keys);
     local out = {
-        string.format('-- vanagear commands for %s. /vg <word> runs the lines in order.', (file == 'ALL') and 'every job' or file),
+        '-- vanagear commands for every job. /vg <word> runs the lines in order.',
         '-- A line is any game command; "wait 2" pauses two seconds. Edit here or in the /vg window.',
         'return {',
     };
     for _, word in ipairs(keys) do
         local quoted = {};
-        for _, line in ipairs(words[word]) do quoted[#quoted + 1] = string.format('%q', line); end
+        for _, line in ipairs(list[word]) do quoted[#quoted + 1] = string.format('%q', line); end
         out[#out + 1] = string.format('    [%q] = { %s },', word, table.concat(quoted, ', '));
     end
     out[#out + 1] = '};';
-    local f = io.open(path(file), 'w');
+    gFileTools.CreateDirectories(allPath());
+    local f = io.open(allPath(), 'w');
     if (f == nil) then
-        say('Could not write ' .. path(file));
+        say('Could not write ' .. allPath());
         return;
     end
     f:write(table.concat(out, '\n') .. '\n');
@@ -93,7 +105,6 @@ end
 -- Forget what was read, so hand edits are picked up.
 mine.Reload = function()
     cache = {};
-    setCache = nil;
     require('vg.core').ApplyOwn();
 end
 
@@ -142,19 +153,9 @@ end
 -- Open config\addons\vanagear in Windows Explorer: commands\ and sets\ are in it, made first
 -- with this job's file so there is something to edit.
 mine.OpenFolder = function()
-    for _, kind in ipairs({ 'commands', 'sets' }) do
-        if (not ashita.fs.exists(mine.Folder(kind))) then
-            ashita.fs.create_directory(mine.Folder(kind));
-        end
-    end
-    local existing = (job() ~= '') and io.open(path(job()), 'r');
-    if (existing) then
-        existing:close();
-    elseif (job() ~= '') then
-        load(job());
-        save(job());
-    end
-    local folder = string.format('%sconfig\\addons\\vanagear', AshitaCore:GetInstallPath());
+    -- your profiles, which hold your sets and commands (vg\profile.lua)
+    local folder = require('vg.profile').Folder();
+    gFileTools.CreateDirectories(folder .. '\\');
     os.execute(string.format('start "" explorer "%s"', folder));
     return folder;
 end
@@ -302,73 +303,25 @@ end
 
 -- ---------------------------------------------------------------- your own sets
 
-local function setFile()
-    return path((job() ~= '') and job() or 'ALL', 'sets');
-end
-
-local function loadSets()
-    if (setCache ~= nil) and (setCache.job == job()) then
-        return setCache.sets;
-    end
-    local sets = {};
-    local chunk = loadfile(setFile());
-    if (chunk ~= nil) then
-        local ok, saved = pcall(chunk);
-        if (ok) and (type(saved) == 'table') then
-            for name, set in pairs(saved) do
-                if (type(name) == 'string') and (type(set) == 'table') then sets[name] = set; end
-            end
-        else
-            say('Your sets file did not load: ' .. tostring(saved));
-        end
-    end
-    setCache = { job = job(), sets = sets };
-    return sets;
-end
-
-local function saveSets()
-    local folder = mine.Folder('sets');
-    if (not ashita.fs.exists(folder)) then
-        ashita.fs.create_directory(folder);
-    end
-    local sets = loadSets();
-    local names = {};
-    for name in pairs(sets) do names[#names + 1] = name; end
-    table.sort(names);
-    local out = {
-        string.format('-- vanagear: your own sets for %s. /vg wear <name>, /vg look <name>. Edit here or in the /vg window.', job()),
-        'return {',
-    };
-    for _, name in ipairs(names) do
-        out[#out + 1] = string.format('    [%q] = {', name);
-        for _, slot in ipairs(gData.Constants.EquipSlotNames) do
-            local piece = sets[name][slot];
-            if (piece ~= nil) then
-                out[#out + 1] = string.format('        %s = %q,', slot, piece);
-            end
-        end
-        out[#out + 1] = '    },';
-    end
-    out[#out + 1] = '};';
-    local f = io.open(setFile(), 'w');
-    if (f == nil) then
-        say('Could not write ' .. setFile());
-        return;
-    end
-    f:write(table.concat(out, '\n') .. '\n');
-    f:close();
+-- Your sets are the sets table of the job's profile file (vg\profile.lua): read out of it when the
+-- profile is read (gVana.FileSets), and every change written straight into it.
+local function profilePath()
+    return (gProfile ~= nil) and gProfile.FilePath or nil;
 end
 
 mine.Sets = function()
-    return loadSets();
+    local out = {};
+    for k, set in pairs(gVana.FileSets or {}) do
+        if (type(set) == 'table') then out[k] = set; end
+    end
+    return out;
 end
 
--- the saved set by name, any case
+-- one of your sets by name, any case
 mine.FindSet = function(name)
-    local sets = loadSets();
     local want = string.lower(name or '');
-    for k, set in pairs(sets) do
-        if (string.lower(k) == want) then return set, k; end
+    for k, set in pairs(gVana.FileSets or {}) do
+        if (type(set) == 'table') and (string.lower(k) == want) then return set, k; end
     end
     return nil;
 end
@@ -400,14 +353,13 @@ mine.SetName = function(name)
 end
 
 local function changed()
-    saveSets();
     require('vg.core').ApplyOwn();
 end
 
--- /vg save <name>: what you are wearing now, slot by slot.
+-- /vg save <name>: what you are wearing now, slot by slot, written into your profile as the set.
 mine.SaveSet = function(name)
     name = mine.SetName(name);
-    if (name == '') then
+    if (name == '') or (profilePath() == nil) then
         return false;
     end
     local set = {};
@@ -420,7 +372,8 @@ mine.SaveSet = function(name)
             count = count + 1;
         end
     end
-    loadSets()[name] = set;
+    local vp = require('vg.profile');
+    vp.SaveSet(profilePath(), vp.FileName(name), set);
     changed();
     if (mine.Dressing) then mine.Dress(false); end
     return true, name, count;
@@ -434,84 +387,34 @@ mine.Dress = function(on)
     for i = 1, 16 do gState.Disabled[i] = on; end
 end
 
--- One slot of one of your sets; nil gives the slot back to the built set.
+-- One slot of one of your sets, in your profile; nil takes it out so the built piece fills it.
 mine.SetSlot = function(name, slot, piece)
     name = mine.SetName(name);
-    if (name == '') then
+    if (name == '') or (profilePath() == nil) then
         return false;
     end
-    local sets = loadSets();
-    sets[name] = sets[name] or {};
-    sets[name][slot] = piece;
+    local vp = require('vg.profile');
+    vp.SetSlot(profilePath(), vp.FileName(name), slot, piece);
     changed();
     return true, name;
 end
 
+-- One of your sets out of your profile: a built one is back to what vanagear builds.
 mine.RemoveSet = function(name)
-    local _, found = mine.FindSet(name);
+    local vp = require('vg.profile');
+    local _, found = mine.FindSet(vp.FileName(mine.SetName(name)));
     if (found == nil) then
+        _, found = mine.FindSet(name);
+    end
+    if (found == nil) or (profilePath() == nil) then
         return false;
     end
-    loadSets()[found] = nil;
+    vp.SaveSet(profilePath(), found, false);
     changed();
     return true, found;
 end
 
--- The built sets with yours laid over them: a set of yours named like a built one (Idle,
--- Tp_Default, Reward, a weaponskill or spell) replaces the slots it names and keeps the rest;
--- any other name is a set of its own.
-mine.Overlay = function(built)
-    local out, own = {}, {};
-    for name, set in pairs(built) do out[name] = set; end
-    for name, set in pairs(loadSets()) do
-        local key = mine.Aliases[string.lower(name)] or name;
-        for k in pairs(built) do
-            if (string.lower(k) == string.lower(key)) then key = k; end
-        end
-        local merged = {};
-        for slot, piece in pairs(built[key] or {}) do merged[slot] = piece; end
-        own[key] = {};
-        for slot, piece in pairs(set) do
-            merged[slot] = piece;
-            own[key][slot] = true;
-        end
-        out[key] = merged;
-    end
-    return out, own;
-end
-
--- Copies a LuAshitacast profile's sets into your own vanagear sets for this job, under the
--- names vanagear wears them by (Engaged -> Tp_Default, precast.FC -> Precast; any other name
--- stays a set of its own). Pieces the profile names with augments keep just the item name.
--- Returns how many sets were copied.
-mine.ImportProfile = function(profileSets)
-    local gsnames = require('vg.gsnames');
-    local sets = loadSets();
-    local count = 0;
-    for name, set in pairs(profileSets or {}) do
-        if (type(name) == 'string') and (type(set) == 'table') then
-            local bare = string.gsub(name, '[^%w_]', '');
-            local key = mine.Aliases[string.lower(bare)] or gsnames.ToVanagear(name) or bare;
-            local copy = {};
-            for _, slot in ipairs(gData.Constants.EquipSlotNames) do
-                local piece = set[slot];
-                if (type(piece) == 'table') then piece = piece.Name; end
-                if (type(piece) == 'string') and (piece ~= '') then
-                    copy[slot] = (string.lower(piece) == 'displaced') and 'remove' or piece;
-                end
-            end
-            if (key ~= '') and (next(copy) ~= nil) then
-                sets[key] = copy;
-                count = count + 1;
-            end
-        end
-    end
-    changed();
-    return count;
-end
-
 mine.ReloadSets = function()
-    setCache = nil;
     require('vg.core').ApplyOwn();
 end
 

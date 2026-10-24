@@ -185,7 +185,7 @@ function gui:Render()
                         imgui.SameLine();
                         if (vd.Button('Unload')) then
                             gState.UnloadProfile();
-                            print(chat.header('LuAshitacast') .. chat.message('Profile unloaded.'));
+                            print(chat.header('vanagear') .. chat.message('Profile unloaded.'));
                         end
                         imgui.SameLine();
                     else

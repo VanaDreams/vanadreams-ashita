@@ -24,28 +24,28 @@ state.Init = function()
     gState.pZoneFlags = ashita.memory.find('FFXiMain.dll', 0, '8B8C24040100008B90????????0BD18990????????8B15????????8B82', 0, 0);
 
     if (gState.pVanaTime == 0) then
-        print(chat.header('LuAshitacast') .. chat.error('Vanatime signature scan failed.'));
+        print(chat.header('vanagear') .. chat.error('Vanatime signature scan failed.'));
     end
 
     if (gState.pWardrobe == 0) then
-        print(chat.header('LuAshitacast') .. chat.error('Wardrobe access signature scan failed.'));
+        print(chat.header('vanagear') .. chat.error('Wardrobe access signature scan failed.'));
     end
 
     if (gState.pWeather == 0) then
-        print(chat.header('LuAshitacast') .. chat.error('Weather signature scan failed.'));
+        print(chat.header('vanagear') .. chat.error('Weather signature scan failed.'));
     end
 
     if (gState.pZoneFlags == 0) then
-        print(chat.header('LuAshitacast') .. chat.error('Zone flag signature scan failed.'));
+        print(chat.header('vanagear') .. chat.error('Zone flag signature scan failed.'));
     else
         gState.pZoneOffset = ashita.memory.read_uint32(gState.pZoneFlags, 0x09);
         if (gState.pZoneOffset == 0) then
             gState.pZoneFlags = 0;
-            print(chat.header('LuAshitacast') .. chat.error('Zone flag offset not found.'));
+            print(chat.header('vanagear') .. chat.error('Zone flag offset not found.'));
         else
             gState.pZoneFlags = ashita.memory.read_uint32(gState.pZoneFlags, 0x17);
             if (gState.pZoneFlags == 0) then
-                print(chat.header('LuAshitacast') .. chat.error('Zone flag sub pointer not found.'));
+                print(chat.header('vanagear') .. chat.error('Zone flag sub pointer not found.'));
             end
         end
     end
@@ -57,7 +57,8 @@ state.Init = function()
         state.Encumbrance[i] = false;
     end
     
-    local configPath = string.format('%sconfig\\addons\\luashitacast\\?.lua;', AshitaCore:GetInstallPath());
+    -- vanagear: a profile's require and gFunc.LoadFile look in vanagear's profiles folder, never luashitacast's
+    local configPath = string.format('%sconfig\\addons\\vanagear\\profiles\\?.lua;', AshitaCore:GetInstallPath());
     package.path = configPath .. package.path;
     gState.BasePath = package.path;
     
@@ -65,7 +66,7 @@ state.Init = function()
         gState.PlayerId = AshitaCore:GetMemoryManager():GetParty():GetMemberServerId(0);
         gState.PlayerName = AshitaCore:GetMemoryManager():GetParty():GetMemberName(0);
         gState.PlayerJob = AshitaCore:GetMemoryManager():GetPlayer():GetMainJob();
-        configPath = string.format('%sconfig\\addons\\luashitacast\\%s_%u\\?.lua;', AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId);
+        configPath = string.format('%sconfig\\addons\\vanagear\\profiles\\%s_%u\\?.lua;', AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId);
         package.path = configPath .. gState.BasePath;
         -- vanagear: loaded after the zone wait, never in the same instant as everything else
         gState.PendingAutoLoad = true;
@@ -98,8 +99,8 @@ state.LoadProfile = function(profilePath)
     local success, loadError = loadfile(profilePath);
     if not success then
         gProfile = nil;
-        print(chat.header('LuAshitacast') .. chat.error('Failed to load profile: ') .. chat.color1(2, shortFileName));
-        print(chat.header('LuAshitacast') .. chat.error(loadError));
+        print(chat.header('vanagear') .. chat.error('Failed to load profile: ') .. chat.color1(2, shortFileName));
+        print(chat.header('vanagear') .. chat.error(loadError));
         return;
 	end
 	gProfile = success();
@@ -114,12 +115,18 @@ state.LoadProfile = function(profilePath)
             end
         end
         state.ResetSettings();
-        print(chat.header('LuAshitacast') .. chat.message('Loaded profile: ') .. chat.color1(2, shortFileName));
+        print(chat.header('vanagear') .. chat.message('Loaded profile: ') .. chat.color1(2, shortFileName));
+        -- vanagear: every profile knows its file, OnLoad or not (/vg addset, /vg reload, the writers in vg\profile.lua)
+        gProfile.FilePath = profilePath;
+        gProfile.FileName = shortFileName;
+        gProfile.VgJob = string.match(shortFileName, '^(.-)%.lua$') or shortFileName;
         if (gProfile.OnLoad ~= nil) and (type(gProfile.OnLoad) == 'function') then
-            gProfile.FilePath = profilePath;
-            gProfile.FileName = shortFileName;
             gState.SafeCall('OnLoad');
             gSetDisplay:Reload();
+        end
+        -- vanagear: a fresh build goes into the profile's built table, then its sets are read back merged
+        if (gVanaCore ~= nil) then
+            gVanaCore.ApplyOwn();
         end
     end
 end
@@ -131,27 +138,36 @@ state.AutoLoadProfile = function()
     if type(jobString) == 'string'then
         jobString = jobString:trimend('\x00');
     end
-    local paths = T{
-        ('%sconfig\\addons\\luashitacast\\%s_%u\\%s.lua'):fmt(AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId, jobString),
-        ('%sconfig\\addons\\luashitacast\\%s_%s.lua'):fmt(AshitaCore:GetInstallPath(), gState.PlayerName, jobString),
-    };
-    if gSettings.DefaultProfile ~= nil then
-        paths:append(('%sconfig\\addons\\luashitacast\\%s'):fmt(AshitaCore:GetInstallPath(), gSettings.DefaultProfile));
-    end
-    -- vanagear: a profile whose sets vanagear took over (/vg takeover) is left alone for this job
-    local forgot = gVana and gVana.Prefs and gVana.Prefs.Forgot and gVana.Prefs.Forgot[tostring(jobString)];
-    for _,path in ipairs(paths) do
-        if (not forgot) and (ashita.fs.exists(path)) then
-            gState.LoadProfile(path);
+    -- vanagear: the job's profile is vanagear's own, config\addons\vanagear\profiles\<Name>_<id>\<JOB>.lua
+    -- (vg\profile.lua). With none there yet, the player's LuAshitacast profile for the job is pulled over
+    -- whole, the one time the luashitacast folder is read; with none of those either, vanagear's template.
+    -- A DefaultProfile setting names a file in vanagear's profiles folder.
+    local vgProfile = require('vg.profile');
+    local job = tostring(jobString);
+    local path = vgProfile.Path(job);
+    if (not ashita.fs.exists(path)) and (gSettings.DefaultProfile ~= nil) then
+        local default = ('%s\\%s'):fmt(vgProfile.Root(), gSettings.DefaultProfile);
+        if (ashita.fs.exists(default)) then
+            gState.LoadProfile(default);
             return;
         end
     end
-
-    -- vanagear: no profile of the player's own, so the built sets and vanagear's rules are it
-    gProfile = require('vg.stock').Profile();
-    gProfile.FileName = 'vanagear (' .. tostring(jobString) .. ')';
-    state.ResetSettings();
-    print(chat.header('vanagear') .. chat.message('No profile of your own for ' .. tostring(jobString) .. ': wearing the sets built from your bags. /vg help for commands.'));
+    local lacPath = nil;
+    for _,lac in ipairs({
+        ('%sconfig\\addons\\luashitacast\\%s_%u\\%s.lua'):fmt(AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId, job),
+        ('%sconfig\\addons\\luashitacast\\%s_%s.lua'):fmt(AshitaCore:GetInstallPath(), gState.PlayerName, job),
+    }) do
+        if (not ashita.fs.exists(path)) and (ashita.fs.exists(lac)) then
+            lacPath = lac;
+            break;
+        end
+    end
+    path = vgProfile.Ensure(job, lacPath);
+    if (path ~= nil) then
+        gState.LoadProfile(path);
+    else
+        print(chat.header('vanagear') .. chat.error('Could not make a profile for ' .. job .. ' in ' .. vgProfile.Folder() .. '.'));
+    end
 end
 
 state.LoadProfileEx = function(path)
@@ -161,15 +177,16 @@ state.LoadProfileEx = function(path)
     if (not ashita.fs.exists(profilePath)) then
         profilePath = path .. '.lua';
         if (not ashita.fs.exists(profilePath)) then
-            profilePath = ('%sconfig\\addons\\luashitacast\\%s_%u\\%s'):fmt(AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId, path);
+            -- vanagear: /vg load <name> looks in vanagear's profiles folder
+            profilePath = ('%sconfig\\addons\\vanagear\\profiles\\%s_%u\\%s'):fmt(AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId, path);
             if (not ashita.fs.exists(profilePath)) then
-                profilePath = ('%sconfig\\addons\\luashitacast\\%s_%u\\%s.lua'):fmt(AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId, path);
+                profilePath = ('%sconfig\\addons\\vanagear\\profiles\\%s_%u\\%s.lua'):fmt(AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId, path);
                 if (not ashita.fs.exists(profilePath)) then
-                    profilePath = ('%sconfig\\addons\\luashitacast\\%s'):fmt(AshitaCore:GetInstallPath(), path);
+                    profilePath = ('%sconfig\\addons\\vanagear\\profiles\\%s'):fmt(AshitaCore:GetInstallPath(), path);
                     if (not ashita.fs.exists(profilePath)) then
-                        profilePath = ('%sconfig\\addons\\luashitacast\\%s.lua'):fmt(AshitaCore:GetInstallPath(), path);
+                        profilePath = ('%sconfig\\addons\\vanagear\\profiles\\%s.lua'):fmt(AshitaCore:GetInstallPath(), path);
                         if (not ashita.fs.exists(profilePath)) then
-                            print(chat.header('LuAshitacast') .. chat.error('Profile not found matching: ') .. chat.color1(2, path));
+                            print(chat.header('vanagear') .. chat.error('Profile not found matching: ') .. chat.color1(2, path));
                             return;
                         end
                     end
@@ -286,15 +303,15 @@ state.SafeCall = function(name,...)
             if (gSettings.SafeCall) then
                 local success,err = pcall(gProfile[name],...);
                 if (not success) then
-                    print(chat.header('LuAshitacast') .. chat.error('Error in profile function: ') .. chat.color1(2, name));
-                    print(chat.header('LuAshitacast') .. chat.error(err));
+                    print(chat.header('vanagear') .. chat.error('Error in profile function: ') .. chat.color1(2, name));
+                    print(chat.header('vanagear') .. chat.error(err));
                 end
             else
                 gProfile[name](...);
             end
             defaultParsed = false;
         elseif (gProfile[name] ~= nil) then
-            print(chat.header('LuAshitacast') .. chat.error('Profile member exists but is not a function: ') .. chat.color1(2, name));
+            print(chat.header('vanagear') .. chat.error('Profile member exists but is not a function: ') .. chat.color1(2, name));
         end
     end
 end

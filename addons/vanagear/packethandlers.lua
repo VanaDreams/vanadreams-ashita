@@ -16,7 +16,7 @@ packethandlers.HandleIncoming0x0A = function(e)
         gState.PlayerId = id;
         gState.PlayerName = name;
         gState.PlayerJob = job;
-        local configPath = string.format('%sconfig\\addons\\luashitacast\\%s_%u\\?.lua;', AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId);
+        local configPath = string.format('%sconfig\\addons\\vanagear\\profiles\\%s_%u\\?.lua;', AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId);
         package.path = configPath .. gState.BasePath;
         -- vanagear: the profile loads after the zone wait, not while the zone is coming in
         gState.PendingAutoLoad = true;
@@ -51,7 +51,7 @@ packethandlers.HandleIncoming0x28 = function(e)
     if (userId == gState.PlayerId) then
         if (gData.Constants.ActionCompleteTypes:contains(actionType)) then
             if (gSettings.Debug) and (gState.PlayerAction ~= nil) then
-                print(chat.header('LuAshitacast') .. chat.message('Action ending due to action packet of type ' .. tostring(actionType) .. '.'));
+                print(chat.header('vanagear') .. chat.message('Action ending due to action packet of type ' .. tostring(actionType) .. '.'));
             end
             gState.DelayedEquip = {};
             gState.PlayerAction = nil;
@@ -59,7 +59,7 @@ packethandlers.HandleIncoming0x28 = function(e)
             --Ranged or magic interrupt resets delay so idlegear resumes.
             if (ashita.bits.unpack_be(e.data_raw, 10, 6, 16) == 28787) then
                 if (gSettings.Debug) and (gState.PlayerAction ~= nil) then
-                    print(chat.header('LuAshitacast') .. chat.message('Action ending due to action packet of type ' .. tostring(actionType) .. ' with parameters indicating interruption.'));
+                    print(chat.header('vanagear') .. chat.message('Action ending due to action packet of type ' .. tostring(actionType) .. ' with parameters indicating interruption.'));
                 end
                 gState.DelayedEquip = {};
                 gState.PlayerAction = nil;
@@ -77,7 +77,7 @@ packethandlers.HandleIncoming0x28 = function(e)
     if (userId == AshitaCore:GetMemoryManager():GetEntity():GetServerId(petIndex)) then
         if (gData.Constants.PetActionCompleteTypes:contains(actionType)) then
             if (gSettings.Debug) and (gState.PetAction ~= nil) then
-                print(chat.header('LuAshitacast') .. chat.message('Pet action ending due to action packet of type ' .. tostring(actionType) .. '.'));
+                print(chat.header('vanagear') .. chat.message('Pet action ending due to action packet of type ' .. tostring(actionType) .. '.'));
             end
             gState.PetAction = nil;
             return;
@@ -85,7 +85,7 @@ packethandlers.HandleIncoming0x28 = function(e)
             --Ranged or magic interrupt resets delay so idlegear resumes.
             if (ashita.bits.unpack_be(e.data_raw, 10, 6, 16) == 28787) then
                 if (gSettings.Debug) and (gState.PetAction ~= nil) then
-                    print(chat.header('LuAshitacast') .. chat.message('Pet action ending due to action packet of type ' .. tostring(actionType) .. ' with parameters indicating interruption.'));
+                    print(chat.header('vanagear') .. chat.message('Pet action ending due to action packet of type ' .. tostring(actionType) .. ' with parameters indicating interruption.'));
                 end
                 gState.PetAction = nil;
 				return;
@@ -251,13 +251,13 @@ packethandlers.HandleOutgoingChunk = function(e)
     local time = os.clock();
     if (gState.PlayerAction ~= nil) and (gState.PlayerAction.Completion < time) then
         if (gSettings.Debug) then
-            print(chat.header('LuAshitacast') .. chat.message('Action ending due to timeout.'));
+            print(chat.header('vanagear') .. chat.message('Action ending due to timeout.'));
         end
         gState.PlayerAction = nil;
     end
     if (gState.PetAction ~= nil) and (gState.PetAction.Completion < time) then
         if (gSettings.Debug) then
-            print(chat.header('LuAshitacast') .. chat.message('Pet action ending due to timeout.'));
+            print(chat.header('vanagear') .. chat.message('Pet action ending due to timeout.'));
         end
         gState.PetAction = nil;
     end

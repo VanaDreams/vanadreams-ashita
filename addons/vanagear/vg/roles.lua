@@ -63,6 +63,31 @@ roles.Modes = {
     Phalanx = { Stats = { PHALANX_RECEIVED = 5, ENHANCE = 0.5 } },
     Regen = { Stats = { REGEN_DURATION = 2, ENH_MAGIC_DURATION = 1, ENHANCE = 0.2 } },
     Refresh = { Stats = { ENHANCES_REFRESH = 3, ENH_MAGIC_DURATION = 1, ENHANCE = 0.2 } },
+    -- worn over the spell above when it lands on you, or when its strength is skill (the templates,
+    -- M419): what the server reads for a spell received and for skill-scaled enhancing
+    Cure_Self = { Stats = { CURE_POTENCY_RCVD = 3, CURE_POTENCY = 1, MND = 0.3 }, Caps = { CURE_POTENCY = 50 } },
+    Enhancing_Self = { Stats = { ENH_MAGIC_DURATION = 2, PHALANX_RECEIVED = 2, ENHANCES_PROT_SHELL_RCVD = 1, ENHANCE = 0.3 } },
+    Refresh_Self = { Stats = { ENHANCES_REFRESH = 3, ENH_MAGIC_DURATION = 1.5 } },
+    Enhancing_Skill = { Stats = { ENHANCE = 2, BARSPELL_AMOUNT = 2, BARSPELL_MDEF_BONUS = 1 } },
+    Enhancing_Precast = { Stats = { FASTCAST = 3, UFASTCAST = 2 }, Caps = { FASTCAST = 80 } },
+    Helix = { Stats = { MATT = 2, INT = 1, MACC = 0.6, MAGIC_DAMAGE = 1.2, HELIX_DURATION = 1 } },
+    -- the job effects the templates lay over a phase while they are up (M419)
+    Saboteur = { Stats = { ENHANCES_SABOTEUR = 3, MACC = 1, ENFEEBLE = 0.5 } },
+    Enspell = { Stats = { ENSPELL_DMG_BONUS = 3, ENSPELL_DMG_PCT = 3, ACC = 0.5, DOUBLE_ATTACK = 0.5 } },
+    SneakAttack = { Stats = { SNEAK_ATK_DEX = 3, DEX = 1, CRITHITRATE = 1, CRIT_DMG_INCREASE = 1 } },
+    TrickAttack = { Stats = { TRICK_ATK_AGI = 3, AGI = 1, CRITHITRATE = 1, CRIT_DMG_INCREASE = 1 } },
+    Cure_Solace = { Stats = { AFFLATUS_SOLACE = 3, CURE_POTENCY = 1, MND = 0.3 }, Caps = { CURE_POTENCY = 50 } },
+    -- the obi: a waist piece that makes the day and weather bonus apply every time. Hachirin-no-Obi
+    -- does it for every element (FORCE_DW_BONUS_PENALTY), the elemental obis for their own one
+    Obi = { Stats = { FORCE_DW_BONUS_PENALTY = 10 } },
+    Obi_Fire = { Stats = { FORCE_FIRE_DWBONUS = 10, FORCE_DW_BONUS_PENALTY = 9 } },
+    Obi_Ice = { Stats = { FORCE_ICE_DWBONUS = 10, FORCE_DW_BONUS_PENALTY = 9 } },
+    Obi_Wind = { Stats = { FORCE_WIND_DWBONUS = 10, FORCE_DW_BONUS_PENALTY = 9 } },
+    Obi_Earth = { Stats = { FORCE_EARTH_DWBONUS = 10, FORCE_DW_BONUS_PENALTY = 9 } },
+    Obi_Thunder = { Stats = { FORCE_LIGHTNING_DWBONUS = 10, FORCE_DW_BONUS_PENALTY = 9 } },
+    Obi_Water = { Stats = { FORCE_WATER_DWBONUS = 10, FORCE_DW_BONUS_PENALTY = 9 } },
+    Obi_Light = { Stats = { FORCE_LIGHT_DWBONUS = 10, FORCE_DW_BONUS_PENALTY = 9 } },
+    Obi_Dark = { Stats = { FORCE_DARK_DWBONUS = 10, FORCE_DW_BONUS_PENALTY = 9 } },
     Enfeebling = { Stats = { MACC = 1.5, ENFEEBLE = 1, MND = 0.6, INT = 0.6, CONSERVE_MP = 0.1 } },
     Macc = { Stats = { MACC = 2, ENFEEBLE = 1.2, INT = 0.5, MND = 0.5 } },
     Nuke = { Stats = { MATT = 2, INT = 1, MACC = 0.6, MAGIC_DAMAGE = 1.2, ELEM = 0.3 } },
@@ -144,8 +169,9 @@ roles.Always = { 'TH' };
 
 -- The midcast sets each kind of magic gets, by the skill name LuAshitacast reports.
 roles.SkillSets = {
-    ['Healing Magic'] = { 'Cure', 'Cure_Precast', 'Cursna' },
-    ['Enhancing Magic'] = { 'Enhancing', 'Stoneskin', 'Phalanx', 'Regen', 'Refresh' },
+    ['Healing Magic'] = { 'Cure', 'Cure_Precast', 'Cursna', 'Cure_Self' },
+    ['Enhancing Magic'] = { 'Enhancing', 'Stoneskin', 'Phalanx', 'Regen', 'Refresh', 'Enhancing_Self', 'Refresh_Self',
+        'Enhancing_Skill', 'Enhancing_Precast' },
     ['Enfeebling Magic'] = { 'Enfeebling', 'Macc' },
     ['Elemental Magic'] = { 'Nuke', 'NukeACC', 'Burst' },
     ['Dark Magic'] = { 'Dark', 'Drain' },

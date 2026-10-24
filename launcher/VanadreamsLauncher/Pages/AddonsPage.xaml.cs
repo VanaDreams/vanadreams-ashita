@@ -16,7 +16,12 @@ namespace Vanadreams.Pages
     public sealed class AddonRow : INotifyPropertyChanged
     {
         private bool _selected, _enabled;
+        private CatalogItem _blockedBy;
         public CatalogItem Item { get; set; }
+        /// <summary>The ticked item this one gives way to (catalogue "conflicts"): while it is ticked this row is
+        /// unticked and greyed out, as LuAshitacast is while vanagear, which carries it, is ticked.</summary>
+        public CatalogItem BlockedBy { get { return _blockedBy; } set { _blockedBy = value; Raise("BlockedBy"); Raise("CanTick"); Raise("Opacity"); } }
+        public bool CanTick => Item.HasV4 && _blockedBy == null;
         /// <summary>The launcher's own window switcher, listed with the addons; its tick is LauncherSettings.SwitcherOn.</summary>
         public bool IsSwitcher { get; set; }
         public bool Installed { get; set; }
@@ -26,7 +31,7 @@ namespace Vanadreams.Pages
         public bool Selected { get { return _selected; } set { _selected = value; Raise("Selected"); Raise("HandVisibility"); } }
         public Visibility HandVisibility => Selected ? Visibility.Visible : Visibility.Hidden;
         public string Label => Item.Name + (string.IsNullOrEmpty(Item.Version) ? "" : " " + Item.Version) + (!Item.HasV4 && !string.IsNullOrEmpty(Item.Replacement) ? " → " + Item.Replacement : "");
-        public double Opacity => Item.HasV4 ? 1.0 : 0.5;
+        public double Opacity => Item.HasV4 && _blockedBy == null ? 1.0 : 0.5;
         public string Tag => IsSwitcher ? "launcher" : Item.SourceTag;
         public Brush TagBrush => IsSwitcher ? (Brush)Application.Current.FindResource("GoldSoft") : Item.Source == SourceType.None ? (Brush)Application.Current.FindResource("Bad") : Item.Source == SourceType.Bundled ? (Brush)Application.Current.FindResource("Mist") : (Brush)Application.Current.FindResource("GoldSoft");
         public event PropertyChangedEventHandler PropertyChanged;
@@ -101,6 +106,7 @@ namespace Vanadreams.Pages
                     Enabled = state.Settings.EnabledAddons.Contains(item.Id, StringComparer.OrdinalIgnoreCase),
                 });
             }
+            UpdateBlocked();
             List.ItemsSource = null; List.ItemsSource = _rows;
             var enabledCount = _rows.Count(r => r.Enabled && r.HasV4 && !r.IsSwitcher);
             Heading.Text = $"✦ Your addons · {enabledCount} of {_rows.Count(r => r.HasV4 && !r.IsSwitcher)} enabled" + (state.CatalogFromCache ? " · catalogue from cache" : "");
@@ -153,10 +159,9 @@ namespace Vanadreams.Pages
                 ItemState.Foreground = (Brush)FindResource("Mist");
             }
             ItemState.Text += string.IsNullOrEmpty(i.Load) ? "" : "\nLoads as " + (i.LoadKind == LoadKind.PolPlugin ? "POL plugin " + i.LoadName + " (boot ini)" : i.Load);
-            var heldBy = row.Enabled ? App.State.Catalog.BlockedBy(i, TickedIds()) : null;
-            if (heldBy != null)
+            if (row.BlockedBy != null)
             {
-                ItemState.Text += "\nLeft out of the startup script while " + heldBy.Name + " is ticked: the two cannot load together.";
+                ItemState.Text += "\nUnticked and greyed out while " + row.BlockedBy.Name + " is ticked: " + row.BlockedBy.Name + " does its job, and the two cannot load together.";
                 ItemState.Foreground = (Brush)FindResource("Warn");
             }
             if (!string.IsNullOrEmpty(i.HeldBack))
@@ -181,7 +186,22 @@ namespace Vanadreams.Pages
         private void Check_Click(object sender, RoutedEventArgs e)
         {
             var row = ((FrameworkElement)sender).Tag as AddonRow;
+            UpdateBlocked();
             if (row != null) Select(row);
+        }
+
+        /// <summary>An item that gives way to a ticked one (catalogue "conflicts") is unticked and greyed out;
+        /// ticking vanagear unticks LuAshitacast, unticking vanagear lets it be ticked again.</summary>
+        private void UpdateBlocked()
+        {
+            var catalog = App.State.Catalog;
+            var ticked = TickedIds();
+            foreach (var r in _rows.Where(r => !r.IsSwitcher))
+            {
+                var by = catalog.BlockedBy(r.Item, ticked.Where(id => !string.Equals(id, r.Item.Id, StringComparison.OrdinalIgnoreCase)));
+                r.BlockedBy = by;
+                if (by != null && r.Enabled) r.Enabled = false;
+            }
         }
 
         private async void Install_Click(object sender, RoutedEventArgs e)

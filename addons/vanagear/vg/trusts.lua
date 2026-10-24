@@ -18,7 +18,9 @@
     changes and from the Send button. The server keeps them, so nothing is sent again for the
     next summon unless a set changed. !trustgear <trust> info tells the tab the trust's name,
     jobs, level and what it uses; the server answers only for your own trusts, and those lines
-    are hidden from chat. Your changes are kept by trust name in config\addons\vanagear\trusts.lua.
+    are hidden from chat. Each trust has a profile file, config\addons\vanagear\profiles\<Name>_<id>\trusts\
+    <Trust>.lua (vg\profile.lua), the same layout as a job's: built, from the band of its job template
+    for its level, and sets, your picks; what is sent is sets over built, read out of that file.
 ]]--
 
 local bags = require('vg.bags');
@@ -81,6 +83,8 @@ local jobKinds = {
 };
 
 local own = nil;            -- trust name -> set name -> { slot name -> item name | 'remove' }
+local fileSets = {};        -- trust name -> what its profile file sends: its sets over its built ones
+local fileSig = {};         -- trust name -> the built sets last written, so the file is written only on a change
 local sentSig = nil;        -- trust name -> set key -> the ids last sent (kept on disk: the server keeps the sets)
 local built = {};           -- trust name -> { at, job, level, uses, sets = { set name -> { [slot] = piece } } }
 local info = {};            -- trust server id -> { Name, Job, Sub, Level, Uses = { { Name, Kind } }, Ours }
@@ -158,13 +162,29 @@ local function writeTable(file, header, t)
     end
 end
 
-local function loadOwn()
-    if (own == nil) then own = readTable('trusts.lua'); end
-    return own;
+-- Your picks for a trust live in its profile file (profiles\<Name>_<id>\trusts\<Trust>.lua, vg\profile.lua),
+-- in its sets table, as your own sets go into your job's profile. What the single trusts.lua held for the
+-- trust (vanagear 0.1.20 and before) is moved in the first time.
+local function saveOwn(name)
+    if (not require('vg.profile').WriteTrustSets(name, own[name] or {})) then
+        say('Could not write the sets for ' .. name .. ' into ' .. require('vg.profile').TrustPath(name));
+    end
+    fileSets[name] = nil;   -- read the file again before the next send
 end
 
-local function saveOwn()
-    writeTable('trusts.lua', '-- vanagear: your picks for each trust, by trust name and set. Written by the addon.', own);
+local function loadOwn(name)
+    own = own or {};
+    if (own[name] == nil) then
+        local picks = require('vg.profile').ReadTrustSets(name);
+        if (picks == nil) then
+            local old = readTable('trusts.lua')[name];
+            own[name] = old or {};
+            if (old ~= nil) then saveOwn(name); end
+        else
+            own[name] = picks;
+        end
+    end
+    return own[name];
 end
 
 local function loadSent()
@@ -224,7 +244,8 @@ end
 -- { Name, Key, Mode (a mode table), For (what it goes on for) }.
 trusts.Plan = function(t)
     local job = plan.Job(t.JobName);
-    local tweaks = job.Tweaks or {};
+    -- the job template's band for the trust's level laid over its all-level tweaks, as your own sets are built
+    local tweaks = plan.BandTweaks(job, t.Level or 99);
     local function named(name)
         if (modes[name] ~= nil) then
             local m = { Name = name, Stats = {}, Caps = {} };
@@ -319,7 +340,7 @@ trusts.Sets = function(t)
         seen[p.Key] = true;
         list[#list + 1] = { Name = p.Name, Key = p.Key, For = p.For, Built = true };
     end
-    local mine = loadOwn()[t.Name] or {};
+    local mine = loadOwn(t.Name);
     local names = {};
     for name in pairs(mine) do
         if (not seen[trusts.Key(name)]) then names[#names + 1] = name; end
@@ -334,16 +355,15 @@ end
 
 -- Your picks for one of this trust's sets, slot name -> item name or 'remove'.
 trusts.Own = function(t, setName)
-    local mine = loadOwn()[t.Name] or {};
+    local mine = loadOwn(t.Name);
     return mine[setName] or {};
 end
 
 trusts.SetSlot = function(t, setName, slotName, item)
-    loadOwn();
-    own[t.Name] = own[t.Name] or {};
-    own[t.Name][setName] = own[t.Name][setName] or {};
-    own[t.Name][setName][slotName] = item;
-    saveOwn();
+    local mine = loadOwn(t.Name);
+    mine[setName] = mine[setName] or {};
+    mine[setName][slotName] = item;
+    saveOwn(t.Name);
 end
 
 -- A set of your own, named after something the trust uses ("Flash", "Savage Blade").
@@ -352,21 +372,15 @@ trusts.AddSet = function(t, setName)
     for _, s in ipairs(trusts.Sets(t)) do
         if (s.Key == trusts.Key(setName)) then return s.Name; end
     end
-    loadOwn();
-    own[t.Name] = own[t.Name] or {};
-    own[t.Name][setName] = {};
-    saveOwn();
+    loadOwn(t.Name)[setName] = {};
+    saveOwn(t.Name);
     return setName;
 end
 
 -- A built set goes back to what vanagear picks; a set of yours is deleted.
 trusts.Reset = function(t, setName)
-    loadOwn();
-    if (own[t.Name] ~= nil) then
-        own[t.Name][setName] = nil;
-        if (next(own[t.Name]) == nil) then own[t.Name] = nil; end
-    end
-    saveOwn();
+    loadOwn(t.Name)[setName] = nil;
+    saveOwn(t.Name);
 end
 
 -- The piece in each slot (1-16) of one set: your pick, else the built one, else nothing.
@@ -396,13 +410,47 @@ local function idOf(name)
     return 0;
 end
 
+-- The trust's built sets into its profile file's built table (config\addons\vanagear\profiles\<Name>_<id>\
+-- trusts, vg\profile.lua), then the file read back, its sets over its built ones: what is sent to the server.
+trusts.WriteProfile = function(t)
+    local sets, planned = trusts.Built(t);
+    local out, parts = {}, {};
+    for _, p in ipairs(planned) do
+        local set = {};
+        parts[#parts + 1] = p.Name;
+        for slot = 1, 16 do
+            local piece = (sets[p.Name] or {})[slot];
+            if (piece ~= nil) then set[gData.Constants.EquipSlotNames[slot]] = piece.Name; end
+            parts[#parts + 1] = (piece ~= nil) and piece.Name or '';
+        end
+        out[p.Name] = set;
+    end
+    local sig = table.concat(parts, '|');
+    if (fileSig[t.Name] ~= sig) then
+        fileSets[t.Name] = require('vg.profile').WriteTrust(t.Name, out);
+        fileSig[t.Name] = sig;
+    elseif (fileSets[t.Name] == nil) then
+        fileSets[t.Name] = require('vg.profile').WriteTrust(t.Name, nil);
+    end
+    return fileSets[t.Name];
+end
+
 -- The item ids of one set in the server's slot order, which is the slot index order here less
--- one (Main 0 ... Back 15), or 'clear' when it has nothing.
+-- one (Main 0 ... Back 15), or 'clear' when it has nothing. From the trust's profile file once
+-- it is written; until then from the sets worked out here.
 trusts.Ids = function(t, setName)
-    local final = trusts.Final(t, setName);
+    local file = fileSets[t.Name] and fileSets[t.Name][setName];
+    local final = (file == nil) and trusts.Final(t, setName) or nil;
     local ids, any = {}, false;
     for slot = 1, 16 do
-        ids[slot] = final[slot] and idOf(final[slot]) or 0;
+        local piece;
+        if (file ~= nil) then
+            piece = file[gData.Constants.EquipSlotNames[slot]];
+            if (type(piece) == 'table') then piece = piece.Name; end
+        else
+            piece = final[slot];
+        end
+        ids[slot] = (type(piece) == 'string') and idOf(piece) or 0;
         any = any or (ids[slot] ~= 0);
     end
     return any and table.concat(ids, ' ') or 'clear';
@@ -427,6 +475,7 @@ end
 
 -- Sends what changed since the server last had this trust's sets; all of them with all = true.
 trusts.Send = function(t, all)
+    trusts.WriteProfile(t);
     loadSent();
     local had = sentSig[sentName(t)] or {};
     local now, changed, listed = {}, false, {};
