@@ -316,8 +316,9 @@ renderSlots = function(name)
     end
     imgui.Separator();
     if (vd.Button('Wear it', nil, true)) then
-        require('vg.use').Wear(name, set);
-        setNote = 'Wearing ' .. name .. ' until /vg wear off.';
+        -- on once, from your profile; your profile's own swaps carry on from there
+        require('vg.use').WearOnce(name, set);
+        setNote = 'Put ' .. name .. ' on. Your profile swaps as usual from here (/vg wear ' .. name .. ' keeps it on).';
     end
     imgui.SameLine();
     if (vd.Button('Take what I wear')) then

@@ -219,6 +219,17 @@ use.Wear = function(name, set)
     if (now ~= nil) then gFunc.ForceEquipSet(now); end
 end
 
+-- The window's Wear it: the set put on once, read out of the profile file by name, as /vg equip does.
+-- Nothing is held: your profile's rules take over at their next swap, so no set kept in vanagear's
+-- memory fights the written lua (Lee, 24 Oct 2026: saving gear in memory to swap made it conflict with
+-- the luas and glitch). /vg wear is the explicit hold, kept until /vg wear off.
+use.WearOnce = function(name, set)
+    local now = ((gProfile ~= nil) and (type(gProfile.Sets) == 'table') and (type(gProfile.Sets[name]) == 'table'))
+        and gProfile.Sets[name] or set;
+    if (now ~= nil) then gFunc.ForceEquipSet(now); end
+    return now ~= nil;
+end
+
 use.Worn = function()
     return worn and worn.name;
 end
