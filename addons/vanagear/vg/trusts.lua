@@ -95,6 +95,14 @@ local built = {};           -- trust name -> { at, job, level, uses, sets = { se
 local info = {};            -- trust server id -> { Name, Job, Sub, Level, Uses = { { Name, Kind } }, Ours }
 local asked = {};           -- trust server id -> true once info was asked for
 local sendQueue, sendAt = {}, 0;
+-- Lee, 24 Oct 2026 ("I call 5 trusts and the game stutters and lags till I can't play it"): the sets were worked out
+-- again for every trust every three seconds, each walking the pool of the trusts before it and scanning the bags by
+-- name for every slot, whether or not anything had changed. Now a trust's sets are only worked out again when one
+-- of their inputs changed: your rebuild (gVana.BuiltAt), your picks (ownVersion), what the server said about any
+-- trust (infoVersion), or the trusts before it in the party, their levels and uses (trusts.Signature).
+local ownVersion, infoVersion = 0, 0;
+local lastSig = {};         -- trust server id -> the signature its sets were last sent for
+local idMap, idMapAt = nil, nil;   -- item name -> id, built once per rebuild (gVana.BuiltAt)
 
 local function say(text)
     print(chat.header('vanagear') .. chat.message(text));
@@ -175,6 +183,8 @@ local function saveOwn(name)
         say('Could not write the sets for ' .. name .. ' into ' .. require('vg.profile').TrustPath(name));
     end
     fileSets[name] = nil;   -- read the file again before the next send
+    ownVersion = ownVersion + 1;
+    trusts.RefreshAll();    -- a pick changed: that lua goes to the server now, and the trusts after it may change
 end
 
 local function loadOwn(name)
@@ -206,6 +216,7 @@ end
 -- else called shows here too; the server only answers for your own (trusts.Ours).
 trusts.Called = function()
     local party = AshitaCore:GetMemoryManager():GetParty();
+    if (party == nil) or (party.GetMemberServerId == nil) then return {}; end   -- no party API (the off-game tests)
     local resources = AshitaCore:GetResourceManager();
     local function abbr(id)
         local s = resources:GetString('jobs.names_abbr', id);
@@ -234,6 +245,37 @@ end
 -- What the server said about this trust, or nil until it answers (it never does for someone else's).
 trusts.Info = function(t)
     return info[t.Id];
+end
+
+-- Everything a trust's sets depend on, as one string: your rebuild, your picks, the server's answers, and the
+-- trusts up to and including this one in party order with their levels and what they use. Cheap: five party
+-- reads and no pool walk, so it can be checked every tick and the sets are only built again when it changes.
+trusts.Signature = function(t)
+    local parts = { tostring(gVana.BuiltAt), ownVersion, infoVersion };
+    -- what your own sets hold back from the pool (they have first call): a walk of your sets' slot names,
+    -- a few hundred string reads, not of the pieces
+    local mine = {};
+    for name, set in pairs(((gProfile ~= nil) and (type(gProfile.Sets) == 'table') and gProfile.Sets or gVana.Sets) or {}) do
+        if (type(set) == 'table') then
+            local names = {};
+            for slot, entry in pairs(set) do
+                if (type(slot) == 'string') then
+                    local n = (type(entry) == 'table') and (entry.Name or (entry[1] and (entry[1].Name or entry[1]))) or entry;
+                    names[#names + 1] = slot .. '=' .. tostring(n);
+                end
+            end
+            table.sort(names);
+            mine[#mine + 1] = tostring(name) .. '{' .. table.concat(names, ',') .. '}';
+        end
+    end
+    table.sort(mine);
+    parts[#parts + 1] = table.concat(mine, ';');
+    for _, u in ipairs(trusts.Called()) do
+        local i = info[u.Id];
+        parts[#parts + 1] = string.format('%d:%d:%d:%d', u.Id, u.Job or 0, u.Level or 0, i and #i.Uses or -1);
+        if (u.Id == t.Id) then break; end
+    end
+    return table.concat(parts, '|');
 end
 
 trusts.Ours = function(t)
@@ -405,9 +447,16 @@ end
 trusts.Built = function(t)
     local i = info[t.Id];
     local uses = i and #i.Uses or -1;
-    local pool, heldSig = trusts.Pool(t);
     local b = built[t.Name];
+    -- the signature covers everything the pool depends on, so a matching one means the cached sets stand
+    -- without walking the pool again (the walk is what cost the frames with five trusts out)
+    local sig = trusts.Signature(t);
+    if (b ~= nil) and (b.sig == sig) then
+        return b.sets, b.plan;
+    end
+    local pool, heldSig = trusts.Pool(t);
     if (b ~= nil) and (b.at == gVana.BuiltAt) and (b.job == t.Job) and (b.level == t.Level) and (b.uses == uses) and (b.held == heldSig) then
+        b.sig = sig;
         return b.sets, b.plan;
     end
     local slots = {};
@@ -418,7 +467,7 @@ trusts.Built = function(t)
     for _, p in ipairs(planned) do
         sets[p.Name] = score.Build(score.Compile(p.Mode), pool, who, slots, { 0 });
     end
-    built[t.Name] = { at = gVana.BuiltAt, job = t.Job, level = t.Level, uses = uses, held = heldSig, sets = sets, plan = planned };
+    built[t.Name] = { at = gVana.BuiltAt, job = t.Job, level = t.Level, uses = uses, held = heldSig, sets = sets, plan = planned, sig = sig };
     return sets, planned;
 end
 
@@ -493,11 +542,15 @@ trusts.Final = function(t, setName)
 end
 
 local function idOf(name)
-    local want = string.lower(name);
-    for _, p in ipairs(gVana.Pieces or {}) do
-        if (string.lower(p.Name) == want) then return p.Id; end
+    -- one map per rebuild instead of a scan of every piece for every slot of every set
+    if (idMap == nil) or (idMapAt ~= gVana.BuiltAt) or (idMap.pieces ~= gVana.Pieces) then
+        idMap, idMapAt = { pieces = gVana.Pieces }, gVana.BuiltAt;
+        for _, p in ipairs(gVana.Pieces or {}) do
+            local key = string.lower(p.Name);
+            if (idMap[key] == nil) then idMap[key] = p.Id; end
+        end
     end
-    return 0;
+    return idMap[string.lower(name)] or 0;
 end
 
 -- The trust's built sets into its profile file's built table (config\addons\vanagear\profiles\<Name>_<id>\
@@ -599,6 +652,7 @@ trusts.TextIn = function(e)
     local id, name, job, sub, level = string.match(text, '%[VG trust%] (%d+)|([^|]*)|(%d+)|(%d+)|(%d+)');
     if (id ~= nil) then
         info[tonumber(id)] = { Name = name, Job = tonumber(job), Sub = tonumber(sub), Level = tonumber(level), Uses = {} };
+        infoVersion = infoVersion + 1;
         e.blocked = true;
         return;
     end
@@ -622,40 +676,75 @@ trusts.TextIn = function(e)
             for useName, kind in string.gmatch(list, '([%w_]+):(%a+)') do
                 i.Uses[#i.Uses + 1] = { Name = useName, Kind = kind };
             end
+            infoVersion = infoVersion + 1;
+            trusts.RefreshAll();   -- the server has said what it uses: its lua is built and sent, once
         end
         e.blocked = true;
     end
 end
 
--- Called every frame once the zone wait is over: each newly called trust is asked about once,
--- and once the server has said it is yours, any set that changed (your bags, your picks) is sent.
-local lastLook = 0;
+-- Lee, 24 Oct 2026 ("trusts should be written to a lua that swaps in when the ability activates, so you don't need
+-- to scan their shit every 3 seconds"): nothing here runs on a timer. A trust's lua is written and sent to the
+-- server when something happens to it and at no other time: the party changes (PartyChanged, from the party
+-- packets), the server answers its info (TextIn), your bags are rebuilt (OnRebuilt, from vg\core.lua) or you change
+-- a pick in its tab (saveOwn). The server holds the sets and swaps them when the action fires. The tick only hands
+-- the next queued line to chat.
+local partyDirty = true;    -- true at load, and whenever a party packet comes in
+
+trusts.PartyChanged = function()
+    partyDirty = true;
+end
+
+-- Sends a trust's lua if its inputs changed since it was last sent (its signature), else nothing.
+trusts.Refresh = function(t)
+    if (info[t.Id] == nil) then return; end
+    local sig = trusts.Signature(t);
+    if (lastSig[t.Id] ~= sig) then
+        lastSig[t.Id] = sig;
+        trusts.Send(t);
+    end
+end
+
+-- Every trust of yours in the party, in order (a change to an earlier one changes the pool of the ones after it).
+local refreshing = false;
+trusts.RefreshAll = function()
+    if (refreshing) or (gVana.Who == nil) or (gVana.Prefs.TrustGear == false) then return; end
+    refreshing = true;   -- a pick file moved in while sending (loadOwn -> saveOwn) must not start this again
+    for _, t in ipairs(trusts.Called()) do trusts.Refresh(t); end
+    refreshing = false;
+end
+
+trusts.OnRebuilt = function()
+    trusts.RefreshAll();
+end
+
+-- The party changed: each newly called trust is asked about once (the server's answer sends its lua), one that
+-- left is forgotten, and the rest are refreshed since the order they hold pieces in may have changed.
+local function partyPass()
+    partyDirty = false;
+    local seen = {};
+    for _, t in ipairs(trusts.Called()) do
+        seen[t.Id] = true;
+        if (t.Level ~= nil) and (t.Level > 0) and (not asked[t.Id]) then
+            asked[t.Id] = true;
+            queue(t.Id .. ' info', string.format('/say !trustgear %d info', t.Id));
+            queue(t.Id .. ' off', string.format('/say !trustuse %d info', t.Id));
+        end
+    end
+    for id in pairs(asked) do
+        if (not seen[id]) then asked[id] = nil; info[id] = nil; lastSig[id] = nil; end
+    end
+    trusts.RefreshAll();
+end
+
 trusts.Tick = function()
     local now = os.clock();
     if (#sendQueue > 0) and (now > sendAt) then
         AshitaCore:GetChatManager():QueueCommand(-1, table.remove(sendQueue, 1).Line);
         sendAt = now + 1.2;
     end
-    if (gVana.Who == nil) or (gVana.Prefs.TrustGear == false) or (now - lastLook < 3) then
-        return;
-    end
-    lastLook = now;
-    local seen = {};
-    for _, t in ipairs(trusts.Called()) do
-        seen[t.Id] = true;
-        if (t.Level ~= nil) and (t.Level > 0) then
-            if (not asked[t.Id]) then
-                asked[t.Id] = true;
-                queue(t.Id .. ' info', string.format('/say !trustgear %d info', t.Id));
-                queue(t.Id .. ' off', string.format('/say !trustuse %d info', t.Id));
-            elseif (info[t.Id] ~= nil) then
-                trusts.Send(t);
-            end
-        end
-    end
-    -- a trust that left: its new entity id is asked about when it comes back
-    for id in pairs(asked) do
-        if (not seen[id]) then asked[id] = nil; info[id] = nil; end
+    if (partyDirty) and (gVana.Who ~= nil) and (gVana.Prefs.TrustGear ~= false) then
+        partyPass();
     end
 end
 

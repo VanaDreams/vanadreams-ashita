@@ -321,6 +321,13 @@ packethandlers.HandleIncomingPacket = function(e)
         gPacketHandlers.HandleIncoming0x61(e);
     elseif (e.id == 0x028) then
         gPacketHandlers.HandleIncoming0x28(e);
+    elseif (e.id == 0x0C8) or (e.id == 0x0DD) then
+        require('vg.trusts').PartyChanged();   -- a trust called or released: the one time its lua is looked at
+    elseif (e.id == 0x050) or (e.id == 0x051) then
+        gVanaCore.NoteChange();   -- the server confirmed a weapon change: a rebuild if the sets were built for another
+    end
+    if (e.id == 0x1B) or (e.id == 0x61) then
+        gVanaCore.NoteChange();   -- job, sub or level
     end
 end
 

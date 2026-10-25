@@ -203,6 +203,7 @@ local function stepBuild(budget)
         gVana.BuiltAt = os.time();
         core.ApplyOwn();
         core.ApplyLook();
+        require('vg.trusts').OnRebuilt();   -- your trusts' luas are built from the same bags, once, now
         local fc = vdata.ModId('FASTCAST');
         gVana.FastCast = (q.totals.Precast and fc) and (q.totals.Precast['m' .. fc] or 0) or 0;
         local count = 0;
@@ -247,7 +248,6 @@ end
 
 -- ---------------------------------------------------------------- watching for changes
 
-local lastLook = 0;
 local signature = nil;
 
 -- A string that changes whenever the job, level or weapons do. Gear coming into or leaving the
@@ -290,15 +290,8 @@ core.Tick = function()
         gState.PendingAutoLoad = false;
         gState.AutoLoadProfile();
     end
-    local now = os.clock();
-    if (queue == nil) and (now - lastLook > 3) then
-        lastLook = now;
-        local s = look();
-        if (s ~= signature) then
-            signature = s;
-            wanted = true;
-        end
-    end
+    -- Lee, 24 Oct 2026: no scanning on a timer. What used to be looked at every three seconds (job, level, sub,
+    -- weapons) is noted when the packet that changes it arrives: core.NoteChange from packethandlers.lua.
     if (queue == nil) and (wanted) then
         wanted = false;
         startBuild();
@@ -311,6 +304,17 @@ end
 
 core.OnSettled = function()
     wanted = true;
+end
+
+-- Called from the packets that change the job, level or weapons (0x1B, 0x61, 0x50, 0x51): a rebuild is
+-- wanted when what the sets were built for has changed, and only then.
+core.NoteChange = function()
+    if (queue ~= nil) then return; end
+    local s = look();
+    if (s ~= signature) then
+        signature = s;
+        wanted = true;
+    end
 end
 
 -- ---------------------------------------------------------------- the look
