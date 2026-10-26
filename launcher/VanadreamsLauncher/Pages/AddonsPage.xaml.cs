@@ -38,6 +38,12 @@ namespace Vanadreams.Pages
         private void Raise(string n) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
     }
 
+    public sealed class AddonSection
+    {
+        public string Name { get; set; }
+        public List<AddonRow> Rows { get; set; }
+    }
+
     public partial class AddonsPage : UserControl
     {
         private readonly MainWindow _win;
@@ -60,11 +66,12 @@ namespace Vanadreams.Pages
         private void OnStateChanged() => Dispatcher.BeginInvoke(new Action(Build));
 
         /// <summary>Two columns of addons when each still fits a name, its version and its tag; one full-width column when not.</summary>
-        private void List_SizeChanged(object sender, SizeChangedEventArgs e)
+        private void SectionRows_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            var panel = FindChild<WrapPanel>(List);
+            var list = sender as ItemsControl;
+            var panel = FindChild<WrapPanel>(list);
             if (panel == null) return;
-            var w = Math.Floor(List.ActualWidth);
+            var w = Math.Floor(list.ActualWidth);
             panel.ItemWidth = w >= 500 ? Math.Floor(w / 2) : w;
         }
 
@@ -85,8 +92,26 @@ namespace Vanadreams.Pages
             var row = _rows.FirstOrDefault(r => string.Equals(r.Item.Id, id, StringComparison.OrdinalIgnoreCase));
             if (row == null) return;
             Select(row);
-            (List.ItemContainerGenerator.ContainerFromItem(row) as FrameworkElement)?.BringIntoView();
+            FindRowElement(List, row)?.BringIntoView();
         }
+
+        private static FrameworkElement FindRowElement(DependencyObject parent, AddonRow row)
+        {
+            for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is FrameworkElement element && ReferenceEquals(element.DataContext, row)) return element;
+                var hit = FindRowElement(child, row);
+                if (hit != null) return hit;
+            }
+            return null;
+        }
+
+        private static readonly string[] SectionOrder = {
+            "VanaDreams", "Launcher & setup", "Gear & inventory", "Combat & targeting",
+            "Maps & travel", "Interface & camera", "Chat & communication",
+            "Crafting", "Screenshots & streaming", "Tools & automation", "Other"
+        };
 
         private void Build()
         {
@@ -94,8 +119,7 @@ namespace Vanadreams.Pages
             var selectedId = _current?.Item.Id;
             _rows.Clear();
             _rows.Add(new AddonRow { Item = SwitcherItem, IsSwitcher = true, Installed = true, Enabled = state.Settings.SwitcherOn });
-            var order = new[] { SourceType.Bundled, SourceType.RepoFolder, SourceType.GithubRelease, SourceType.None };
-            foreach (var item in state.Catalog.Items.OrderBy(i => Array.IndexOf(order, i.Source)).ThenBy(i => i.Kind).ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase))
+            foreach (var item in state.Catalog.Items)
             {
                 string ver; state.Settings.InstalledVersions.TryGetValue(item.Id, out ver);
                 _rows.Add(new AddonRow
@@ -107,7 +131,12 @@ namespace Vanadreams.Pages
                 });
             }
             UpdateBlocked();
-            List.ItemsSource = null; List.ItemsSource = _rows;
+            var sections = _rows.GroupBy(r => r.IsSwitcher ? "Launcher & setup" :
+                (string.IsNullOrWhiteSpace(r.Item.Category) ? "Other" : r.Item.Category))
+                .Select(g => new AddonSection { Name = g.Key, Rows = g.OrderBy(r => r.Item.Name, StringComparer.OrdinalIgnoreCase).ToList() })
+                .OrderBy(s => { var index = Array.IndexOf(SectionOrder, s.Name); return index < 0 ? SectionOrder.Length : index; })
+                .ThenBy(s => s.Name, StringComparer.OrdinalIgnoreCase).ToList();
+            List.ItemsSource = null; List.ItemsSource = sections;
             var enabledCount = _rows.Count(r => r.Enabled && r.HasV4 && !r.IsSwitcher);
             Heading.Text = $"✦ Your addons · {enabledCount} of {_rows.Count(r => r.HasV4 && !r.IsSwitcher)} enabled" + (state.CatalogFromCache ? " · catalogue from cache" : "");
             var sel = _rows.FirstOrDefault(r => r.Item.Id == selectedId) ?? _rows.FirstOrDefault(r => !r.IsSwitcher) ?? _rows.FirstOrDefault();

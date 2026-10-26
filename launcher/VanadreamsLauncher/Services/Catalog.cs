@@ -30,6 +30,7 @@ namespace Vanadreams.Services
         public string Config { get; set; }
         public string Docs { get; set; }
         public string Description { get; set; }
+        public string Category { get; set; }       // display section in the addon picker
         public string Replacement { get; set; }
         public string Maintainer { get; set; }
         public List<string> ConfigLines { get; set; } = new List<string>();
@@ -184,6 +185,7 @@ namespace Vanadreams.Services
                     Config = Json.Str(d, "config"),
                     Docs = Json.Str(d, "docs"),
                     Description = Json.Str(d, "description"),
+                    Category = Json.Str(d, "category"),
                     Replacement = Json.Str(d, "replacement"),
                     Maintainer = Json.Str(d, "maintainer"),
                     ConfigLines = Json.Strings(d, "configLines"),

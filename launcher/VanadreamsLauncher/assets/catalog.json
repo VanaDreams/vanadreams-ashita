@@ -25,7 +25,8 @@
       "load": "/addon load meritfix",
       "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/meritfix",
       "onByDefault": true,
-      "description": "Shows your real merit points past 127 in the game's own merit window. Vanadreams lets you hold up to 969; the unpatched game wraps the number at 128. Changes nothing on the server."
+      "description": "Shows your real merit points past 127 in the game's own merit window. Vanadreams lets you hold up to 969; the unpatched game wraps the number at 128. Changes nothing on the server.",
+      "category": "VanaDreams"
     },
     {
       "id": "vanafish",
@@ -43,7 +44,8 @@
       "load": "/addon load vanafish",
       "config": "config\\vanafish\\",
       "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/vanafish",
-      "description": "The Vanadreams fishing bot. Casts, reads the bite, decides catch or release by your rules, ends the fight the way the server judges it, stops itself when something is off. Works on any server."
+      "description": "The Vanadreams fishing bot. Casts, reads the bite, decides catch or release by your rules, ends the fight the way the server judges it, stops itself when something is off. Works on any server.",
+      "category": "VanaDreams"
     },
     {
       "id": "vanachatfix",
@@ -60,7 +62,8 @@
       "install": "copy-to-addons",
       "load": "/addon load vanachatfix",
       "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/vanachatfix",
-      "description": "For players who also use this Ashita on other private servers. Loads chatfix only where the server still sends the old chat layout, and keeps it off on Vanadreams. Tick this, not chatfix."
+      "description": "For players who also use this Ashita on other private servers. Loads chatfix only where the server still sends the old chat layout, and keeps it off on Vanadreams. Tick this, not chatfix.",
+      "category": "VanaDreams"
     },
     {
       "id": "charcapture",
@@ -78,7 +81,8 @@
       "load": "/addon load charcapture",
       "config": "config\\charcapture\\",
       "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/charcapture",
-      "description": "Snapshots your character for porting to Vanadreams: /capture in game, then send it from the launcher's Capture page. Reads only."
+      "description": "Snapshots your character for porting to Vanadreams: /capture in game, then send it from the launcher's Capture page. Reads only.",
+      "category": "VanaDreams"
     },
     {
       "id": "distance",
@@ -91,7 +95,8 @@
       "description": "Shows the distance to your target.",
       "v3": {
         "name": "distance"
-      }
+      },
+      "category": "Combat & targeting"
     },
     {
       "id": "fps",
@@ -107,7 +112,8 @@
       ],
       "v3": {
         "name": "fps"
-      }
+      },
+      "category": "Interface & camera"
     },
     {
       "id": "timestamp",
@@ -124,7 +130,8 @@
       "description": "Timestamps in the chat log.",
       "v3": {
         "name": "timestamp"
-      }
+      },
+      "category": "Chat & communication"
     },
     {
       "id": "tparty",
@@ -137,7 +144,8 @@
       "description": "Shows party members' TP and target HP.",
       "v3": {
         "name": "tparty"
-      }
+      },
+      "category": "Combat & targeting"
     },
     {
       "id": "recast",
@@ -150,7 +158,8 @@
       "description": "Ability and spell recast timers.",
       "v3": {
         "name": "recast"
-      }
+      },
+      "category": "Combat & targeting"
     },
     {
       "id": "chatmon",
@@ -163,7 +172,8 @@
       "description": "Sounds and alerts for tells and chat.",
       "v3": {
         "name": "chatmon"
-      }
+      },
+      "category": "Chat & communication"
     },
     {
       "id": "itemwatch",
@@ -176,7 +186,8 @@
       "description": "Watch counts of items and key items on screen.",
       "v3": {
         "name": "itemwatch"
-      }
+      },
+      "category": "Gear & inventory"
     },
     {
       "id": "blumon",
@@ -189,7 +200,8 @@
       "description": "Blue Mage spell learning monitor.",
       "v3": {
         "name": "blumon"
-      }
+      },
+      "category": "Combat & targeting"
     },
     {
       "id": "blusets",
@@ -203,7 +215,8 @@
       "v3": {
         "name": "blusets",
         "note": "v3 sets were JSON; v4 wants one spell per line in config\\addons\\blusets\\<name>.txt."
-      }
+      },
+      "category": "Gear & inventory"
     },
     {
       "id": "checker",
@@ -216,7 +229,8 @@
       "description": "Shows level and evasion/defense on /check.",
       "v3": {
         "name": "checker"
-      }
+      },
+      "category": "Combat & targeting"
     },
     {
       "id": "craftmon",
@@ -229,7 +243,8 @@
       "description": "Crafting results monitor.",
       "v3": {
         "name": "craftmon"
-      }
+      },
+      "category": "Crafting"
     },
     {
       "id": "filterless",
@@ -242,7 +257,8 @@
       "description": "Removes chat filters.",
       "v3": {
         "name": "filterless"
-      }
+      },
+      "category": "Chat & communication"
     },
     {
       "id": "filterscan",
@@ -255,7 +271,8 @@
       "description": "Filters wide scan results.",
       "v3": {
         "name": "filterscan"
-      }
+      },
+      "category": "Maps & travel"
     },
     {
       "id": "links",
@@ -268,7 +285,8 @@
       "description": "Makes links in chat clickable.",
       "v3": {
         "name": "links"
-      }
+      },
+      "category": "Chat & communication"
     },
     {
       "id": "mapdot",
@@ -281,7 +299,8 @@
       "description": "Shows your position on the map as a dot.",
       "v3": {
         "name": "mapdot"
-      }
+      },
+      "category": "Maps & travel"
     },
     {
       "id": "paranormal",
@@ -294,7 +313,8 @@
       "description": "Shows hidden nearby entities.",
       "v3": {
         "name": "paranormal"
-      }
+      },
+      "category": "Maps & travel"
     },
     {
       "id": "petinfo",
@@ -307,7 +327,8 @@
       "description": "Pet HP, MP and TP display.",
       "v3": {
         "name": "petinfo"
-      }
+      },
+      "category": "Combat & targeting"
     },
     {
       "id": "repeater",
@@ -320,7 +341,8 @@
       "description": "Repeats a command on a timer.",
       "v3": {
         "name": "repeater"
-      }
+      },
+      "category": "Tools & automation"
     },
     {
       "id": "affinity",
@@ -334,7 +356,8 @@
       "v3": {
         "name": "Affinity",
         "note": "Was a plugin in v3; an addon in v4. Re-add /affinity set <mask> under the wait if you used one."
-      }
+      },
+      "category": "Launcher & setup"
     },
     {
       "id": "nokb",
@@ -348,7 +371,8 @@
       "v3": {
         "name": "No-ckback",
         "note": "Was the No-ckback plugin in v3."
-      }
+      },
+      "category": "Combat & targeting"
     },
     {
       "id": "thirdparty",
@@ -362,7 +386,8 @@
       "v3": {
         "name": "WindowerInput",
         "note": "Replaces WindowerInput."
-      }
+      },
+      "category": "Launcher & setup"
     },
     {
       "id": "screenshot",
@@ -378,7 +403,8 @@
       ],
       "v3": {
         "name": "Screenshot"
-      }
+      },
+      "category": "Screenshots & streaming"
     },
     {
       "id": "minimap",
@@ -388,7 +414,8 @@
         "type": "bundled"
       },
       "load": "/load minimap",
-      "description": "A minimap overlay."
+      "description": "A minimap overlay.",
+      "category": "Maps & travel"
     },
     {
       "id": "find",
@@ -407,7 +434,8 @@
       "description": "Finds an item across your bags, storage and slips.",
       "v3": {
         "name": "find"
-      }
+      },
+      "category": "Gear & inventory"
     },
     {
       "id": "oseem",
@@ -427,7 +455,8 @@
       "v3": {
         "name": "Oseem",
         "note": "Was a plugin in v3; an addon in v4 with no config files."
-      }
+      },
+      "category": "Gear & inventory"
     },
     {
       "id": "lootwhore",
@@ -449,7 +478,8 @@
         "name": "Lootwhore",
         "carry": "profiles",
         "note": "Profiles copied to config\\lootwhore\\profiles; check the drop and store lists once."
-      }
+      },
+      "category": "Combat & targeting"
     },
     {
       "id": "bellhop",
@@ -473,7 +503,8 @@
       "v3": {
         "name": "Bellhop",
         "note": "Commands are /bh now; the legacy command names are switched back on for you."
-      }
+      },
+      "category": "Gear & inventory"
     },
     {
       "id": "packer",
@@ -494,7 +525,8 @@
       "v3": {
         "name": "DressMe",
         "note": "Does what DressMe did; DressMe has no v4 version."
-      }
+      },
+      "category": "Gear & inventory"
     },
     {
       "id": "legacyac",
@@ -516,7 +548,8 @@
         "name": "Ashitacast",
         "carry": "xml",
         "note": "Your Ashitacast XMLs were copied into config\\LegacyAC. Commands are /la instead of /ac."
-      }
+      },
+      "category": "Gear & inventory"
     },
     {
       "id": "luashitacast",
@@ -540,7 +573,8 @@
       "v3": {
         "name": "Ashitacast",
         "note": "The author's newer swapper. LegacyAC keeps reading your v3 XMLs; this is for building new jobs in game."
-      }
+      },
+      "category": "Gear & inventory"
     },
     {
       "id": "vanagear",
@@ -558,7 +592,8 @@
       "load": "/addon load vanagear",
       "config": "config\\addons\\vanagear\\profiles\\",
       "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/vanagear",
-      "description": "Gear sets built for you from what you carry, for your job and level, written into a profile for each job that is shaped for how that job plays: type /vg. Built on LuAshitacast by ThornyFFXI and replaces it; your LuAshitacast profile for a job is brought over the first time you play it. A Settings tab, every command listed in the window, and GearSwap's /gs c commands work too. Your called trusts get a tab each with a fighting set and swap-ins for what they use, from gear in your bags that you and your other trusts are not using."
+      "description": "Gear sets built for you from what you carry, for your job and level, written into a profile for each job that is shaped for how that job plays: type /vg. Built on LuAshitacast by ThornyFFXI and replaces it; your LuAshitacast profile for a job is brought over the first time you play it. A Settings tab, every command listed in the window, and GearSwap's /gs c commands work too. Your called trusts get a tab each with a fighting set and swap-ins for what they use, from gear in your bags that you and your other trusts are not using.",
+      "category": "VanaDreams"
     },
     {
       "id": "multisend",
@@ -580,7 +615,8 @@
         "name": "MultiSend",
         "carry": "config",
         "note": "Same groups file as v3, copied over."
-      }
+      },
+      "category": "Chat & communication"
     },
     {
       "id": "findall",
@@ -600,7 +636,8 @@
       "v3": {
         "name": "findall",
         "note": "The v3 addon became this plugin. It rebuilds its own cache once each character has loaded."
-      }
+      },
+      "category": "Gear & inventory"
     },
     {
       "id": "pivot",
@@ -622,7 +659,8 @@
         "name": "XIPivot",
         "carry": "overlays",
         "note": "Overlays moved from plugins\\DATs to polplugins\\DATs and the overlay list rewritten as config\\pivot\\pivot.ini. Enabled in the boot profile, not the script."
-      }
+      },
+      "category": "Interface & camera"
     },
     {
       "id": "xi-vision",
@@ -655,7 +693,8 @@
       "version": "2022-09-20.3",
       "install": "pivot-overlay",
       "docs": "https://github.com/Drauku/FFXI-Vision",
-      "description": "Redrawn zone maps and Vision's interface look (Drauku's fork of Caradog's XI-Vision, used with Drauku's permission), loaded through XIPivot so your game files stay as they are. It needs XIPivot ticked and installed. Vision's own interface file is from a 2018 client and crashes the current one when you open Quests, so the launcher builds it on your PC instead: Vision's arrows, buttons, fonts, gauge and menu pictures are laid onto your own current interface file. If an old manual install of Vision already replaced that file in your game folder, the launcher puts a clean current one back first. Nothing of Square Enix's is hosted."
+      "description": "Redrawn zone maps and Vision's interface look (Drauku's fork of Caradog's XI-Vision, used with Drauku's permission), loaded through XIPivot so your game files stay as they are. It needs XIPivot ticked and installed. Vision's own interface file is from a 2018 client and crashes the current one when you open Quests, so the launcher builds it on your PC instead: Vision's arrows, buttons, fonts, gauge and menu pictures are laid onto your own current interface file. If an old manual install of Vision already replaced that file in your game folder, the launcher puts a clean current one back first. Nothing of Square Enix's is hosted.",
+      "category": "Interface & camera"
     },
     {
       "id": "vanatunes",
@@ -674,7 +713,8 @@
       "onByDefault": true,
       "config": "{desktop}\\Vanadreams Music\\",
       "docs": "https://github.com/VanaDreams/vanatunes/tree/main/vanatunes",
-      "description": "The Vanadreams playlist in game, and your own songs beside it. It plays them shuffled wherever you are, moving on when a song ends, from its own window. Press Reinstall to get songs added to the playlist since; your own mp3 or wav files go in the folder the Config button opens. Windows plays the songs beside the game, so no game track is replaced; turn Music down in the game's sound config if you only want these."
+      "description": "The Vanadreams playlist in game, and your own songs beside it. It plays them shuffled wherever you are, moving on when a song ends, from its own window. Press Reinstall to get songs added to the playlist since; your own mp3 or wav files go in the folder the Config button opens. Windows plays the songs beside the game, so no game track is replaced; turn Music down in the game's sound config if you only want these.",
+      "category": "VanaDreams"
     },
     {
       "id": "grampsshop",
@@ -691,7 +731,8 @@
       "install": "copy-to-addons",
       "load": "/addon load grampsshop",
       "docs": "https://github.com/VanaDreams/grampsshop/tree/main/grampsshop",
-      "description": "Gramps Shop, Kupo! A small shop you can open anywhere on Vanadreams. Click the little Gramps Shop button in game, pick an item and how many, and press Buy; the gil comes out of your pocket and the item goes in your bag. Instant Warp scrolls, Reraisers, Silent Oil, Prism Powder, Shihei, pickaxes, hatchets, sickles and level 1 ammunition. Vanadreams only."
+      "description": "Gramps Shop, Kupo! A small shop you can open anywhere on Vanadreams. Click the little Gramps Shop button in game, pick an item and how many, and press Buy; the gil comes out of your pocket and the item goes in your bag. Instant Warp scrolls, Reraisers, Silent Oil, Prism Powder, Shihei, pickaxes, hatchets, sickles and level 1 ammunition. Vanadreams only.",
+      "category": "VanaDreams"
     },
     {
       "id": "crafty",
@@ -713,7 +754,8 @@
       "v3": {
         "name": "Crafty",
         "note": "Written again as a v4 addon for Vanadreams; the v3 plugin had no v4 version."
-      }
+      },
+      "category": "VanaDreams"
     },
     {
       "id": "dressme",
@@ -726,7 +768,8 @@
       "v3": {
         "name": "DressMe",
         "note": "No v4 version; Packer does the job."
-      }
+      },
+      "category": "Gear & inventory"
     },
     {
       "id": "watchexp",
@@ -738,7 +781,8 @@
       "v3": {
         "name": "WatchEXP",
         "note": "No v4 version exists."
-      }
+      },
+      "category": "Combat & targeting"
     },
     {
       "id": "lotomatic",
@@ -751,7 +795,8 @@
       "v3": {
         "name": "lotomatic",
         "note": "No v4 version; Lootwhore covers lotting and passing."
-      }
+      },
+      "category": "Combat & targeting"
     },
     {
       "id": "pbar",
@@ -764,7 +809,8 @@
       "v3": {
         "name": "pbar",
         "note": "No v4 version; petinfo is the nearest bundled pet display."
-      }
+      },
+      "category": "Combat & targeting"
     },
     {
       "id": "pupatt",
@@ -777,7 +823,8 @@
       "v3": {
         "name": "pupatt",
         "note": "No v4 version; Sippius's pupsets sets attachments from a file."
-      }
+      },
+      "category": "Combat & targeting"
     },
     {
       "id": "status",
@@ -789,7 +836,8 @@
       "v3": {
         "name": "status",
         "note": "No v4 version exists."
-      }
+      },
+      "category": "Combat & targeting"
     },
     {
       "id": "synplicity",
@@ -801,7 +849,8 @@
       "v3": {
         "name": "synplicity",
         "note": "No v4 version exists."
-      }
+      },
+      "category": "Crafting"
     },
     {
       "id": "actionparse",
@@ -814,7 +863,8 @@
       "install": "nothing",
       "load": "/addon load actionparse",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/actionparse",
-      "description": "Shows the contents of incoming action packets. A developer tool."
+      "description": "Shows the contents of incoming action packets. A developer tool.",
+      "category": "Tools & automation"
     },
     {
       "id": "activemon",
@@ -827,7 +877,8 @@
       "install": "nothing",
       "load": "/addon load activemon",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/activemon",
-      "description": "Shows an image on screen when this game window is the focused one. For people running more than one."
+      "description": "Shows an image on screen when this game window is the focused one. For people running more than one.",
+      "category": "Interface & camera"
     },
     {
       "id": "ahcolors",
@@ -840,7 +891,8 @@
       "install": "nothing",
       "load": "/addon load ahcolors",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/ahcolors",
-      "description": "Recolours auction house listings so they are easier to read."
+      "description": "Recolours auction house listings so they are easier to read.",
+      "category": "Gear & inventory"
     },
     {
       "id": "ahgo",
@@ -853,7 +905,8 @@
       "install": "nothing",
       "load": "/addon load ahgo",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/ahgo",
-      "description": "Opens the auction house from anywhere and lets you walk with it open."
+      "description": "Opens the auction house from anywhere and lets you walk with it open.",
+      "category": "Gear & inventory"
     },
     {
       "id": "allmaps",
@@ -866,7 +919,8 @@
       "install": "nothing",
       "load": "/addon load allmaps",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/allmaps",
-      "description": "Shows every map with /map without needing the key items, waypoints included."
+      "description": "Shows every map with /map without needing the key items, waypoints included.",
+      "category": "Maps & travel"
     },
     {
       "id": "aspect",
@@ -879,7 +933,8 @@
       "install": "nothing",
       "load": "/addon load aspect",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/aspect",
-      "description": "Forces the game's aspect ratio to match the window."
+      "description": "Forces the game's aspect ratio to match the window.",
+      "category": "Interface & camera"
     },
     {
       "id": "autojoin",
@@ -892,7 +947,8 @@
       "install": "nothing",
       "load": "/addon load autojoin",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/autojoin",
-      "description": "Handles party invites for you by your rules."
+      "description": "Handles party invites for you by your rules.",
+      "category": "Combat & targeting"
     },
     {
       "id": "autologin",
@@ -905,7 +961,8 @@
       "install": "nothing",
       "load": "/addon load autologin",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/autologin",
-      "description": "Logs into a chosen character slot on its own."
+      "description": "Logs into a chosen character slot on its own.",
+      "category": "Launcher & setup"
     },
     {
       "id": "autorespond",
@@ -918,7 +975,8 @@
       "install": "nothing",
       "load": "/addon load autorespond",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/autorespond",
-      "description": "Marks you AFK and answers tells with a set message."
+      "description": "Marks you AFK and answers tells with a set message.",
+      "category": "Chat & communication"
     },
     {
       "id": "blucheck",
@@ -931,7 +989,8 @@
       "install": "nothing",
       "load": "/addon load blucheck",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/blucheck",
-      "description": "A window tracking which Blue Mage spells you have learned."
+      "description": "A window tracking which Blue Mage spells you have learned.",
+      "category": "Combat & targeting"
     },
     {
       "id": "cartographer",
@@ -944,7 +1003,8 @@
       "install": "nothing",
       "load": "/addon load cartographer",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/cartographer",
-      "description": "Shows every map in the map menus, not just the zone you are in."
+      "description": "Shows every map in the map menus, not just the zone you are in.",
+      "category": "Maps & travel"
     },
     {
       "id": "casper",
@@ -957,7 +1017,8 @@
       "install": "nothing",
       "load": "/addon load casper",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/casper",
-      "description": "Removes collision with other players: walk through them."
+      "description": "Removes collision with other players: walk through them.",
+      "category": "Maps & travel"
     },
     {
       "id": "cfhblock",
@@ -970,7 +1031,8 @@
       "install": "nothing",
       "load": "/addon load cfhblock",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/cfhblock",
-      "description": "Blocks Call for Help so you cannot hit it by accident."
+      "description": "Blocks Call for Help so you cannot hit it by accident.",
+      "category": "Combat & targeting"
     },
     {
       "id": "chamcham",
@@ -983,7 +1045,8 @@
       "install": "nothing",
       "load": "/addon load chamcham",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/chamcham",
-      "description": "Colours models by what they are: player, monster, NPC."
+      "description": "Colours models by what they are: player, monster, NPC.",
+      "category": "Interface & camera"
     },
     {
       "id": "changecall",
@@ -996,7 +1059,8 @@
       "install": "nothing",
       "load": "/addon load changecall",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/changecall",
-      "description": "Replaces every call command with the one call sound you pick."
+      "description": "Replaces every call command with the one call sound you pick.",
+      "category": "Chat & communication"
     },
     {
       "id": "chatfix",
@@ -1011,7 +1075,8 @@
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/chatfix",
       "description": "For private servers still on the old chat packet layout. Vanadreams is not one: here it cuts the first letter off every chat line, sends tells to the wrong name and breaks NPC menus.",
       "heldBack": "it breaks chat, tells and menus on Vanadreams.",
-      "replacement": "vanachatfix"
+      "replacement": "vanachatfix",
+      "category": "Chat & communication"
     },
     {
       "id": "chime",
@@ -1024,7 +1089,8 @@
       "install": "nothing",
       "load": "/addon load chime",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/chime",
-      "description": "Plays in-game chime sounds from a slash command."
+      "description": "Plays in-game chime sounds from a slash command.",
+      "category": "Chat & communication"
     },
     {
       "id": "cleancs",
@@ -1037,7 +1103,8 @@
       "install": "nothing",
       "load": "/addon load cleancs",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/cleancs",
-      "description": "Hides Ashita windows during cutscenes."
+      "description": "Hides Ashita windows during cutscenes.",
+      "category": "Interface & camera"
     },
     {
       "id": "clearcolor",
@@ -1050,7 +1117,8 @@
       "install": "nothing",
       "load": "/addon load clearcolor",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/clearcolor",
-      "description": "Changes the background colour of the scene."
+      "description": "Changes the background colour of the scene.",
+      "category": "Interface & camera"
     },
     {
       "id": "clock",
@@ -1063,7 +1131,8 @@
       "install": "nothing",
       "load": "/addon load clock",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/clock",
-      "description": "Shows clocks on screen: local, server, Vana'diel."
+      "description": "Shows clocks on screen: local, server, Vana'diel.",
+      "category": "Interface & camera"
     },
     {
       "id": "config",
@@ -1076,7 +1145,8 @@
       "install": "nothing",
       "load": "/addon load config",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/config",
-      "description": "Slash commands that set game settings directly."
+      "description": "Slash commands that set game settings directly.",
+      "category": "Launcher & setup"
     },
     {
       "id": "crosshair",
@@ -1089,7 +1159,8 @@
       "install": "nothing",
       "load": "/addon load crosshair",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/crosshair",
-      "description": "Draws position guide lines for lining up Ashita windows."
+      "description": "Draws position guide lines for lining up Ashita windows.",
+      "category": "Interface & camera"
     },
     {
       "id": "debuff",
@@ -1102,7 +1173,8 @@
       "install": "nothing",
       "load": "/addon load debuff",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/debuff",
-      "description": "Cancel a status effect by command."
+      "description": "Cancel a status effect by command.",
+      "category": "Combat & targeting"
     },
     {
       "id": "drawdistance",
@@ -1115,7 +1187,8 @@
       "install": "nothing",
       "load": "/addon load drawdistance",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/drawdistance",
-      "description": "Slash commands for the scene render distances."
+      "description": "Slash commands for the scene render distances.",
+      "category": "Interface & camera"
     },
     {
       "id": "enternity",
@@ -1128,7 +1201,8 @@
       "install": "nothing",
       "load": "/addon load enternity",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/enternity",
-      "description": "No more pressing Enter through NPC dialogue and cutscenes."
+      "description": "No more pressing Enter through NPC dialogue and cutscenes.",
+      "category": "Interface & camera"
     },
     {
       "id": "equipmon",
@@ -1141,7 +1215,8 @@
       "install": "nothing",
       "load": "/addon load equipmon",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/equipmon",
-      "description": "Your equipment on screen all the time."
+      "description": "Your equipment on screen all the time.",
+      "category": "Gear & inventory"
     },
     {
       "id": "fastswap",
@@ -1154,7 +1229,8 @@
       "install": "nothing",
       "load": "/addon load fastswap",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/fastswap",
-      "description": "Fixes the client getting stuck when you change jobs too fast."
+      "description": "Fixes the client getting stuck when you change jobs too fast.",
+      "category": "Combat & targeting"
     },
     {
       "id": "filters",
@@ -1167,7 +1243,8 @@
       "install": "nothing",
       "load": "/addon load filters",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/filters",
-      "description": "Save and load chat filter sets. Written for private servers."
+      "description": "Save and load chat filter sets. Written for private servers.",
+      "category": "Chat & communication"
     },
     {
       "id": "freemem",
@@ -1180,7 +1257,8 @@
       "install": "nothing",
       "load": "/addon load freemem",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/freemem",
-      "description": "Memory clean-up."
+      "description": "Memory clean-up.",
+      "category": "Launcher & setup"
     },
     {
       "id": "gateway",
@@ -1193,7 +1271,8 @@
       "install": "nothing",
       "load": "/addon load gateway",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/gateway",
-      "description": "Every door is always open."
+      "description": "Every door is always open.",
+      "category": "Maps & travel"
     },
     {
       "id": "hideconsole",
@@ -1206,7 +1285,8 @@
       "install": "nothing",
       "load": "/addon load hideconsole",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/hideconsole",
-      "description": "Slash commands to hide or show the boot loader window on private servers."
+      "description": "Slash commands to hide or show the boot loader window on private servers.",
+      "category": "Launcher & setup"
     },
     {
       "id": "hideobs",
@@ -1219,7 +1299,8 @@
       "install": "nothing",
       "load": "/addon load hideobs",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/hideobs",
-      "description": "Hides the game window from OBS capture."
+      "description": "Hides the game window from OBS capture.",
+      "category": "Screenshots & streaming"
     },
     {
       "id": "hideparty",
@@ -1232,7 +1313,8 @@
       "install": "nothing",
       "load": "/addon load hideparty",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/hideparty",
-      "description": "Slash commands to hide, show or toggle the party frames."
+      "description": "Slash commands to hide, show or toggle the party frames.",
+      "category": "Interface & camera"
     },
     {
       "id": "hideui",
@@ -1245,7 +1327,8 @@
       "install": "nothing",
       "load": "/addon load hideui",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/hideui",
-      "description": "Slash commands to hide, show or toggle the Ashita windows."
+      "description": "Slash commands to hide, show or toggle the Ashita windows.",
+      "category": "Interface & camera"
     },
     {
       "id": "ime",
@@ -1258,7 +1341,8 @@
       "install": "nothing",
       "load": "/addon load ime",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/ime",
-      "description": "Lets non-Japanese clients type with the Japanese IME."
+      "description": "Lets non-Japanese clients type with the Japanese IME.",
+      "category": "Chat & communication"
     },
     {
       "id": "imguistyle",
@@ -1271,7 +1355,8 @@
       "install": "nothing",
       "load": "/addon load imguistyle",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/imguistyle",
-      "description": "Per-character styling of the Ashita windows."
+      "description": "Per-character styling of the Ashita windows.",
+      "category": "Interface & camera"
     },
     {
       "id": "instantah",
@@ -1284,7 +1369,8 @@
       "install": "nothing",
       "load": "/addon load instantah",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/instantah",
-      "description": "Removes the delay on auction house actions."
+      "description": "Removes the delay on auction house actions.",
+      "category": "Gear & inventory"
     },
     {
       "id": "instantchat",
@@ -1297,7 +1383,8 @@
       "install": "nothing",
       "load": "/addon load instantchat",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/instantchat",
-      "description": "Removes the delay on messages reaching the chat windows."
+      "description": "Removes the delay on messages reaching the chat windows.",
+      "category": "Chat & communication"
     },
     {
       "id": "invmon",
@@ -1310,7 +1397,8 @@
       "install": "nothing",
       "load": "/addon load invmon",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/invmon",
-      "description": "Your bag space on screen."
+      "description": "Your bag space on screen.",
+      "category": "Gear & inventory"
     },
     {
       "id": "logincmd",
@@ -1323,7 +1411,8 @@
       "install": "nothing",
       "load": "/addon load logincmd",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/logincmd",
-      "description": "Runs a script per character at login or on switching characters."
+      "description": "Runs a script per character at login or on switching characters.",
+      "category": "Launcher & setup"
     },
     {
       "id": "logs",
@@ -1336,7 +1425,8 @@
       "install": "nothing",
       "load": "/addon load logs",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/logs",
-      "description": "Writes everything in the chat log to a file."
+      "description": "Writes everything in the chat log to a file.",
+      "category": "Chat & communication"
     },
     {
       "id": "macrofix",
@@ -1352,7 +1442,8 @@
         "xiui"
       ],
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/macrofix",
-      "description": "Removes the macro bar delay when pressing Ctrl or Alt. XIUI does this itself and the two cannot load together, so macrofix is left out while XIUI is ticked."
+      "description": "Removes the macro bar delay when pressing Ctrl or Alt. XIUI does this itself and the two cannot load together, so macrofix is left out while XIUI is ticked.",
+      "category": "Combat & targeting"
     },
     {
       "id": "minimapmon",
@@ -1365,7 +1456,8 @@
       "install": "nothing",
       "load": "/addon load minimapmon",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/minimapmon",
-      "description": "Hides the minimap when you stand still and in other cases you choose."
+      "description": "Hides the minimap when you stand still and in other cases you choose.",
+      "category": "Maps & travel"
     },
     {
       "id": "mipmap",
@@ -1378,7 +1470,8 @@
       "install": "nothing",
       "load": "/addon load mipmap",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/mipmap",
-      "description": "Undoes a Square Enix patch that changed how mipmaps are set up."
+      "description": "Undoes a Square Enix patch that changed how mipmaps are set up.",
+      "category": "Interface & camera"
     },
     {
       "id": "move",
@@ -1391,7 +1484,8 @@
       "install": "nothing",
       "load": "/addon load move",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/move",
-      "description": "Adjusts the game window: position, size, border."
+      "description": "Adjusts the game window: position, size, border.",
+      "category": "Launcher & setup"
     },
     {
       "id": "namecolors",
@@ -1404,7 +1498,8 @@
       "install": "nothing",
       "load": "/addon load namecolors",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/namecolors",
-      "description": "Edits the game's name colour table."
+      "description": "Edits the game's name colour table.",
+      "category": "Interface & camera"
     },
     {
       "id": "nomad",
@@ -1417,7 +1512,8 @@
       "install": "nothing",
       "load": "/addon load nomad",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/nomad",
-      "description": "Mog house functions in any zone."
+      "description": "Mog house functions in any zone.",
+      "category": "Gear & inventory"
     },
     {
       "id": "noname",
@@ -1430,7 +1526,8 @@
       "install": "nothing",
       "load": "/addon load noname",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/noname",
-      "description": "Hides your own name."
+      "description": "Hides your own name.",
+      "category": "Interface & camera"
     },
     {
       "id": "onevent",
@@ -1443,7 +1540,8 @@
       "install": "nothing",
       "load": "/addon load onevent",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/onevent",
-      "description": "Runs commands of your choosing when a chat event matches."
+      "description": "Runs commands of your choosing when a chat event matches.",
+      "category": "Chat & communication"
     },
     {
       "id": "peekaboo",
@@ -1456,7 +1554,8 @@
       "install": "nothing",
       "load": "/addon load peekaboo",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/peekaboo",
-      "description": "Makes every entity the client knows about visible."
+      "description": "Makes every entity the client knows about visible.",
+      "category": "Maps & travel"
     },
     {
       "id": "quicksets",
@@ -1469,7 +1568,8 @@
       "install": "nothing",
       "load": "/addon load quicksets",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/quicksets",
-      "description": "Removes the delay between equipment sets."
+      "description": "Removes the delay between equipment sets.",
+      "category": "Gear & inventory"
     },
     {
       "id": "renamer",
@@ -1482,7 +1582,8 @@
       "install": "nothing",
       "load": "/addon load renamer",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/renamer",
-      "description": "Renames entities with your own overrides."
+      "description": "Renames entities with your own overrides.",
+      "category": "Interface & camera"
     },
     {
       "id": "sexchange",
@@ -1495,7 +1596,8 @@
       "install": "nothing",
       "load": "/addon load sexchange",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/sexchange",
-      "description": "Change your race and hair style by command."
+      "description": "Change your race and hair style by command.",
+      "category": "Interface & camera"
     },
     {
       "id": "singlerace",
@@ -1508,7 +1610,8 @@
       "install": "nothing",
       "load": "/addon load singlerace",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/singlerace",
-      "description": "Every player and NPC becomes one race and hair style."
+      "description": "Every player and NPC becomes one race and hair style.",
+      "category": "Interface & camera"
     },
     {
       "id": "skeletonkey",
@@ -1521,7 +1624,8 @@
       "install": "nothing",
       "load": "/addon load skeletonkey",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/skeletonkey",
-      "description": "Forces closed doors open."
+      "description": "Forces closed doors open.",
+      "category": "Maps & travel"
     },
     {
       "id": "stepdialog",
@@ -1534,7 +1638,8 @@
       "install": "nothing",
       "load": "/addon load stepdialog",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/stepdialog",
-      "description": "Presses the key to continue the current dialogue, by command."
+      "description": "Presses the key to continue the current dialogue, by command.",
+      "category": "Interface & camera"
     },
     {
       "id": "stfu",
@@ -1547,7 +1652,8 @@
       "install": "nothing",
       "load": "/addon load stfu",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/stfu",
-      "description": "Stops repeated game spam in chat and stops calls making sounds."
+      "description": "Stops repeated game spam in chat and stops calls making sounds.",
+      "category": "Chat & communication"
     },
     {
       "id": "tokens",
@@ -1560,7 +1666,8 @@
       "install": "nothing",
       "load": "/addon load tokens",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/tokens",
-      "description": "More tokens for the chat log to parse."
+      "description": "More tokens for the chat log to parse.",
+      "category": "Chat & communication"
     },
     {
       "id": "trimspells",
@@ -1573,7 +1680,8 @@
       "install": "nothing",
       "load": "/addon load trimspells",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/trimspells",
-      "description": "Trims the Ctrl+M spell list to the spells you know."
+      "description": "Trims the Ctrl+M spell list to the spells you know.",
+      "category": "Interface & camera"
     },
     {
       "id": "truesight",
@@ -1586,7 +1694,8 @@
       "install": "nothing",
       "load": "/addon load truesight",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/truesight",
-      "description": "Removes occlusion and shows invisible players half-transparent."
+      "description": "Removes occlusion and shows invisible players half-transparent.",
+      "category": "Maps & travel"
     },
     {
       "id": "watchdog",
@@ -1599,7 +1708,8 @@
       "install": "nothing",
       "load": "/addon load watchdog",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta/tree/main/addons/watchdog",
-      "description": "Widescan tracking of nearly anything, by command."
+      "description": "Widescan tracking of nearly anything, by command.",
+      "category": "Maps & travel"
     },
     {
       "id": "hardwaremouse",
@@ -1612,7 +1722,8 @@
       "install": "nothing",
       "load": "/load hardwaremouse",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta",
-      "description": "Uses the hardware mouse cursor instead of the game-drawn one."
+      "description": "Uses the hardware mouse cursor instead of the game-drawn one.",
+      "category": "Interface & camera"
     },
     {
       "id": "winefix",
@@ -1625,7 +1736,8 @@
       "install": "nothing",
       "load": "/load winefix",
       "docs": "https://github.com/AshitaXI/Ashita-v4beta",
-      "description": "Fixes for running under Wine on Linux and Mac."
+      "description": "Fixes for running under Wine on Linux and Mac.",
+      "category": "Launcher & setup"
     },
     {
       "id": "sequencer",
@@ -1641,7 +1753,8 @@
       "install": "unzip-to-root",
       "load": "/load sequencer",
       "docs": "https://github.com/ThornyFFXI/Sequencer",
-      "description": "Stops actions double-registering when a gear swapper (LegacyAC or LuAshitacast) is changing your gear. The author recommends it with either."
+      "description": "Stops actions double-registering when a gear swapper (LegacyAC or LuAshitacast) is changing your gear. The author recommends it with either.",
+      "category": "Combat & targeting"
     },
     {
       "id": "tcrossbar",
@@ -1658,7 +1771,8 @@
       "load": "/addon load tCrossBar",
       "docs": "https://github.com/ThornyFFXI/tCrossBar",
       "description": "Controller macros with an on-screen crossbar, the FFXIV style.",
-      "config": "config\\addons\\tCrossBar\\"
+      "config": "config\\addons\\tCrossBar\\",
+      "category": "Interface & camera"
     },
     {
       "id": "thotbar",
@@ -1675,7 +1789,8 @@
       "load": "/addon load thotbar",
       "docs": "https://github.com/ThornyFFXI/tHotBar",
       "description": "Keyboard macro bars with an on-screen display.",
-      "config": "config\\addons\\thotbar\\"
+      "config": "config\\addons\\thotbar\\",
+      "category": "Interface & camera"
     },
     {
       "id": "ttimers",
@@ -1692,7 +1807,8 @@
       "load": "/addon load tTimers",
       "docs": "https://github.com/ThornyFFXI/tTimers",
       "description": "Time left on the buffs and debuffs you cast, and recast timers for your spells and abilities.",
-      "config": "config\\addons\\tTimers\\"
+      "config": "config\\addons\\tTimers\\",
+      "category": "Combat & targeting"
     },
     {
       "id": "statustimers",
@@ -1709,7 +1825,8 @@
       "load": "/addon load statustimers",
       "docs": "https://github.com/HealsCodes/statustimers",
       "description": "Status effect timers on screen, replacing the game's icons.",
-      "config": "config\\addons\\statustimers\\"
+      "config": "config\\addons\\statustimers\\",
+      "category": "Combat & targeting"
     },
     {
       "id": "mobdb",
@@ -1726,7 +1843,8 @@
       "load": "/addon load mobdb",
       "docs": "https://github.com/ThornyFFXI/mobdb",
       "description": "Information about the monsters around you, in the style of ibar.",
-      "config": "config\\addons\\mobdb\\"
+      "config": "config\\addons\\mobdb\\",
+      "category": "Combat & targeting"
     },
     {
       "id": "porter",
@@ -1743,7 +1861,8 @@
       "load": "/addon load porter",
       "docs": "https://github.com/ThornyFFXI/Porter",
       "description": "Stores and fetches gear through the porter moogle. LegacyAC and LuAshitacast can drive it.",
-      "config": "config\\addons\\Porter\\"
+      "config": "config\\addons\\Porter\\",
+      "category": "Gear & inventory"
     },
     {
       "id": "castdelay",
@@ -1759,7 +1878,8 @@
       "install": "unzip-to-root",
       "load": "/addon load castdelay",
       "docs": "https://github.com/ThornyFFXI/castdelay",
-      "description": "Holds casts, ranged attacks and item use until you stop moving, so they are not interrupted."
+      "description": "Holds casts, ranged attacks and item use until you stop moving, so they are not interrupted.",
+      "category": "Combat & targeting"
     },
     {
       "id": "xiui",
@@ -1776,7 +1896,8 @@
       "load": "/addon load XIUI",
       "docs": "https://github.com/tirem/XIUI",
       "description": "A replacement UI: player bar, target bar, party list, enemy list, exp and gil trackers. The most-used v4 project.",
-      "config": "config\\addons\\XIUI\\"
+      "config": "config\\addons\\XIUI\\",
+      "category": "Interface & camera"
     },
     {
       "id": "balloon",
@@ -1793,7 +1914,8 @@
       "load": "/addon load Balloon",
       "docs": "https://github.com/onimitch/ffxi-balloon-ashitav4",
       "description": "NPC dialogue in speech balloons, with themes. A port of the Windower addon.",
-      "config": "config\\addons\\Balloon\\"
+      "config": "config\\addons\\Balloon\\",
+      "category": "Interface & camera"
     },
     {
       "id": "captain",
@@ -1810,7 +1932,8 @@
       "load": "/addon load captain",
       "docs": "https://github.com/sruon/captain",
       "description": "Packet capture and analysis. For people helping build the server.",
-      "config": "config\\addons\\captain\\"
+      "config": "config\\addons\\captain\\",
+      "category": "Tools & automation"
     },
     {
       "id": "scenthound",
@@ -1827,7 +1950,8 @@
       "load": "/addon load scenthound",
       "docs": "https://github.com/ThornyFFXI/ScentHound",
       "description": "Tracks monster spawns with on-screen markers and sound alerts. For notorious monster camping.",
-      "config": "config\\addons\\scenthound\\"
+      "config": "config\\addons\\scenthound\\",
+      "category": "Maps & travel"
     },
     {
       "id": "hush",
@@ -1844,7 +1968,8 @@
       "load": "/addon load hush",
       "docs": "https://github.com/clanofartisans/ashita-hush",
       "description": "Hides yells, teleport requests and other chat noise.",
-      "config": "config\\addons\\hush\\"
+      "config": "config\\addons\\hush\\",
+      "category": "Chat & communication"
     },
     {
       "id": "zonename",
@@ -1861,7 +1986,8 @@
       "load": "/addon load Zonename",
       "docs": "https://github.com/onimitch/ffxi-zonename",
       "description": "Shows the zone and region name for a moment when you zone. A port of the Windower addon.",
-      "config": "config\\addons\\Zonename\\"
+      "config": "config\\addons\\Zonename\\",
+      "category": "Maps & travel"
     },
     {
       "id": "fancychat",
@@ -1890,7 +2016,8 @@
       ],
       "config": "config\\addons\\fancychat\\",
       "docs": "https://github.com/ariel-logos/Fancychat",
-      "description": "Replaces the chat box with a themed, resizable window: tabs for combat, linkshell, party, tells and shouts, a compact icon combat log, timestamps, item and spell tooltips, clickable links, tell sounds and zone maps on Ctrl+click. /fchat settings to set it up, /fchat manual for the guide. SimpleLog and timestamp step aside while it is ticked."
+      "description": "Replaces the chat box with a themed, resizable window: tabs for combat, linkshell, party, tells and shouts, a compact icon combat log, timestamps, item and spell tooltips, clickable links, tell sounds and zone maps on Ctrl+click. /fchat settings to set it up, /fchat manual for the guide. SimpleLog and timestamp step aside while it is ticked.",
+      "category": "Chat & communication"
     },
     {
       "id": "simplelog",
@@ -1910,7 +2037,8 @@
       ],
       "docs": "https://github.com/ThornyFFXI/SimpleLog",
       "description": "Combat and message log parser: a cleaner, filtered log window.",
-      "config": "config\\addons\\simplelog\\"
+      "config": "config\\addons\\simplelog\\",
+      "category": "Chat & communication"
     },
     {
       "id": "fancytrusts",
@@ -1926,7 +2054,8 @@
       "install": "copy-to-addons",
       "load": "/addon load FancyTrusts",
       "docs": "https://github.com/ThornyFFXI/FancyTrusts",
-      "description": "A window for calling and managing trusts."
+      "description": "A window for calling and managing trusts.",
+      "category": "Combat & targeting"
     },
     {
       "id": "boussole",
@@ -1943,7 +2072,8 @@
       "load": "/addon load boussole",
       "docs": "https://github.com/loonsies/boussole",
       "description": "A replacement for the in-game map with extra features.",
-      "config": "config\\addons\\boussole\\"
+      "config": "config\\addons\\boussole\\",
+      "category": "Maps & travel"
     },
     {
       "id": "auctioneer",
@@ -1960,7 +2090,8 @@
       "load": "/addon load auctioneer",
       "docs": "https://github.com/loonsies/Auctioneer",
       "description": "An easier auction house: search, buy and sell from one window.",
-      "config": "config\\addons\\auctioneer\\"
+      "config": "config\\addons\\auctioneer\\",
+      "category": "Gear & inventory"
     },
     {
       "id": "points",
@@ -1977,7 +2108,8 @@
       "load": "/addon load points",
       "docs": "https://github.com/Shinzaku/Points",
       "description": "Tracks the points you are earning: exp, capacity, sparks, and more, on screen.",
-      "config": "config\\addons\\points\\"
+      "config": "config\\addons\\points\\",
+      "category": "Combat & targeting"
     },
     {
       "id": "dreamyah",
@@ -1996,7 +2128,26 @@
       "onByDefault": true,
       "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/dreamyah",
       "description": "Search the Vanadreams Auction House by item name. An AH Search button shows up while the Auction House menu is open; click it to see what is listed, how many, and the recent sale prices, and to bid. Also /dreamyah. Vanadreams only.",
-      "config": "config\\addons\\dreamyah\\"
+      "config": "config\\addons\\dreamyah\\",
+      "category": "VanaDreams"
+    },
+    {
+      "id": "vanacam",
+      "name": "VanaCam",
+      "kind": "addon",
+      "maintainer": "Vanadreams",
+      "source": {
+        "type": "repo-folder",
+        "repo": "VanaDreams/vanadreams-ashita",
+        "path": "addons/vanacam",
+        "branch": "main"
+      },
+      "version": "0.1.0",
+      "install": "copy-to-addons",
+      "load": "/addon load vanacam",
+      "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/vanacam",
+      "description": "Move the camera farther back while exploring or fighting. /vc cycles 8, 15 and 20; /vc set 20 picks a distance directly.",
+      "category": "VanaDreams"
     }
   ]
 }

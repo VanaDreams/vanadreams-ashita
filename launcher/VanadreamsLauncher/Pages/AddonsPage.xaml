@@ -23,27 +23,38 @@
                     <TextBlock x:Name="Heading" Style="{StaticResource Eyebrow}" Text="✦ Your addons" TextWrapping="Wrap"/>
                 </DockPanel>
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <ItemsControl x:Name="List" SizeChanged="List_SizeChanged">
+                    <ItemsControl x:Name="List">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <!-- two columns when the box is wide (menu across the top), one when it is not: List_SizeChanged -->
-                                <WrapPanel/>
+                                <StackPanel/>
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Grid MinHeight="27" Margin="0,0,12,0" Background="Transparent" MouseLeftButtonUp="Row_Click" Tag="{Binding}">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="22"/>
-                                        <ColumnDefinition Width="22"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Style="{StaticResource Hand}" FontSize="18" Margin="0,-3,0,0" Visibility="{Binding HandVisibility}"/>
-                                    <CheckBox Grid.Column="1" IsChecked="{Binding Enabled, Mode=TwoWay}" IsEnabled="{Binding CanTick}" VerticalAlignment="Center" Click="Check_Click" Tag="{Binding}"/>
-                                    <TextBlock Grid.Column="2" Text="{Binding Label}" VerticalAlignment="Center" Opacity="{Binding Opacity}" TextWrapping="Wrap" Margin="0,3"/>
-                                    <TextBlock Grid.Column="3" Text="{Binding Tag}" FontSize="11" FontWeight="ExtraBold" Foreground="{Binding TagBrush}" VerticalAlignment="Center" Typography.Capitals="AllSmallCaps" Margin="4,0,0,0"/>
-                                </Grid>
+                                <StackPanel Margin="0,5,0,9">
+                                    <TextBlock Text="{Binding Name}" Style="{StaticResource Eyebrow}" Margin="0,0,0,4"/>
+                                    <ItemsControl ItemsSource="{Binding Rows}" SizeChanged="SectionRows_SizeChanged">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid MinHeight="27" Margin="0,0,12,0" Background="Transparent" MouseLeftButtonUp="Row_Click" Tag="{Binding}">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="22"/>
+                                                        <ColumnDefinition Width="22"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Style="{StaticResource Hand}" FontSize="18" Margin="0,-3,0,0" Visibility="{Binding HandVisibility}"/>
+                                                    <CheckBox Grid.Column="1" IsChecked="{Binding Enabled, Mode=TwoWay}" IsEnabled="{Binding CanTick}" VerticalAlignment="Center" Click="Check_Click" Tag="{Binding}"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding Label}" VerticalAlignment="Center" Opacity="{Binding Opacity}" TextWrapping="Wrap" Margin="0,3"/>
+                                                    <TextBlock Grid.Column="3" Text="{Binding Tag}" FontSize="11" FontWeight="ExtraBold" Foreground="{Binding TagBrush}" VerticalAlignment="Center" Typography.Capitals="AllSmallCaps" Margin="4,0,0,0"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
