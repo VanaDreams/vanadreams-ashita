@@ -707,13 +707,13 @@
         "path": "vanatunes",
         "branch": "main"
       },
-      "version": "0.3.6",
+      "version": "0.3.7",
       "install": "copy-to-addons",
       "load": "/addon load vanatunes",
       "onByDefault": true,
       "config": "{desktop}\\Vanadreams Music\\",
       "docs": "https://github.com/VanaDreams/vanatunes/tree/main/vanatunes",
-      "description": "The Vanadreams playlist in game, and your own songs beside it. It plays them shuffled wherever you are, moving on when a song ends, from its own window. Press Reinstall to get songs added to the playlist since; your own mp3 or wav files go in the folder the Config button opens. Windows plays the songs beside the game, so no game track is replaced; turn Music down in the game's sound config if you only want these.",
+      "description": "Play the bundled VanaTunes songs or choose an album tab. Folders inside the addon's music folder become bundled albums; folders inside your Desktop Vanadreams Music folder become your own albums. Next and Shuffle stay in the selected album. Press Reinstall to get newly released songs and albums. Windows plays the songs beside the game, so no game track is replaced.",
       "category": "VanaDreams"
     },
     {
