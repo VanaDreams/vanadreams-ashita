@@ -24,7 +24,7 @@ namespace Vanadreams.Pages
             MusicBox.IsChecked = s.MusicOn;
             RestoreBox.IsChecked = s.RestoreOtherGame;
             MusicCredit.Text = "made for Vanadreams with SoundBreak";
-            About.Text = "Vanadreams Launcher " + typeof(App).Assembly.GetName().Version + " · github.com/VanaDreams/vanadreams-ashita · no telemetry";
+            About.Text = "Vanadreams Launcher " + typeof(App).Assembly.GetName().Version + " · github.com/VanaDreams/vanadreams-launcher · no telemetry";
             ShowLayout();
         }
 

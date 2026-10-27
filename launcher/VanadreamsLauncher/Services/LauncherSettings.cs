@@ -35,7 +35,7 @@ namespace Vanadreams.Services
         /// </summary>
         public string OtherGameRoot { get; set; } = "";
         public string LastProfile { get; set; } = "";
-        public string CatalogUrl { get; set; } = "https://raw.githubusercontent.com/VanaDreams/vanadreams-ashita/main/catalog.json";
+        public string CatalogUrl { get; set; } = "https://raw.githubusercontent.com/VanaDreams/vanadreams-launcher/main/catalog.json";
         public string StatusUrl { get; set; } = ServerStatusClient.DefaultUrl;
         public string CaptureUrl { get; set; } = "https://vanadreams.org/api/public/vanadreams/capture";
         public string ExpectedClientVer { get; set; } = "30260805_0";
@@ -52,7 +52,7 @@ namespace Vanadreams.Services
         /// <summary>The menu down the left ("vertical", the default) or as tabs across the top ("horizontal"), the player's pick on Settings.</summary>
         public string MenuLayout { get; set; } = "vertical";
         public bool HorizontalMenu => string.Equals(MenuLayout, "horizontal", StringComparison.OrdinalIgnoreCase);
-        public string NewsUrl { get; set; } = "https://raw.githubusercontent.com/VanaDreams/vanadreams-ashita/main/news.json";
+        public string NewsUrl { get; set; } = "https://raw.githubusercontent.com/VanaDreams/vanadreams-launcher/main/news.json";
         /// <summary>Low spec: the modern look's effects (d3d8to9 and ReShade in bootloader\) are renamed to .off (Effects).</summary>
         public bool LowSpec { get; set; }
         public List<string> EnabledAddons { get; set; } = new List<string>();

@@ -16,14 +16,14 @@
       "maintainer": "Vanadreams",
       "source": {
         "type": "repo-folder",
-        "repo": "VanaDreams/vanadreams-ashita",
+        "repo": "VanaDreams/vanadreams-launcher",
         "path": "addons/meritfix",
         "branch": "main"
       },
       "version": "0.1.0",
       "install": "copy-to-addons",
       "load": "/addon load meritfix",
-      "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/meritfix",
+      "docs": "https://github.com/VanaDreams/vanadreams-launcher/tree/main/addons/meritfix",
       "onByDefault": true,
       "description": "Shows your real merit points past 127 in the game's own merit window. Vanadreams lets you hold up to 969; the unpatched game wraps the number at 128. Changes nothing on the server.",
       "category": "VanaDreams"
@@ -35,7 +35,7 @@
       "maintainer": "Vanadreams",
       "source": {
         "type": "repo-folder",
-        "repo": "VanaDreams/vanadreams-ashita",
+        "repo": "VanaDreams/vanadreams-launcher",
         "path": "addons/vanafish",
         "branch": "main"
       },
@@ -43,7 +43,7 @@
       "install": "copy-to-addons",
       "load": "/addon load vanafish",
       "config": "config\\vanafish\\",
-      "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/vanafish",
+      "docs": "https://github.com/VanaDreams/vanadreams-launcher/tree/main/addons/vanafish",
       "description": "The Vanadreams fishing bot. Casts, reads the bite, decides catch or release by your rules, ends the fight the way the server judges it, stops itself when something is off. Works on any server.",
       "category": "VanaDreams"
     },
@@ -54,14 +54,14 @@
       "maintainer": "Vanadreams",
       "source": {
         "type": "repo-folder",
-        "repo": "VanaDreams/vanadreams-ashita",
+        "repo": "VanaDreams/vanadreams-launcher",
         "path": "addons/vanachatfix",
         "branch": "main"
       },
       "version": "0.1.0",
       "install": "copy-to-addons",
       "load": "/addon load vanachatfix",
-      "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/vanachatfix",
+      "docs": "https://github.com/VanaDreams/vanadreams-launcher/tree/main/addons/vanachatfix",
       "description": "For players who also use this Ashita on other private servers. Loads chatfix only where the server still sends the old chat layout, and keeps it off on Vanadreams. Tick this, not chatfix.",
       "category": "VanaDreams"
     },
@@ -72,7 +72,7 @@
       "maintainer": "Vanadreams",
       "source": {
         "type": "repo-folder",
-        "repo": "VanaDreams/vanadreams-ashita",
+        "repo": "VanaDreams/vanadreams-launcher",
         "path": "addons/charcapture",
         "branch": "main"
       },
@@ -80,7 +80,7 @@
       "install": "copy-to-addons",
       "load": "/addon load charcapture",
       "config": "config\\charcapture\\",
-      "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/charcapture",
+      "docs": "https://github.com/VanaDreams/vanadreams-launcher/tree/main/addons/charcapture",
       "description": "Snapshots your character for porting to Vanadreams: /capture in game, then send it from the launcher's Capture page. Reads only.",
       "category": "VanaDreams"
     },
@@ -583,7 +583,7 @@
       "maintainer": "Vanadreams",
       "source": {
         "type": "repo-folder",
-        "repo": "VanaDreams/vanadreams-ashita",
+        "repo": "VanaDreams/vanadreams-launcher",
         "path": "addons/vanagear",
         "branch": "main"
       },
@@ -591,7 +591,7 @@
       "install": "copy-to-addons",
       "load": "/addon load vanagear",
       "config": "config\\addons\\vanagear\\profiles\\",
-      "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/vanagear",
+      "docs": "https://github.com/VanaDreams/vanadreams-launcher/tree/main/addons/vanagear",
       "description": "Gear sets built for you from what you carry, for your job and level, written into a profile for each job that is shaped for how that job plays: type /vg. Built on LuAshitacast by ThornyFFXI and replaces it; your LuAshitacast profile for a job is brought over the first time you play it. A Settings tab, every command listed in the window, and GearSwap's /gs c commands work too. Your called trusts get a tab each with a fighting set and swap-ins for what they use, from gear in your bags that you and your other trusts are not using.",
       "category": "VanaDreams"
     },
@@ -741,7 +741,7 @@
       "maintainer": "Vanadreams",
       "source": {
         "type": "repo-folder",
-        "repo": "VanaDreams/vanadreams-ashita",
+        "repo": "VanaDreams/vanadreams-launcher",
         "path": "addons/crafty",
         "branch": "main"
       },
@@ -749,7 +749,7 @@
       "install": "copy-to-addons",
       "load": "/addon load crafty",
       "config": "config\\crafty\\",
-      "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/crafty",
+      "docs": "https://github.com/VanaDreams/vanadreams-launcher/tree/main/addons/crafty",
       "description": "Repeats a synthesis on Vanadreams: queue a crystal and ingredients with /crafty add, then /crafty start. Stops itself when materials run out or the bags fill.",
       "v3": {
         "name": "Crafty",
@@ -2118,7 +2118,7 @@
       "maintainer": "Vanadreams",
       "source": {
         "type": "repo-folder",
-        "repo": "VanaDreams/vanadreams-ashita",
+        "repo": "VanaDreams/vanadreams-launcher",
         "path": "addons/dreamyah",
         "branch": "main"
       },
@@ -2126,7 +2126,7 @@
       "install": "copy-to-addons",
       "load": "/addon load dreamyah",
       "onByDefault": true,
-      "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/dreamyah",
+      "docs": "https://github.com/VanaDreams/vanadreams-launcher/tree/main/addons/dreamyah",
       "description": "Search the Vanadreams Auction House by item name. An AH Search button shows up while the Auction House menu is open; click it to see what is listed, how many, and the recent sale prices, and to bid. Also /dreamyah. Vanadreams only.",
       "config": "config\\addons\\dreamyah\\",
       "category": "VanaDreams"
@@ -2138,14 +2138,14 @@
       "maintainer": "Vanadreams",
       "source": {
         "type": "repo-folder",
-        "repo": "VanaDreams/vanadreams-ashita",
+        "repo": "VanaDreams/vanadreams-launcher",
         "path": "addons/vanacam",
         "branch": "main"
       },
       "version": "0.2.0",
       "install": "copy-to-addons",
       "load": "/addon load vanacam",
-      "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/vanacam",
+      "docs": "https://github.com/VanaDreams/vanadreams-launcher/tree/main/addons/vanacam",
       "description": "Camera controls in game: close/adventure/far presets, normal and combat distance sliders, close zoom in tight spaces, and automatic screen-aspect matching for widescreen displays. Type /vc ui.",
       "category": "VanaDreams"
     }

@@ -27,9 +27,9 @@ catalog = json.loads(primary.read_text(encoding="utf-8"))
 if not any(item["id"] == "vanacam" for item in catalog["items"]):
     catalog["items"].append({
         "id": "vanacam", "name": "VanaCam", "kind": "addon", "maintainer": "Vanadreams",
-        "source": {"type": "repo-folder", "repo": "VanaDreams/vanadreams-ashita", "path": "addons/vanacam", "branch": "main"},
+        "source": {"type": "repo-folder", "repo": "VanaDreams/vanadreams-launcher", "path": "addons/vanacam", "branch": "main"},
         "version": "0.2.0", "install": "copy-to-addons", "load": "/addon load vanacam",
-        "docs": "https://github.com/VanaDreams/vanadreams-ashita/tree/main/addons/vanacam",
+        "docs": "https://github.com/VanaDreams/vanadreams-launcher/tree/main/addons/vanacam",
         "description": "Camera controls in game: close/adventure/far presets, normal and combat distance sliders, close zoom in tight spaces, and automatic screen-aspect matching for widescreen displays. Type /vc ui."
     })
 

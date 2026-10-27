@@ -29,7 +29,7 @@ addon.name    = 'crafty';
 addon.author  = 'Vanadreams';
 addon.version = '0.1.4';
 addon.desc    = 'Repeat a synthesis, built for the Vanadreams server.';
-addon.link    = 'https://github.com/VanaDreams/vanadreams-ashita';
+addon.link    = 'https://github.com/VanaDreams/vanadreams-launcher';
 
 require('common');
 local imgui    = require('imgui');

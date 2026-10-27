@@ -149,7 +149,7 @@ namespace Vanadreams.Tests
             var items = new List<string>
             {
                 @"{ ""id"": ""vanatunes"", ""kind"": ""addon"", ""onByDefault"": true, ""source"": { ""type"": ""repo-folder"", ""repo"": ""VanaDreams/vanatunes"", ""path"": ""vanatunes"" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load vanatunes"" }",
-                @"{ ""id"": ""vanagear"", ""kind"": ""addon"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""VanaDreams/vanadreams-ashita"", ""path"": ""addons/vanagear"" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load vanagear"" }",
+                @"{ ""id"": ""vanagear"", ""kind"": ""addon"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""VanaDreams/vanadreams-launcher"", ""path"": ""addons/vanagear"" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load vanagear"" }",
                 @"{ ""id"": ""chatfix"", ""kind"": ""addon"", ""onByDefault"": true, ""heldBack"": ""wrong here"", ""source"": { ""type"": ""bundled"" }, ""load"": ""/addon load chatfix"" }",
             };
             var ashita = new List<string> { "crosshair", "chamcham", "ime", "activemon", "aspect", "distance" };
@@ -175,7 +175,7 @@ namespace Vanadreams.Tests
         {
             var cat = Catalog.Parse(@"{ ""schema"": 1, ""items"": [
   { ""id"": ""vanatunes"", ""kind"": ""addon"", ""version"": ""0.3.1"", ""onByDefault"": true, ""source"": { ""type"": ""repo-folder"", ""repo"": ""VanaDreams/vanatunes"", ""path"": ""vanatunes"" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load vanatunes"" },
-  { ""id"": ""crafty"", ""kind"": ""addon"", ""version"": ""0.1.0"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""VanaDreams/vanadreams-ashita"", ""path"": ""addons/crafty"" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load crafty"" },
+  { ""id"": ""crafty"", ""kind"": ""addon"", ""version"": ""0.1.0"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""VanaDreams/vanadreams-launcher"", ""path"": ""addons/crafty"" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load crafty"" },
   { ""id"": ""oseem"", ""kind"": ""addon"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""ThornyFFXI/Oseem"", ""path"": """" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load oseem"" },
   { ""id"": ""chatfix"", ""kind"": ""addon"", ""version"": ""9"", ""heldBack"": ""wrong here"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""x/y"", ""path"": ""chatfix"" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load chatfix"" },
   { ""id"": ""bellhop"", ""kind"": ""plugin"", ""version"": ""1.22"", ""source"": { ""type"": ""github-release"", ""repo"": ""ThornyFFXI/Bellhop"", ""asset"": ""*.zip"" }, ""install"": ""unzip-to-root"", ""load"": ""/load bellhop"" }
@@ -223,7 +223,7 @@ namespace Vanadreams.Tests
         {
             var cat = Catalog.Parse(@"{ ""schema"": 1, ""items"": [
   { ""id"": ""xi-vision"", ""kind"": ""overlay"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""Drauku/FFXI-Vision"", ""path"": ""FFXI-map-dats"", ""branch"": ""master"", ""skip"": [ ""ROM/119/*"" ] }, ""install"": ""pivot-overlay"" },
-  { ""id"": ""crafty"", ""kind"": ""addon"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""VanaDreams/vanadreams-ashita"", ""path"": ""addons/crafty"" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load crafty"" }
+  { ""id"": ""crafty"", ""kind"": ""addon"", ""source"": { ""type"": ""repo-folder"", ""repo"": ""VanaDreams/vanadreams-launcher"", ""path"": ""addons/crafty"" }, ""install"": ""copy-to-addons"", ""load"": ""/addon load crafty"" }
 ] }");
             CollectionAssert.AreEqual(new[] { "ROM/119/*" }, cat.Find("xi-vision").Skip);
             Assert.AreEqual(InstallAction.PivotOverlay, cat.Find("xi-vision").Install);
