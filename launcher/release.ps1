@@ -56,6 +56,7 @@ if (-not $NoSign) {
     if ($LASTEXITCODE) { throw 'Signing failed. Is az login current, and does the account have the Certificate Profile Signer role?' }
     & $signtool.FullName verify /pa /v $exe | Select-String 'Issued to|Successfully'
     if ($LASTEXITCODE) { throw 'Signature did not verify.' }
+    & (Join-Path $launcher 'tests\verify-updater-signature.ps1') $exe
 }
 
 # 3. Defender scan: never ship a build the classifier dislikes

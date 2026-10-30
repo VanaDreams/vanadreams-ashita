@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
 namespace Vanadreams.Services
@@ -47,23 +46,8 @@ namespace Vanadreams.Services
             catch (Exception) { return null; }
         }
 
-        /// <summary>The exe carries a signature whose subject is ours and whose chain Windows trusts.</summary>
-        public static bool IsSignedByUs(string exe)
-        {
-            try
-            {
-                using (var cert = new X509Certificate2(X509Certificate.CreateFromSignedFile(exe)))
-                {
-                    if (cert.Subject.IndexOf(Signer, StringComparison.OrdinalIgnoreCase) < 0) return false;
-                    using (var chain = new X509Chain())
-                    {
-                        chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                        return chain.Build(cert);
-                    }
-                }
-            }
-            catch (Exception ex) { Log.Warn("signature check " + Path.GetFileName(exe) + ": " + ex.Message); return false; }
-        }
+        /// <summary>Accept only an intact, trusted, timestamped release from our publisher.</summary>
+        public static bool IsSignedByUs(string exe) => AuthenticodeVerifier.IsSignedByUs(exe);
 
         /// <summary>A newer release than this build, or null.</summary>
         public static async Task<ReleaseAsset> CheckAsync(Downloader downloader)
