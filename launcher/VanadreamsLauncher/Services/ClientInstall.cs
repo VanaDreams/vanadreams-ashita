@@ -102,6 +102,24 @@ namespace Vanadreams.Services
         /// Ashita folder gets it again even though the game's own record says it was done.</summary>
         public static string RecordFolder(ClientChunk c, string root, string ashitaRoot) => c.ToAshita ? ashitaRoot : root;
 
+        /// <summary>
+        /// The record file for a folder: beside the game, except when the folder is the top of a drive. Windows lets a
+        /// normal user make folders in C:\ but not files, so a game installed straight into C:\ unpacked and then
+        /// stopped on "Access to the path 'C:\.vanadreams-client.txt' is denied" (30 Oct 2026). That record lives in
+        /// the launcher's own data folder instead, one per drive.
+        /// </summary>
+        public static string RecordPath(string folder) => IsDriveTop(folder)
+            ? Path.Combine(LauncherSettings.DataFolder, "client-record-" + char.ToUpperInvariant(folder.Trim()[0]) + ".txt")
+            : Path.Combine(folder, RecordName);
+
+        /// <summary>"C:\", "C:" or "C:/": the top of a drive, where files cannot be written without admin rights.</summary>
+        public static bool IsDriveTop(string folder)
+        {
+            if (string.IsNullOrWhiteSpace(folder)) return false;
+            var f = folder.Trim().TrimEnd('\\', '/');
+            return f.Length == 2 && f[1] == ':' && char.IsLetter(f[0]);
+        }
+
         /// <summary>Zips already unpacked for this version, from the record in the game's root and, for the chunks that
         /// go under Ashita, the one in the Ashita folder.</summary>
         public static HashSet<string> Done(string root, string version, string ashitaRoot = null)
@@ -110,7 +128,7 @@ namespace Vanadreams.Services
             foreach (var folder in new[] { root, ashitaRoot })
             {
                 if (string.IsNullOrWhiteSpace(folder)) continue;
-                var path = Path.Combine(folder, RecordName);
+                var path = RecordPath(folder);
                 if (!File.Exists(path)) continue;
                 foreach (var line in File.ReadAllLines(path))
                 {
@@ -175,7 +193,9 @@ namespace Vanadreams.Services
                 }
                 var dest = DestFolder(c, root, ashitaRoot);
                 await Task.Run(() => Downloader.ExtractZipOverwrite(zip, dest), ct).ConfigureAwait(false);
-                File.AppendAllText(Path.Combine(RecordFolder(c, root, ashitaRoot), RecordName), $"{m.Version} {c.Name} {c.Sha256}{Environment.NewLine}");
+                var record = RecordPath(RecordFolder(c, root, ashitaRoot));
+                Directory.CreateDirectory(Path.GetDirectoryName(record));
+                File.AppendAllText(record, $"{m.Version} {c.Name} {c.Sha256}{Environment.NewLine}");
                 File.Delete(zip);
                 before += c.Size;
                 touchedAshita |= c.ToAshita;

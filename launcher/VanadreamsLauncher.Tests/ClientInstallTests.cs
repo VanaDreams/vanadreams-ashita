@@ -39,6 +39,39 @@ namespace Vanadreams.Tests
         }
 
         [TestMethod]
+        public void Record_AtTheTopOfADrive_GoesToTheLauncherDataFolder()
+        {
+            var data = Path.Combine(Path.GetTempPath(), "vdl-data-" + Guid.NewGuid().ToString("N"));
+            var before = LauncherSettings.DataOverride;
+            LauncherSettings.DataOverride = data;
+            try
+            {
+                // 30 Oct 2026: a game installed into C:\ stopped on "Access to the path 'C:\.vanadreams-client.txt' is denied"
+                foreach (var top in new[] { @"C:\", "C:", "c:/", " C:\\ " })
+                {
+                    Assert.IsTrue(ClientInstall.IsDriveTop(top), top);
+                    Assert.AreEqual(Path.Combine(data, "client-record-C.txt"), ClientInstall.RecordPath(top), top);
+                }
+                Assert.AreEqual(Path.Combine(data, "client-record-D.txt"), ClientInstall.RecordPath(@"D:\"));
+                foreach (var folder in new[] { @"C:\Games\Vanadreams", @"D:\FFXI", "", null })
+                    Assert.IsFalse(ClientInstall.IsDriveTop(folder), folder ?? "null");
+                Assert.AreEqual(Path.Combine(@"C:\Games\Vanadreams", ClientInstall.RecordName), ClientInstall.RecordPath(@"C:\Games\Vanadreams"));
+
+                // what was recorded there is read back for that drive
+                Directory.CreateDirectory(data);
+                File.WriteAllLines(Path.Combine(data, "client-record-C.txt"), new[] { "30260904_1 base.zip aa" });
+                var m = ClientManifest.Parse(Manifest);
+                var left = ClientInstall.Remaining(m, ClientInstall.Done(@"C:\", m.Version)).Select(c => c.Name).ToList();
+                CollectionAssert.AreEqual(new[] { "ROM-01.zip", "pol-viewer.zip" }, left);
+            }
+            finally
+            {
+                LauncherSettings.DataOverride = before;
+                if (Directory.Exists(data)) Directory.Delete(data, true);
+            }
+        }
+
+        [TestMethod]
         public void Remaining_SkipsWhatTheRecordSaysIsDone_ButOnlyWithTheSameHash()
         {
             var root = Path.Combine(Path.GetTempPath(), "vdl-client-" + Guid.NewGuid().ToString("N"));
