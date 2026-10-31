@@ -64,7 +64,8 @@ coming from GearSwap.
 ## Your support job's gear
 
 Vanadreams lets your main job wear the weapons and armour your support job can wear, through your
-own sets. The game's equipment menu and the built sets only use your main job's gear. In the `/vg`
+own sets. The game's equipment menu only uses your main job's gear; the sets vanagear builds for
+you and your trusts, and `/vg upgrades`, count the support job's pieces too. In the `/vg`
 window, every slot's list of your own set also offers your support job's pieces; or use
 `/vg set <name> <slot> <item>` (for example `/vg set Axe Main Great Axe` on BLM/WAR), then
 `/vg wear <name>`. Weapon skills you get this way cap at 80% of the support job's cap.

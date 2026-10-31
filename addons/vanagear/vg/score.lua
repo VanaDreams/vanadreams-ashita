@@ -204,13 +204,14 @@ end
 
 -- Builds one set over the given slots. Returns { [slot] = piece }, the ranked candidates per
 -- slot from the last round (for /vg why), the set's score and its stat totals.
-score.Build = function(mode, pieces, who, slots, petTypes)
+-- withSub: the support job's gear counts too (Vanadreams lets you and your trusts wear it).
+score.Build = function(mode, pieces, who, slots, petTypes, withSub)
     mode.Who = who;   -- for latent stats that depend on the player (job, level, zone)
     local cands = {};
     for _, slot in ipairs(slots) do
         cands[slot] = {};
         for _, piece in ipairs(pieces) do
-            if (piece.Equippable) and (bags.CanWear(piece, slot, who)) then
+            if (piece.Equippable) and (bags.CanWear(piece, slot, who, withSub)) then
                 local v = vector(piece, slot, mode, petTypes);
                 if (next(v) ~= nil) then
                     cands[slot][#cands[slot] + 1] = { piece = piece, v = v };
