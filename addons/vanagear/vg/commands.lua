@@ -167,7 +167,7 @@ local function upgrades()
         for slot, ranks in pairs(ex.ranks) do
             local bestGain = (ranks[1] ~= nil) and ranks[1].gain or 0;
             for _, p in ipairs(stored) do
-                if (bags.CanWear(p, slot, gVana.Who)) then
+                if (bags.CanWear(p, slot, gVana.Who, true)) then
                     local v = score.Vector(p, slot, ex.mode, require('vg.data').PetTypes[job()] or { 0 });
                     local alone = score.Total(ex.mode, v);
                     if (alone > bestGain + 0.5) then

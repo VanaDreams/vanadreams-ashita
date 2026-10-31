@@ -423,7 +423,8 @@ trusts.Pool = function(t)
                 for slot, name in pairs(trusts.Final(u, s.Name)) do named[gData.Constants.EquipSlotNames[slot]] = name; end
                 finals[s.Name] = named;
             end
-            needed(finals, held);
+            -- most of a piece in any one of its sets, added to what you and the others already hold
+            for key, n in pairs(needed(finals, {})) do held[key] = (held[key] or 0) + n; end
         end
     end
     local keys = {};
@@ -465,7 +466,7 @@ trusts.Built = function(t)
     local sets = {};
     local planned = trusts.Plan(t);
     for _, p in ipairs(planned) do
-        sets[p.Name] = score.Build(score.Compile(p.Mode), pool, who, slots, { 0 });
+        sets[p.Name] = score.Build(score.Compile(p.Mode), pool, who, slots, { 0 }, true);
     end
     built[t.Name] = { at = gVana.BuiltAt, job = t.Job, level = t.Level, uses = uses, held = heldSig, sets = sets, plan = planned, sig = sig };
     return sets, planned;

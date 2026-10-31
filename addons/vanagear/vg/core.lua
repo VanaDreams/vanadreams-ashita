@@ -179,7 +179,7 @@ local function stepBuild(budget)
         local done = item.SameAs and q.same[item.SameAs];
         if (done == nil) then
             local mode = score.Compile(item.Mode);
-            local built, ranks, total, totals = score.Build(mode, q.pieces, q.who, item.Slots, q.petTypes);
+            local built, ranks, total, totals = score.Build(mode, q.pieces, q.who, item.Slots, q.petTypes, true);
             done = { built = built, ranks = ranks, total = total, totals = totals, mode = mode };
             if (item.SameAs) then q.same[item.SameAs] = done; end
         end

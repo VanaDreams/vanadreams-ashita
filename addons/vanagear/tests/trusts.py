@@ -222,21 +222,27 @@ expect = [
     'blocked true true uses 4',
     'sets Engaged,Weaponskill,Cure,Ability,Savage Blade,Sentinel',
     'Cure IV/savageblade',
-    # the tank's Engaged and Ability sets take the damage taken and enmity helm, its weaponskills the strong one
-    ' ; '.join([line('engaged', head_ring(106, 108)), line('weaponskill', head_ring(107)),
-                line('ability', head_ring(106, 108)), line('savageblade', head_ring(107)),
-                line('sentinel', [0, 0, 0, 0, 0, 0, 0, 0, 109] + [0] * 7)]),
+    # the tank's Engaged and Ability sets take the damage taken and enmity helm, its weaponskills the strong one;
+    # the Shared Rings are WAR gear and Excenmille is PLD/WAR, so his support job's rings go on too
+    ' ; '.join([
+        line('engaged', [0, 0, 0, 0, 106] + [0] * 8 + [108, 103, 0]),
+        line('weaponskill', [0, 0, 0, 0, 107] + [0] * 8 + [103, 103, 0]),
+        line('cure', [0] * 13 + [103, 103, 0]),
+        line('ability', head_ring(106, 108)),
+        line('savageblade', [0, 0, 0, 0, 107] + [0] * 8 + [103, 103, 0]),
+        line('sentinel', [0, 0, 0, 0, 0, 0, 0, 0, 109] + [0] * 7)]),
     'again 0',
-    ' ; '.join([line('engaged', head_ring(0, 108)), line('flash', head_ring(102)), '/say !trustgear 16818177 flash clear']),
+    ' ; '.join([line('engaged', [0] * 13 + [108, 103, 0]), line('flash', head_ring(102)), '/say !trustgear 16818177 flash clear']),
     'reloaded remove',
     'off true cure true flash false',
     'now cure false flash false ws true',
     # flash was switched off and back on before anything was sent, so only its last word goes; the others go once each
     '/say !trustuse 16818177 on flash ; /say !trustuse 16818177 on cure_iv ; /say !trustuse 16818177 off savage_blade',
-    'free: Kupipi cure rings 2, Excenmille ability helm true',
-    'yours taken: Kupipi cure rings 1, Excenmille ability helm false',
+    # Excenmille is called first and wears both Shared Rings himself, so Kupipi, after him, gets what is left
+    'free: Kupipi cure rings 0, Excenmille ability helm true',
+    'yours taken: Kupipi cure rings 0, Excenmille ability helm false',
     'both taken: Kupipi cure rings 0',
-    'earlier trust holds one: Kupipi cure rings 1',
+    'earlier trust holds one: Kupipi cure rings 0',
     'over-promised: none',
 ]
 assert lines == expect, '\n'.join(f'{a!r} vs {b!r}' for a, b in zip(lines, expect) if a != b)
